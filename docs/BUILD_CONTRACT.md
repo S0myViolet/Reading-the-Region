@@ -91,3 +91,35 @@ seems needed, work around it locally and note it in your final report.
 ## Definition of done
 
 `cd /home/user/Reading-the-Region && npx tsc --noEmit` passes with zero errors in your files.
+
+## Visibility layers (complexity rule)
+
+The platform is a simple surface over a rigorous engine. Depth is hidden by default and
+inspectable on demand via the global view-depth control (`ViewModeSwitch` in the shell).
+
+- `simple` (default): what happened, why it matters, confidence **with a reason**, evidence
+  quality in one line, what could contradict it, what it connects to, suggested next step.
+- `analyst`: adds scoring panels, source credibility & bias tags, zooming analysis, systems
+  effects, cluster logic, validation status.
+- `methodology`: adds thresholds, full rubric detail, provenance labels, audit trail
+  (created/updated, review machinery), evidence lineage.
+
+Implementation idiom:
+
+- Gate depth with `<ViewGate min="analyst">…</ViewGate>` / `<ViewGate min="methodology">…</ViewGate>`
+  from `@/components/ViewMode`; read the mode with `useViewMode()`.
+- In simple view, add one `<DepthHint>Scoring, sources and validation detail</DepthHint>` per
+  detail page so users know deeper material exists.
+- Never render a bare score, confidence level, or "contradiction detected". Use the
+  generators in `@/lib/explain.ts` (`explainSignalScore`, `explainSignalConfidence`,
+  `evidenceQualityLine`, `explainContradiction`, `explainClusterStatus`,
+  `explainPatternStatus`, `explainDriverStatus`, `explainScenarioEvidence`,
+  `explainTerritoryStatus`, `explainImplicationEvidence`, `explainIndicator`,
+  `summarizeValidation`, `nextStepForSignal`, `nextStepForCluster`) and the readout
+  components in `@/components/Explained.tsx` (`ExplainedScore`, `ExplainedConfidence`,
+  `EvidenceQualityLine`, `ExplainedValue`).
+- Tabs on detail pages: the Overview tab is the simple layer; Scoring/Evidence/Systems/
+  Review tabs are analyst+; threshold tables and audit trails are methodology-only.
+- Forms: in simple view, creation flows show the essential capture fields and explain that
+  scoring/validation completes in Analyst view (objects land as drafts needing review) —
+  the user must never feel they are filling a compliance form.

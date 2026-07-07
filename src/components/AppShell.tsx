@@ -7,6 +7,7 @@ import { indicatorOverdue } from "@/lib/derived";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { OnboardingModal } from "./OnboardingModal";
 import { SearchOverlay } from "./SearchOverlay";
+import { ViewModeSwitch } from "./ViewMode";
 
 interface NavItem {
   href: string;
@@ -150,6 +151,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               })}
             </div>
           ))}
+        </div>
+
+        <div className="border-t border-line px-4 py-3">
+          <ViewModeSwitch />
         </div>
 
         <div className="border-t border-line px-4 py-3">
