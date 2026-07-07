@@ -218,22 +218,31 @@ function MonitoringContent() {
     <>
       <MonitoringHeader
         actions={
-          <button
-            type="button"
-            onClick={() => setAdding((a) => !a)}
-            className={
-              adding
-                ? "rounded-[2px] border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft hover:border-line-strong"
-                : "rounded-[2px] border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink"
-            }
-          >
-            {adding ? "Close form" : "Add indicator"}
-          </button>
+          <ViewGate min="analyst">
+            <button
+              type="button"
+              onClick={() => setAdding((a) => !a)}
+              className={
+                adding
+                  ? "rounded-[2px] border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft hover:border-line-strong"
+                  : "rounded-[2px] border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink"
+              }
+            >
+              {adding ? "Close form" : "Add indicator"}
+            </button>
+          </ViewGate>
         }
       />
       <WalkthroughPanel pageId="monitoring" />
+      <div className="mb-4">
+        <DepthHint>
+          Indicator classification, evidence detail and check recording
+        </DepthHint>
+      </div>
 
-      {adding ? <AddIndicatorForm onClose={() => setAdding(false)} /> : null}
+      {analyst && adding ? (
+        <AddIndicatorForm onClose={() => setAdding(false)} />
+      ) : null}
 
       <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
         {TREND_ORDER.map((t) => (
@@ -254,19 +263,97 @@ function MonitoringContent() {
         />
       </div>
 
-      <MonitoringQuestionsCard />
-      <CadenceStrip />
+      <section className="card mb-5">
+        <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
+          <h2 className="overline-label">Filters</h2>
+          {anyFilterActive ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+            >
+              Reset filters
+            </button>
+          ) : null}
+        </header>
+        <div
+          className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
+            analyst ? "lg:grid-cols-3" : ""
+          }`}
+        >
+          <Field label="Territory">
+            <Select
+              value={territoryFilter}
+              onChange={(e) => setTerritoryFilter(e.target.value)}
+            >
+              <option value="">All territories</option>
+              {territories.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+              <option value="unattached">No territory linkage</option>
+            </Select>
+          </Field>
+          {analyst ? (
+            <>
+              <Field label="Indicator type">
+                <Select
+                  value={typeFilter}
+                  onChange={(e) =>
+                    setTypeFilter(e.target.value as IndicatorType | "")
+                  }
+                >
+                  <option value="">All types</option>
+                  {(Object.keys(INDICATOR_TYPE_LABELS) as IndicatorType[]).map(
+                    (t) => (
+                      <option key={t} value={t}>
+                        {INDICATOR_TYPE_LABELS[t]}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </Field>
+              <Field label="Cadence">
+                <Select
+                  value={cadenceFilter}
+                  onChange={(e) =>
+                    setCadenceFilter(e.target.value as MonitoringCadence | "")
+                  }
+                >
+                  <option value="">All cadences</option>
+                  {(Object.keys(CADENCE_LABELS) as MonitoringCadence[]).map(
+                    (c) => (
+                      <option key={c} value={c}>
+                        {CADENCE_LABELS[c]}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </Field>
+            </>
+          ) : null}
+        </div>
+      </section>
 
-      {filter !== null ? (
+      <ViewGate min="analyst">
+        <MonitoringQuestionsCard />
+      </ViewGate>
+      <ViewGate min="methodology">
+        <CadenceStrip />
+      </ViewGate>
+
+      {anyFilterActive ? (
         <p className="mb-4 flex flex-wrap items-center gap-2 text-[11.5px] text-ink-faint">
           Showing {visible.length} of {indicators.length} indicator
-          {indicators.length === 1 ? "" : "s"} — filter: {filterLabel}.
+          {indicators.length === 1 ? "" : "s"} — filter:{" "}
+          {activeFilterLabels.join(" · ")}.
           <button
             type="button"
-            onClick={() => setFilter(null)}
+            onClick={clearFilters}
             className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
           >
-            Clear filter
+            Clear filters
           </button>
         </p>
       ) : null}
@@ -284,10 +371,10 @@ function MonitoringContent() {
           </p>
           <button
             type="button"
-            onClick={() => setFilter(null)}
+            onClick={clearFilters}
             className="mt-3 rounded-[2px] border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft hover:border-line-strong"
           >
-            Clear filter
+            Clear filters
           </button>
         </div>
       ) : (
@@ -298,8 +385,16 @@ function MonitoringContent() {
                 <p className="overline-label">
                   {g.territoryId !== null ? (
                     <>
-                      Future territory ·{" "}
-                      <span className="font-mono normal-case">{g.territoryId}</span>
+                      Future territory
+                      {analyst ? (
+                        <>
+                          {" "}
+                          ·{" "}
+                          <span className="font-mono normal-case">
+                            {g.territoryId}
+                          </span>
+                        </>
+                      ) : null}
                     </>
                   ) : (
                     "No territory linkage"
