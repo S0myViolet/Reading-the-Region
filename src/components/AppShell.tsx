@@ -21,13 +21,13 @@ interface NavCounts {
   overdueIndicators: number;
 }
 
-const NAV_GROUPS: Array<{ heading: string; items: NavItem[] }> = [
+const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
   {
-    heading: "Command",
-    items: [{ href: "/", label: "Intelligence Overview" }],
+    heading: null,
+    items: [{ href: "/", label: "Overview" }],
   },
   {
-    heading: "Scan & Classify",
+    heading: "Scan",
     items: [
       { href: "/inbox", label: "Scan Inbox", badge: (c) => c.unreviewedObservations },
       { href: "/signals", label: "Signal Library", badge: (c) => c.signalsNeedingReview },
@@ -35,7 +35,7 @@ const NAV_GROUPS: Array<{ heading: string; items: NavItem[] }> = [
     ],
   },
   {
-    heading: "Connect & Synthesize",
+    heading: "Connect",
     items: [
       { href: "/clusters", label: "Signal Clusters" },
       { href: "/patterns", label: "Patterns" },
@@ -43,7 +43,7 @@ const NAV_GROUPS: Array<{ heading: string; items: NavItem[] }> = [
     ],
   },
   {
-    heading: "Interpret & Imagine",
+    heading: "Interpret",
     items: [
       { href: "/drivers", label: "Drivers" },
       { href: "/territories", label: "Future Territories" },
@@ -51,14 +51,14 @@ const NAV_GROUPS: Array<{ heading: string; items: NavItem[] }> = [
     ],
   },
   {
-    heading: "Apply & Monitor",
+    heading: "Apply",
     items: [
       { href: "/implications", label: "Strategic Implications" },
       { href: "/monitoring", label: "Monitoring", badge: (c) => c.overdueIndicators },
     ],
   },
   {
-    heading: "System",
+    heading: null,
     items: [
       { href: "/methodology", label: "Methodology" },
       { href: "/settings", label: "Settings" },
@@ -102,49 +102,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <nav className="fixed inset-y-0 left-0 z-40 hidden w-[218px] flex-col border-r border-line bg-paper lg:flex">
-        <div className="border-b border-line px-4 py-4">
+      <nav className="fixed inset-y-0 left-0 z-40 hidden w-[224px] flex-col bg-paper lg:flex">
+        <div className="px-6 pb-5 pt-6">
           <Link href="/" className="block">
             <span className="font-display block text-[17px] leading-tight text-ink">
               Reading the Region
             </span>
-            <span className="mt-0.5 block text-[10px] leading-snug text-ink-faint">
-              Strategic foresight intelligence · MENA
+            <span className="mt-1 block text-[10.5px] leading-snug text-ink-faint">
+              Strategic foresight · MENA
             </span>
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 border-b border-line px-4 py-2.5">
+        <div className="flex-1 overflow-y-auto pb-4">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex-1 border border-line bg-surface px-2 py-1 text-left text-[11.5px] text-ink-faint rounded-[2px] hover:border-line-strong"
+            className="mx-6 mb-5 flex w-[calc(100%-3rem)] items-baseline justify-between text-[12px] text-ink-faint hover:text-ink-soft"
             title="Search all intelligence layers (Ctrl/Cmd + K)"
           >
-            Search… <span className="float-right font-mono text-[10px]">⌘K</span>
+            Search
+            <span className="font-mono text-[10px]">⌘K</span>
           </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto py-2">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.heading} className="px-2 py-1.5">
-              <p className="overline-label px-2 pb-1">{group.heading}</p>
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className="mb-5 px-6">
+              {group.heading ? (
+                <p className="mb-1 text-[10.5px] text-ink-faint">{group.heading}</p>
+              ) : null}
               {group.items.map((item) => {
                 const badge = item.badge ? item.badge(counts) : 0;
+                const active = isActive(item.href);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center justify-between rounded-[2px] px-2 py-[5px] text-[12.5px] ${
-                      isActive(item.href)
-                        ? "bg-surface font-medium text-accent-ink border border-line"
-                        : "text-ink-soft hover:bg-surface hover:text-ink border border-transparent"
+                    className={`-mx-2 flex items-baseline justify-between rounded-[4px] px-2 py-[5px] text-[13px] ${
+                      active
+                        ? "font-medium text-ink"
+                        : "text-ink-soft hover:text-ink"
                     }`}
                   >
-                    {item.label}
+                    <span className={active ? "border-b border-accent pb-px" : ""}>
+                      {item.label}
+                    </span>
                     {badge > 0 ? (
-                      <span className="ml-2 rounded-[2px] bg-caution-soft px-1.5 font-mono text-[10px] text-caution">
-                        {badge}
-                      </span>
+                      <span className="font-mono text-[10.5px] text-ink-faint">{badge}</span>
                     ) : null}
                   </Link>
                 );
@@ -153,22 +155,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
 
-        <div className="border-t border-line px-4 py-3">
-          <ViewModeSwitch />
-        </div>
-
-        <div className="border-t border-line px-4 py-3">
+        <div className="space-y-3 px-6 pb-6 pt-4">
+          <div className="border-t border-line pt-4">
+            <ViewModeSwitch compact />
+          </div>
           <label
-            className="flex cursor-pointer items-center justify-between text-[11.5px] text-ink-soft"
-            title="Guided Mode shows page-level guidance: purpose, recommended action, common mistake, next step."
+            className="flex cursor-pointer items-center justify-between text-[11.5px] text-ink-faint"
+            title="Guided Mode shows the page guide: purpose, recommended action, next step."
           >
             Guided mode
             <button
               role="switch"
               aria-checked={hydrated ? guidedMode : true}
               onClick={() => setGuidedMode(!guidedMode)}
-              className={`relative h-[16px] w-[28px] rounded-full border transition-colors ${
-                hydrated && guidedMode ? "border-accent bg-accent" : "border-line-strong bg-surface-muted"
+              className={`relative h-[14px] w-[26px] rounded-full transition-colors ${
+                hydrated && guidedMode ? "bg-accent" : "bg-line-strong"
               }`}
             >
               <span
@@ -186,10 +187,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/" className="font-display text-[15px] text-ink">
           Reading the Region
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setSearchOpen(true)}
-            className="border border-line bg-surface px-2 py-1 text-[11.5px] text-ink-faint rounded-[2px]"
+            className="text-[12px] text-ink-faint"
           >
             Search
           </button>
@@ -197,8 +198,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <main className="min-w-0 flex-1 px-4 pb-16 pt-16 sm:px-6 lg:ml-[218px] lg:pt-6">
-        <div className="mx-auto max-w-6xl">{children}</div>
+      <main className="min-w-0 flex-1 px-5 pb-20 pt-16 sm:px-8 lg:ml-[224px] lg:pt-10 lg:pl-10">
+        <div className="mx-auto max-w-5xl">{children}</div>
       </main>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
@@ -214,21 +215,23 @@ function MobileNav({ pathname }: { pathname: string }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="border border-line bg-surface px-2 py-1 text-[11.5px] text-ink-soft rounded-[2px]"
+        className="text-[12px] text-ink-soft"
         aria-expanded={open}
       >
         Menu
       </button>
       {open ? (
-        <div className="absolute right-0 top-8 z-50 w-60 card max-h-[70vh] overflow-y-auto">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.heading} className="border-b border-line px-3 py-2 last:border-b-0">
-              <p className="overline-label pb-1">{group.heading}</p>
+        <div className="card absolute right-0 top-8 z-50 max-h-[70vh] w-60 overflow-y-auto py-2">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className="px-4 py-1.5">
+              {group.heading ? (
+                <p className="pb-0.5 text-[10.5px] text-ink-faint">{group.heading}</p>
+              ) : null}
               {group.items.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="block rounded-[2px] px-1.5 py-1 text-[12.5px] text-ink-soft hover:bg-surface-muted"
+                  className="block py-1 text-[13px] text-ink-soft hover:text-ink"
                 >
                   {item.label}
                 </Link>

@@ -72,11 +72,11 @@ export function ViewModeSwitch({ compact = false }: { compact?: boolean }) {
 
   return (
     <div>
-      {!compact ? <p className="overline-label pb-1">View depth</p> : null}
+      {!compact ? <p className="pb-1 text-[11.5px] text-ink-faint">View depth</p> : null}
       <div
         role="radiogroup"
         aria-label="View depth"
-        className="flex w-full border border-line rounded-[2px] overflow-hidden"
+        className="flex w-full rounded-[5px] bg-surface-muted p-[2px]"
       >
         {MODES.map((m) => (
           <button
@@ -85,11 +85,11 @@ export function ViewModeSwitch({ compact = false }: { compact?: boolean }) {
             aria-checked={current === m}
             title={VIEW_MODE_DESCRIPTIONS[m]}
             onClick={() => setMode(m)}
-            className={`flex-1 px-1 py-[3px] text-[10.5px] tracking-wide transition-colors ${
+            className={`flex-1 rounded-[4px] px-1 py-[3px] text-[10.5px] transition-colors ${
               current === m
-                ? "bg-accent text-white font-medium"
-                : "bg-surface text-ink-faint hover:text-ink-soft"
-            } ${m !== "simple" ? "border-l border-line" : ""}`}
+                ? "bg-surface font-medium text-ink shadow-none"
+                : "text-ink-faint hover:text-ink-soft"
+            }`}
           >
             {VIEW_MODE_LABELS[m]}
           </button>

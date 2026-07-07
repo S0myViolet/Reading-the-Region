@@ -3,7 +3,8 @@ import type { ValidationResult } from "@/lib/validation";
 /**
  * Renders a validation result as an explicit pass/fail checklist. Used for
  * cluster thresholds, pattern tests, driver thresholds, territory linkage,
- * scenario quality, and implication evidence rules.
+ * scenario quality, and implication evidence rules. Quiet by design — the
+ * verdict line and per-check marks carry the information without boxing.
  */
 export function ValidationChecklist({
   result,
@@ -17,32 +18,24 @@ export function ValidationChecklist({
   failedLabel?: string;
 }) {
   return (
-    <section className="card">
-      <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">{title}</h3>
+    <section>
+      <header className="mb-2 flex items-baseline justify-between gap-4">
+        <h3 className="text-[13px] font-medium text-ink">{title}</h3>
         <span
-          className={`px-1.5 py-px text-[10.5px] font-medium rounded-[2px] border ${
-            result.valid
-              ? "bg-accent-soft text-accent-ink border-accent/30"
-              : "bg-caution-soft text-caution border-caution/30"
-          }`}
+          className={`text-[11.5px] ${result.valid ? "text-accent-ink" : "text-caution"}`}
         >
           {result.valid ? passedLabel : failedLabel} · {result.passedCount}/{result.totalCount}
         </span>
       </header>
-      <ul className="divide-y divide-line">
+      <ul className="space-y-2 border-l border-line pl-4">
         {result.checks.map((c) => (
-          <li key={c.label} className="flex items-start gap-2.5 px-4 py-2">
+          <li key={c.label} className="flex items-start gap-2.5">
             <span
               aria-hidden
-              className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-[1px] border text-center text-[9px] leading-[11px] font-bold ${
-                c.passed
-                  ? "border-accent bg-accent text-white"
-                  : "border-line-strong bg-surface text-transparent"
+              className={`mt-[5px] inline-block h-[7px] w-[7px] shrink-0 rounded-full ${
+                c.passed ? "bg-accent" : "border border-line-strong bg-transparent"
               }`}
-            >
-              ✓
-            </span>
+            />
             <span>
               <span className={`text-[12.5px] ${c.passed ? "text-ink" : "text-ink-soft"}`}>
                 {c.label}

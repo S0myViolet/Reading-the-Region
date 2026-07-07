@@ -17,18 +17,18 @@ import { OBSERVATION_STATUS_LABELS } from "@/lib/types";
 type PillTone = "neutral" | "accent" | "tension" | "caution" | "info";
 
 /**
- * Tone mapping for observation statuses. Caution marks items awaiting a
- * decision or more evidence; accent is reserved for observations that earned
- * promotion; filtered material stays neutral.
+ * Tone mapping for observation statuses. Unreviewed is the default state of
+ * inbox material, so it stays quiet — amber keeps meaning for items that
+ * genuinely need more evidence; accent is reserved for earned promotion.
  */
 export const OBSERVATION_STATUS_TONES: Record<ObservationStatus, PillTone> = {
-  unreviewed: "caution",
+  unreviewed: "neutral",
   promoted: "accent",
   archived_noise: "neutral",
   needs_more_evidence: "caution",
   duplicate: "neutral",
-  split: "info",
-  merged: "info",
+  split: "neutral",
+  merged: "neutral",
 };
 
 export function ObservationStatusPill({ status }: { status: ObservationStatus }) {

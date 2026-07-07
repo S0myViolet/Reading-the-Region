@@ -40,16 +40,17 @@ const LEVELS: Array<{
  */
 export function ZoomingPanel({ zoom }: { zoom: ZoomAnalysis }) {
   return (
-    <section className="card">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">Zooming method — event to future, one level at a time</h3>
-      </header>
-      <ol className="divide-y divide-line">
+    <section>
+      <h3 className="mb-3 text-[13px] font-medium text-ink">
+        Zooming method — event to future, one level at a time
+      </h3>
+      <ol className="space-y-5 border-l border-line pl-5">
         {LEVELS.map((level) => (
-          <li key={level.n} className="px-4 py-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[12px] font-semibold text-ink">
-                <span className="font-mono text-ink-faint">L{level.n}</span> {level.question}
+          <li key={level.n}>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[12.5px] font-medium text-ink">
+                <span className="mr-1 font-mono text-[11px] text-ink-faint">L{level.n}</span>{" "}
+                {level.question}
               </p>
               {level.n === 1 ? (
                 <ProvenanceBadge label="sourced_fact" />
@@ -61,8 +62,10 @@ export function ZoomingPanel({ zoom }: { zoom: ZoomAnalysis }) {
                 <ProvenanceBadge label="human_interpretation" />
               )}
             </div>
-            <p className="mt-0.5 text-[10.5px] text-ink-faint">{level.note}</p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{zoom[level.key]}</p>
+            <p className="mt-0.5 text-[11px] text-ink-faint">{level.note}</p>
+            <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+              {zoom[level.key]}
+            </p>
           </li>
         ))}
       </ol>

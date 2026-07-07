@@ -18,8 +18,8 @@ export function ScoreBar({
         {([1, 2, 3, 4, 5] as const).map((n) => (
           <span
             key={n}
-            className={`h-[9px] w-[18px] rounded-[1px] ${
-              n <= value ? "bg-accent" : "bg-surface-muted border border-line"
+            className={`h-[8px] w-[18px] rounded-[2px] ${
+              n <= value ? "bg-accent" : "bg-surface-muted"
             }`}
           />
         ))}

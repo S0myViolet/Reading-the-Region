@@ -4,17 +4,22 @@
  * Scan Inbox — where raw observations enter before becoming signals.
  * An observation is not a signal: it earns promotion only through the
  * promotion checklist (minimum 3 of 9 criteria).
+ *
+ * Layout has exactly four layers: header, one control bar, the observation
+ * list, and the collapsed page guide. The list is the visual focus.
  */
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
-import { IdChip, SourceCredibilityBadge } from "@/components/badges";
-import { SectorTags } from "@/components/tags";
+import {
+  ControlBar,
+  ControlSearch,
+  ControlSelect,
+} from "@/components/ControlBar";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { promotionCriteriaMet } from "@/lib/validation";
 import type { Observation, ObservationStatus } from "@/lib/types";
@@ -22,7 +27,6 @@ import {
   OBSERVATION_STATUS_LABELS,
   PROMOTION_CRITERIA,
   PROMOTION_MIN_CRITERIA,
-  SOURCE_TYPE_LABELS,
 } from "@/lib/types";
 import { ObservationStatusPill, btnPrimary, fmtDate } from "./observation-ui";
 
@@ -34,25 +38,26 @@ type FilterKey =
   | "needs_more_evidence"
   | "duplicate";
 
-const STATUS_FILTERS: Array<{ key: FilterKey; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "unreviewed", label: OBSERVATION_STATUS_LABELS.unreviewed },
-  { key: "promoted", label: OBSERVATION_STATUS_LABELS.promoted },
-  { key: "archived_noise", label: OBSERVATION_STATUS_LABELS.archived_noise },
-  { key: "needs_more_evidence", label: OBSERVATION_STATUS_LABELS.needs_more_evidence },
-  { key: "duplicate", label: OBSERVATION_STATUS_LABELS.duplicate },
+const STATUS_OPTIONS: Array<{ value: FilterKey; label: string }> = [
+  { value: "all", label: "All statuses" },
+  { value: "unreviewed", label: OBSERVATION_STATUS_LABELS.unreviewed },
+  { value: "promoted", label: OBSERVATION_STATUS_LABELS.promoted },
+  { value: "archived_noise", label: OBSERVATION_STATUS_LABELS.archived_noise },
+  { value: "needs_more_evidence", label: OBSERVATION_STATUS_LABELS.needs_more_evidence },
+  { value: "duplicate", label: OBSERVATION_STATUS_LABELS.duplicate },
 ];
 
+type SortKey = "newest" | "oldest" | "readiness";
+
 function isFilterKey(v: string | null): v is FilterKey {
-  return STATUS_FILTERS.some((f) => f.key === v);
+  return STATUS_OPTIONS.some((f) => f.value === v);
 }
 
 function InboxHeader() {
   return (
     <PageHeader
-      overline="Scan & Classify"
       title="Scan Inbox"
-      description="Raw observations captured during scanning. Nothing here is a signal yet — each observation is triaged and promoted only if it passes at least 3 of 9 promotion criteria."
+      description="Review raw observations before promoting them into signals."
       actions={
         <Link href="/inbox/new" className={btnPrimary}>
           Add observation
@@ -62,76 +67,33 @@ function InboxHeader() {
   );
 }
 
-function ObservationRow({ obs, showFull }: { obs: Observation; showFull: boolean }) {
-  const sources = useIntelligenceStore((s) => s.sources);
-  const source = obs.sourceId
-    ? sources.find((s) => s.id === obs.sourceId) ?? null
-    : null;
+function ObservationRow({ obs }: { obs: Observation }) {
   const met = promotionCriteriaMet(obs);
-  const total = PROMOTION_CRITERIA.length;
+  const ready = met >= PROMOTION_MIN_CRITERIA;
 
   return (
-    <tr>
-      <td>
-        <Link
-          href={`/inbox/${obs.id}`}
-          className="text-[13px] font-medium text-ink hover:text-accent-ink hover:underline"
-        >
+    <Link href={`/inbox/${obs.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
           {obs.title}
-        </Link>
-        <div className="mt-0.5">
-          <IdChip id={obs.id} />
-        </div>
-      </td>
-      <td>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[12.5px] text-ink-soft">{obs.sourceName}</span>
-          {source ? <SourceCredibilityBadge score={source.credibility} /> : null}
-        </div>
-        <p className="mt-0.5 text-[11px] text-ink-faint">
-          {SOURCE_TYPE_LABELS[obs.sourceType]}
         </p>
-      </td>
-      <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
-        {fmtDate(obs.dateObserved)}
-      </td>
-      {showFull ? (
-        <>
-          <td className="text-[12.5px] text-ink-soft">
-            {obs.country}
-            {obs.city ? <span className="text-ink-faint"> · {obs.city}</span> : null}
-          </td>
-          <td>
-            {obs.sectors.length > 0 ? (
-              <SectorTags sectors={obs.sectors} />
-            ) : (
-              <span className="text-[11px] text-ink-faint">Unclassified</span>
-            )}
-          </td>
-        </>
-      ) : null}
-      <td>
-        <span
-          className={`font-mono text-[11.5px] whitespace-nowrap ${
-            met >= PROMOTION_MIN_CRITERIA ? "text-accent-ink" : "text-ink-faint"
-          }`}
-          title={`${met} of ${total} promotion criteria met — minimum ${PROMOTION_MIN_CRITERIA} to promote`}
-        >
-          {met}/{total} criteria
-        </span>
-      </td>
-      <td>
-        <ObservationStatusPill status={obs.status} />
-        {obs.status === "promoted" && obs.promotedSignalId ? (
-          <Link
-            href={`/signals/${obs.promotedSignalId}`}
-            className="mt-1 block text-[10.5px] text-accent-ink hover:underline"
+        <span className="flex shrink-0 items-baseline gap-4">
+          <span
+            className={`text-[11.5px] ${ready ? "text-accent-ink" : "text-ink-faint"}`}
+            title={`${met} of ${PROMOTION_CRITERIA.length} promotion criteria met — minimum ${PROMOTION_MIN_CRITERIA} to promote`}
           >
-            Signal · <span className="font-mono">{obs.promotedSignalId}</span>
-          </Link>
+            {met}/{PROMOTION_CRITERIA.length}
+          </span>
+          <ObservationStatusPill status={obs.status} />
+        </span>
+      </div>
+      <p className="mt-1 text-[12px] text-ink-faint">
+        {obs.sourceName} · {fmtDate(obs.dateObserved)}
+        {obs.status === "promoted" && obs.promotedSignalId ? (
+          <span className="text-accent-ink"> · promoted to {obs.promotedSignalId}</span>
         ) : null}
-      </td>
-    </tr>
+      </p>
+    </Link>
   );
 }
 
@@ -139,10 +101,37 @@ function InboxContent() {
   const hydrated = useHydrated();
   const searchParams = useSearchParams();
   const observations = useIntelligenceStore((s) => s.observations);
-  // Simple view keeps triage-critical columns only; Analyst restores the
-  // geography and sector classification columns. Hydration-safe: "simple"
-  // until the client store loads.
-  const showFull = useViewMode() !== "simple";
+
+  const statusParam = searchParams.get("status");
+  const [status, setStatus] = useState<FilterKey>(
+    isFilterKey(statusParam) ? statusParam : "all",
+  );
+  const [query, setQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sort, setSort] = useState<SortKey>("newest");
+
+  const sourceOptions = useMemo(() => {
+    const names = [...new Set(observations.map((o) => o.sourceName))].sort();
+    return [
+      { value: "all", label: "All sources" },
+      ...names.map((n) => ({ value: n, label: n })),
+    ];
+  }, [observations]);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = observations.filter((o) => {
+      if (status !== "all" && o.status !== (status as ObservationStatus)) return false;
+      if (sourceFilter !== "all" && o.sourceName !== sourceFilter) return false;
+      if (q && !`${o.title} ${o.description}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => {
+      if (sort === "oldest") return a.dateObserved.localeCompare(b.dateObserved);
+      if (sort === "readiness") return promotionCriteriaMet(b) - promotionCriteriaMet(a);
+      return b.dateObserved.localeCompare(a.dateObserved);
+    });
+  }, [observations, status, sourceFilter, query, sort]);
 
   if (!hydrated) {
     return (
@@ -153,45 +142,46 @@ function InboxContent() {
     );
   }
 
-  const statusParam = searchParams.get("status");
-  const active: FilterKey = isFilterKey(statusParam) ? statusParam : "all";
-
-  const countFor = (key: FilterKey) =>
-    key === "all"
-      ? observations.length
-      : observations.filter((o) => o.status === key).length;
-
-  const filtered =
-    active === "all"
-      ? observations
-      : observations.filter((o) => o.status === (active as ObservationStatus));
-  const rows = [...filtered].sort((a, b) =>
-    b.dateObserved.localeCompare(a.dateObserved),
-  );
+  const unreviewed = observations.filter((o) => o.status === "unreviewed").length;
 
   return (
     <>
       <InboxHeader />
       <WalkthroughPanel pageId="inbox" />
 
-      <nav aria-label="Filter by status" className="mb-4 flex flex-wrap gap-1.5">
-        {STATUS_FILTERS.map((f) => (
-          <Link
-            key={f.key}
-            href={f.key === "all" ? "/inbox" : `/inbox?status=${f.key}`}
-            className={`border px-2.5 py-1 text-[11.5px] rounded-[2px] ${
-              active === f.key
-                ? "border-accent bg-accent-soft font-medium text-accent-ink"
-                : "border-line bg-surface text-ink-soft hover:border-line-strong"
-            }`}
-          >
-            {f.label}{" "}
-            <span className="font-mono text-[10.5px] text-ink-faint">
-              {countFor(f.key)}
+      <ControlBar
+        right={
+          unreviewed > 0 ? (
+            <span className="text-[12px] text-ink-faint">
+              {unreviewed} awaiting review
             </span>
-          </Link>
-        ))}
-      </nav>
+          ) : null
+        }
+      >
+        <ControlSearch value={query} onChange={setQuery} placeholder="Search observations…" />
+        <ControlSelect
+          label="Status"
+          value={status}
+          onChange={(v) => setStatus(v as FilterKey)}
+          options={STATUS_OPTIONS}
+        />
+        <ControlSelect
+          label="Source"
+          value={sourceFilter}
+          onChange={setSourceFilter}
+          options={sourceOptions}
+        />
+        <ControlSelect
+          label="Sort"
+          value={sort}
+          onChange={(v) => setSort(v as SortKey)}
+          options={[
+            { value: "newest", label: "Newest first" },
+            { value: "oldest", label: "Oldest first" },
+            { value: "readiness", label: "Closest to promotion" },
+          ]}
+        />
+      </ControlBar>
 
       {observations.length === 0 ? (
         <EmptyState
@@ -201,47 +191,15 @@ function InboxContent() {
         />
       ) : rows.length === 0 ? (
         <EmptyState
-          message={`No observations currently carry the status “${
-            active === "all" ? "All" : OBSERVATION_STATUS_LABELS[active as ObservationStatus]
-          }”. Statuses are triage decisions made on each observation's detail page — review unreviewed observations, or capture new raw material from scanning.`}
+          message="Nothing matches the current filters. Statuses are triage decisions made on each observation's detail page — review unreviewed observations, or capture new raw material from scanning."
           actionLabel="Add observation"
           actionHref="/inbox/new"
         />
       ) : (
-        <section className="card">
-          <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">
-              {rows.length} observation{rows.length === 1 ? "" : "s"}
-            </h2>
-            <p className="text-[11px] text-ink-faint">
-              Promotion requires at least {PROMOTION_MIN_CRITERIA} of{" "}
-              {PROMOTION_CRITERIA.length} criteria
-            </p>
-          </header>
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Observation</th>
-                  <th>Source</th>
-                  <th>Observed</th>
-                  {showFull ? (
-                    <>
-                      <th>Geography</th>
-                      <th>Sectors</th>
-                    </>
-                  ) : null}
-                  <th>Promotion</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((o) => (
-                  <ObservationRow key={o.id} obs={o} showFull={showFull} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <section aria-label="Observations">
+          {rows.map((o) => (
+            <ObservationRow key={o.id} obs={o} />
+          ))}
         </section>
       )}
     </>

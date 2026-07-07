@@ -49,6 +49,8 @@ interface UiState {
   onboardingComplete: boolean;
   /** Walkthrough panels the user has collapsed, keyed by page id. */
   dismissedWalkthroughs: string[];
+  /** Pages whose guide has been seen once — after that it defaults collapsed. */
+  seenWalkthroughs: string[];
 }
 
 export interface IntelligenceStore extends IntelligenceData, UiState {
@@ -95,6 +97,7 @@ export interface IntelligenceStore extends IntelligenceData, UiState {
   resetOnboarding: () => void;
   dismissWalkthrough: (pageId: string) => void;
   restoreWalkthrough: (pageId: string) => void;
+  markWalkthroughSeen: (pageId: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -117,6 +120,7 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
       guidedMode: true,
       onboardingComplete: false,
       dismissedWalkthroughs: [],
+      seenWalkthroughs: [],
 
       addObservation: (obs) =>
         set((s) => ({ observations: [obs, ...s.observations] })),
@@ -190,6 +194,12 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
       restoreWalkthrough: (pageId) =>
         set((s) => ({
           dismissedWalkthroughs: s.dismissedWalkthroughs.filter((p) => p !== pageId),
+        })),
+      markWalkthroughSeen: (pageId) =>
+        set((s) => ({
+          seenWalkthroughs: s.seenWalkthroughs.includes(pageId)
+            ? s.seenWalkthroughs
+            : [...s.seenWalkthroughs, pageId],
         })),
       resetToSeedData: () =>
         set({ ...seedData, guidedMode: get().guidedMode, onboardingComplete: true }),

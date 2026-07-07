@@ -19,12 +19,17 @@ import {
 
 type Tone = "neutral" | "accent" | "tension" | "caution" | "info";
 
+/*
+ * Status styling is deliberately subdued: soft tint, no border, sentence
+ * case. Badges support scanning — they must never compete with content.
+ * Neutral tone renders as plain muted text, not a chip.
+ */
 const TONE_CLASSES: Record<Tone, string> = {
-  neutral: "bg-surface-muted text-ink-soft border-line",
-  accent: "bg-accent-soft text-accent-ink border-accent/30",
-  tension: "bg-tension-soft text-tension border-tension/30",
-  caution: "bg-caution-soft text-caution border-caution/30",
-  info: "bg-info-soft text-info border-info/30",
+  neutral: "text-ink-faint",
+  accent: "bg-accent-soft text-accent-ink",
+  tension: "bg-tension-soft text-tension",
+  caution: "bg-caution-soft text-caution",
+  info: "bg-info-soft text-info",
 };
 
 export function Pill({
@@ -39,7 +44,9 @@ export function Pill({
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1 border px-1.5 py-px text-[10.5px] font-medium tracking-wide whitespace-nowrap rounded-[2px] ${TONE_CLASSES[tone]}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-[4px] text-[11px] leading-[1.4] ${
+        tone === "neutral" ? "" : "px-1.5 py-px"
+      } ${TONE_CLASSES[tone]}`}
     >
       {children}
     </span>
@@ -48,7 +55,7 @@ export function Pill({
 
 const CONFIDENCE_TONES: Record<ConfidenceLevel, Tone> = {
   low: "caution",
-  medium: "info",
+  medium: "neutral",
   high: "accent",
 };
 
@@ -56,18 +63,19 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
   return <Pill tone={CONFIDENCE_TONES[level]}>{CONFIDENCE_LABELS[level]}</Pill>;
 }
 
+/* Only genuinely actionable or warning states carry color. */
 const REVIEW_TONES: Record<ReviewStatus, Tone> = {
   draft: "neutral",
   needs_evidence: "caution",
   needs_human_review: "caution",
-  ai_suggested: "info",
-  human_reviewed: "info",
+  ai_suggested: "neutral",
+  human_reviewed: "neutral",
   validated: "accent",
   rejected: "tension",
   archived_noise: "neutral",
   duplicate: "neutral",
   contradictory: "tension",
-  monitoring: "info",
+  monitoring: "neutral",
 };
 
 export function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
@@ -75,32 +83,25 @@ export function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
 }
 
 export function SourceCredibilityBadge({ score }: { score: Score }) {
-  const tone: Tone = score >= 4 ? "accent" : score === 3 ? "info" : "caution";
-  return (
-    <Pill tone={tone} title={CREDIBILITY_LABELS[score]}>
-      <span className="font-mono">C{score}</span>
-      <span className="hidden sm:inline">· {CREDIBILITY_LABELS[score]}</span>
-    </Pill>
-  );
+  const tone: Tone = score >= 4 ? "accent" : score === 3 ? "neutral" : "caution";
+  return <Pill tone={tone}>{CREDIBILITY_LABELS[score]}</Pill>;
 }
 
 export function ProvenanceBadge({ label }: { label: ProvenanceLabel }) {
   const tone: Tone =
-    label === "sourced_fact" || label === "validated_conclusion"
-      ? "accent"
-      : label === "contradiction"
-        ? "tension"
-        : label === "ai_inference" ||
-            label === "hypothesis" ||
-            label === "speculative_possibility"
-          ? "caution"
-          : "info";
+    label === "contradiction"
+      ? "tension"
+      : label === "ai_inference" ||
+          label === "hypothesis" ||
+          label === "speculative_possibility"
+        ? "caution"
+        : "neutral";
   return <Pill tone={tone}>{PROVENANCE_LABELS[label]}</Pill>;
 }
 
 const STRENGTH_TONES: Record<SignalStrength, Tone> = {
   weak: "caution",
-  emerging: "info",
+  emerging: "neutral",
   established: "accent",
   mainstream: "neutral",
   declining: "neutral",
@@ -125,7 +126,7 @@ export function TrendBadge({ trend }: { trend: IndicatorTrend }) {
 const TERRITORY_STATUS_TONES: Record<TerritoryMonitoringStatus, Tone> = {
   strengthening: "accent",
   weakening: "caution",
-  mutating: "info",
+  mutating: "neutral",
   contradicted: "tension",
   needs_more_evidence: "caution",
   dormant: "neutral",
@@ -135,14 +136,19 @@ export function TerritoryStatusBadge({ status }: { status: TerritoryMonitoringSt
   return <Pill tone={TERRITORY_STATUS_TONES[status]}>{TERRITORY_MONITORING_LABELS[status]}</Pill>;
 }
 
-/** Monospace entity id chip, e.g. SIG-004. */
+/** Monospace entity id, quiet metadata. */
 export function IdChip({ id }: { id: string }) {
-  return (
-    <span className="font-mono text-[10.5px] text-ink-faint tracking-wide">{id}</span>
-  );
+  return <span className="font-mono text-[10.5px] text-ink-faint">{id}</span>;
 }
 
 /** Small demo-data marker so sample material is never mistaken for real citations. */
 export function DemoTag() {
-  return <Pill tone="neutral" title="Sample data for demonstration — not a real citation">demo data</Pill>;
+  return (
+    <span
+      title="Sample data for demonstration — not a real citation"
+      className="text-[10.5px] italic text-ink-faint"
+    >
+      demo data
+    </span>
+  );
 }

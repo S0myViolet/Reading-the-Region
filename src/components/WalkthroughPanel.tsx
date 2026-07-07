@@ -1,72 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WALKTHROUGHS } from "@/lib/copy";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 
 /**
- * Collapsible page walkthrough shown under the page header. Content follows
- * the fixed structure: purpose, recommended action, common mistake, next
- * step. Hidden entirely when Guided Mode is off; dismissible per page.
+ * Page guide — deliberately light. A single quiet line that expands to three
+ * short items (purpose, recommended action, next step) with the common
+ * mistake behind one more click. Expanded automatically only on the user's
+ * first visit to a page; collapsed ever after. Hidden when Guided Mode is off.
  */
 export function WalkthroughPanel({ pageId }: { pageId: string }) {
   const hydrated = useHydrated();
   const guidedMode = useIntelligenceStore((s) => s.guidedMode);
-  const dismissed = useIntelligenceStore((s) => s.dismissedWalkthroughs);
-  const dismiss = useIntelligenceStore((s) => s.dismissWalkthrough);
-  const restore = useIntelligenceStore((s) => s.restoreWalkthrough);
-  const [expanded, setExpanded] = useState(true);
+  const seen = useIntelligenceStore((s) => s.seenWalkthroughs);
+  const markSeen = useIntelligenceStore((s) => s.markWalkthroughSeen);
+  const [expanded, setExpanded] = useState<boolean | null>(null);
+  const [showMistake, setShowMistake] = useState(false);
+
+  const firstVisit = hydrated && !seen.includes(pageId);
+
+  // First visit: open once, then record the visit so the guide stays quiet.
+  useEffect(() => {
+    if (!hydrated || !guidedMode) return;
+    if (expanded === null) {
+      setExpanded(firstVisit);
+      if (firstVisit) markSeen(pageId);
+    }
+  }, [hydrated, guidedMode, expanded, firstVisit, markSeen, pageId]);
 
   const content = WALKTHROUGHS[pageId];
   if (!hydrated || !guidedMode || !content) return null;
 
-  if (dismissed.includes(pageId)) {
-    return (
-      <button
-        onClick={() => restore(pageId)}
-        className="mb-4 text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-      >
-        Show guidance for this page
-      </button>
-    );
-  }
+  const isOpen = expanded === true;
 
   return (
-    <aside className="card mb-5 border-l-2 border-l-accent">
-      <header className="flex items-center justify-between px-4 py-2">
-        <button
-          onClick={() => setExpanded((e) => !e)}
-          className="overline-label hover:text-accent-ink"
-        >
-          {expanded ? "▾" : "▸"} How to work on this page
-        </button>
-        <button
-          onClick={() => dismiss(pageId)}
-          className="text-[11px] text-ink-faint hover:text-ink"
-          title="Hide this guidance panel. You can restore it any time."
-        >
-          Hide
-        </button>
-      </header>
-      {expanded ? (
-        <dl className="grid gap-x-6 gap-y-2 border-t border-line px-4 py-3 sm:grid-cols-2">
-          <div>
-            <dt className="overline-label">Purpose</dt>
-            <dd className="mt-0.5 text-[12.5px] text-ink-soft">{content.purpose}</dd>
-          </div>
-          <div>
-            <dt className="overline-label">Recommended action</dt>
-            <dd className="mt-0.5 text-[12.5px] text-ink-soft">{content.recommendedAction}</dd>
-          </div>
-          <div>
-            <dt className="overline-label text-caution">Common mistake to avoid</dt>
-            <dd className="mt-0.5 text-[12.5px] text-ink-soft">{content.commonMistake}</dd>
-          </div>
-          <div>
-            <dt className="overline-label text-accent-ink">Next step</dt>
-            <dd className="mt-0.5 text-[12.5px] text-ink-soft">{content.nextStep}</dd>
-          </div>
-        </dl>
+    <aside className="mb-8 -mt-3">
+      <button
+        onClick={() => setExpanded(!isOpen)}
+        className="text-[11.5px] text-ink-faint hover:text-ink-soft"
+        aria-expanded={isOpen}
+      >
+        <span className="mr-1 inline-block w-2 text-[9px]">{isOpen ? "▾" : "▸"}</span>
+        Page guide
+      </button>
+      {isOpen ? (
+        <div className="mt-2 ml-[3px] space-y-1.5 border-l border-line pl-4">
+          <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+            {content.purpose}
+          </p>
+          <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+            <span className="text-ink-faint">Do here — </span>
+            {content.recommendedAction}
+          </p>
+          <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+            <span className="text-ink-faint">Then — </span>
+            {content.nextStep}
+          </p>
+          {showMistake ? (
+            <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+              <span className="text-ink-faint">Avoid — </span>
+              {content.commonMistake}
+            </p>
+          ) : (
+            <button
+              onClick={() => setShowMistake(true)}
+              className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+            >
+              Common mistake to avoid
+            </button>
+          )}
+        </div>
       ) : null}
     </aside>
   );

@@ -123,3 +123,47 @@ Implementation idiom:
 - Forms: in simple view, creation flows show the essential capture fields and explain that
   scoring/validation completes in Analyst view (objects land as drafts needing review) —
   the user must never feel they are filling a compliance form.
+
+## Calm redesign (binding — supersedes earlier visual guidance where they conflict)
+
+Cleanliness is the top priority: show less, separate better, prioritize clearly.
+The exemplar page is `src/app/inbox/page.tsx` — match its calm exactly.
+
+- **Whitespace before borders.** Prefer plain sections separated by generous spacing
+  (mb-8/mb-10) and type hierarchy over `.card` boxes. Use `.card` ONLY for tables needing
+  horizontal scroll, forms, or genuine asides. Never stack more than two cards in a row —
+  merge into one flow under text headings.
+- **Section headings**: `text-[13px] font-medium text-ink` (or 15px for major sections) with
+  an optional one-line description in `text-[12px] text-ink-faint`. NO uppercase/overline
+  section headers. `.overline-label` survives only for tiny inline metadata labels.
+- **Lists over tables** for work queues: use the `.list-row` class — whole row is a Link,
+  ONE primary line (13.5px, font-medium, truncate), ONE secondary metadata line (12px,
+  ink-faint, values joined by " · "), right-aligned quiet status. Max 2 badges per row.
+- **Tables**: only when columns genuinely aid comparison; ≤5 columns in simple view; the
+  `.data-table` idiom is already restyled (sentence-case headers, roomier rows).
+- **Filters**: exactly ONE ControlBar (`@/components/ControlBar`) per list page —
+  ControlSearch + up to 3 ControlSelects + sort; everything else goes in the `more` slot.
+  NO pill/chip filter rows anywhere.
+- **Stats**: no boxed stat cards. Render figures as mono number (18–22px) over a small faint
+  label, in a flex row with generous gaps; hairline dividers only if truly needed.
+- **Badges**: `Pill` is now borderless/tinted; neutral renders as plain text. Reserve colour:
+  accent = validated/promoted/strengthening; caution = genuinely needs attention;
+  tension = contradiction ONLY. Default states (unreviewed, draft, stable) stay neutral.
+  Most metadata should be plain faint text, not pills.
+- **PageHeader**: title + one-line description + ONE primary action (no overline rendered).
+  Secondary actions become quiet text links in the body.
+- **Page guide**: WalkthroughPanel is now a one-line collapsed row. Exactly one per page,
+  directly after PageHeader. Never add other instructional slabs above the work area.
+- **Detail pages**: left column reads as an article — sections separated by whitespace and
+  headings, not stacked cards. Right rail: RelatedObjectsPanel (now borderless) plus at most
+  one quiet aside. Deep methodology stays behind tabs/ViewGate as before.
+- **Buttons**: primary = `bg-accent text-white rounded-[4px] px-3.5 py-1.5 text-[12.5px]
+  font-medium hover:bg-accent-ink` (no border); secondary = plain text link
+  (`text-ink-soft hover:text-ink underline-offset-2`) or `bg-surface-muted` chip. No bordered
+  button rows.
+- **Shared components already restyled** (do not re-box them): badges, tags,
+  IntelligencePipeline, EntityLink/RelatedObjectsPanel, ValidationChecklist, BiasCheckPanel,
+  ZoomingPanel, ContradictionPanel, EmptyState, ScorePanel, WalkthroughPanel, PageHeader,
+  ControlBar, form Field.
+- **Three-second test** before finishing a page: page purpose obvious; main action obvious;
+  nothing competing for attention; anything removable removed or hidden behind disclosure.

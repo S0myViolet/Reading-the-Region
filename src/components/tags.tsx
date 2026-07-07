@@ -2,6 +2,12 @@ import Link from "next/link";
 import type { BiasTag, Sector, SystemAffected } from "@/lib/types";
 import { BIAS_TAG_LABELS, SECTOR_LABELS, SYSTEM_LABELS } from "@/lib/types";
 
+/*
+ * Tag groups are quiet, borderless chips. Colour is not used to distinguish
+ * tag families — position and label wording do that work; caution tint is
+ * reserved for bias warnings.
+ */
+
 export function SectorTags({ sectors, linked = true }: { sectors: Sector[]; linked?: boolean }) {
   return (
     <span className="inline-flex flex-wrap gap-1">
@@ -10,14 +16,14 @@ export function SectorTags({ sectors, linked = true }: { sectors: Sector[]; link
           <Link
             key={s}
             href={`/signals?sector=${s}`}
-            className="border border-line bg-surface px-1.5 py-px text-[10.5px] text-ink-soft rounded-[2px] hover:border-accent hover:text-accent-ink"
+            className="rounded-[4px] bg-surface-muted px-1.5 py-px text-[11px] text-ink-soft hover:text-accent-ink"
           >
             {SECTOR_LABELS[s]}
           </Link>
         ) : (
           <span
             key={s}
-            className="border border-line bg-surface px-1.5 py-px text-[10.5px] text-ink-soft rounded-[2px]"
+            className="rounded-[4px] bg-surface-muted px-1.5 py-px text-[11px] text-ink-soft"
           >
             {SECTOR_LABELS[s]}
           </span>
@@ -34,7 +40,7 @@ export function SystemTags({ systems }: { systems: SystemAffected[] }) {
         <span
           key={s}
           title="System affected"
-          className="border border-info/25 bg-info-soft px-1.5 py-px text-[10.5px] text-info rounded-[2px]"
+          className="rounded-[4px] bg-surface-muted px-1.5 py-px text-[11px] text-ink-soft"
         >
           {SYSTEM_LABELS[s]}
         </span>
@@ -52,7 +58,7 @@ export function SourceBiasTags({ tags }: { tags: BiasTag[] }) {
         <span
           key={t}
           title="Known bias to weigh when using this source"
-          className="border border-caution/30 bg-caution-soft px-1.5 py-px text-[10.5px] text-caution rounded-[2px]"
+          className="rounded-[4px] bg-caution-soft px-1.5 py-px text-[11px] text-caution"
         >
           {BIAS_TAG_LABELS[t]}
         </span>
@@ -67,7 +73,7 @@ export function PlainTags({ tags }: { tags: string[] }) {
       {tags.map((t) => (
         <span
           key={t}
-          className="bg-surface-muted px-1.5 py-px text-[10.5px] text-ink-soft rounded-[2px]"
+          className="rounded-[4px] bg-surface-muted px-1.5 py-px text-[11px] text-ink-soft"
         >
           {t}
         </span>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { EntityKind } from "@/lib/types";
 import { ENTITY_KIND_LABELS, ENTITY_ROUTES } from "@/lib/types";
 
-/** Cross-link to any intelligence object, with its kind as an overline. */
+/** Cross-link to any intelligence object — a quiet two-line text link. */
 export function EntityLink({
   kind,
   id,
@@ -13,14 +13,13 @@ export function EntityLink({
   title: string;
 }) {
   return (
-    <Link
-      href={`${ENTITY_ROUTES[kind]}/${id}`}
-      className="group block border border-line bg-surface px-2.5 py-1.5 rounded-[2px] hover:border-accent"
-    >
-      <span className="overline-label block group-hover:text-accent-ink">
-        {ENTITY_KIND_LABELS[kind]} · <span className="font-mono normal-case">{id}</span>
+    <Link href={`${ENTITY_ROUTES[kind]}/${id}`} className="group block py-0.5">
+      <span className="block text-[10.5px] text-ink-faint">
+        {ENTITY_KIND_LABELS[kind]} · <span className="font-mono">{id}</span>
       </span>
-      <span className="text-[12.5px] text-ink leading-snug">{title}</span>
+      <span className="text-[12.5px] leading-snug text-ink-soft group-hover:text-accent-ink">
+        {title}
+      </span>
     </Link>
   );
 }
@@ -34,18 +33,17 @@ export interface RelatedGroup {
 
 /**
  * Relationship trail: every detail page shows where its object sits in the
- * intelligence chain and what it connects to, grouped by layer.
+ * intelligence chain and what it connects to, grouped by layer. Rendered as
+ * a quiet outline — a hairline rail, no boxes.
  */
 export function RelatedObjectsPanel({ groups }: { groups: RelatedGroup[] }) {
   return (
-    <section className="card">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">Relationship trail</h3>
-      </header>
-      <div className="space-y-3 px-4 py-3">
+    <section>
+      <h3 className="mb-3 text-[13px] font-medium text-ink">Relationship trail</h3>
+      <div className="space-y-4 border-l border-line pl-4">
         {groups.map((g) => (
           <div key={g.heading}>
-            <p className="overline-label mb-1">{g.heading}</p>
+            <p className="mb-1 text-[11px] text-ink-faint">{g.heading}</p>
             {g.items.length > 0 ? (
               <div className="grid gap-1.5">
                 {g.items.map((it) => (

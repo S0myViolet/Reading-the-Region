@@ -17,12 +17,12 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="overline-label block">
+      <span className="block text-[12.5px] font-medium text-ink-soft">
         {label}
-        {required ? <span className="text-tension"> *</span> : null}
+        {required ? <span className="text-ink-faint"> *</span> : null}
       </span>
-      {hint ? <span className="mt-0.5 block text-[11px] text-ink-faint">{hint}</span> : null}
-      <span className="mt-1 block">{children}</span>
+      {hint ? <span className="mt-0.5 block text-[11.5px] text-ink-faint">{hint}</span> : null}
+      <span className="mt-1.5 block">{children}</span>
     </label>
   );
 }
