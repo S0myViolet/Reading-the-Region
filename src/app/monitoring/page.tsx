@@ -116,6 +116,8 @@ interface IndicatorGroup {
 function MonitoringContent() {
   const hydrated = useHydrated();
   const searchParams = useSearchParams();
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
   const indicators = useIntelligenceStore((s) => s.indicators);
   const territories = useIntelligenceStore((s) => s.territories);
   const drivers = useIntelligenceStore((s) => s.drivers);
@@ -125,6 +127,9 @@ function MonitoringContent() {
   const [filter, setFilter] = useState<FilterKey | null>(() =>
     searchParams.get("overdue") === "1" ? "overdue" : null,
   );
+  const [territoryFilter, setTerritoryFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<IndicatorType | "">("");
+  const [cadenceFilter, setCadenceFilter] = useState<MonitoringCadence | "">("");
 
   if (!hydrated) return <LoadingState />;
 
@@ -139,24 +144,49 @@ function MonitoringContent() {
   const overdueCount = indicators.filter((i) => indicatorOverdue(i)).length;
 
   // --- filtering -----------------------------------------------------------
-  const visible = filter
-    ? indicators.filter((i) =>
-        filter === "overdue" ? indicatorOverdue(i) : i.trend === filter,
-      )
-    : indicators;
+  const knownTerritoryIds = new Set(territories.map((t) => t.id));
+  const matchesTerritory = (i: MonitoringIndicator) =>
+    territoryFilter === "" ||
+    (territoryFilter === "unattached"
+      ? i.territoryId === null || !knownTerritoryIds.has(i.territoryId)
+      : i.territoryId === territoryFilter);
 
-  const filterLabel =
-    filter === null
-      ? null
-      : filter === "overdue"
-        ? "Overdue"
-        : INDICATOR_TREND_LABELS[filter];
+  const visible = indicators.filter(
+    (i) =>
+      (filter === null ||
+        (filter === "overdue" ? indicatorOverdue(i) : i.trend === filter)) &&
+      matchesTerritory(i) &&
+      (typeFilter === "" || i.indicatorType === typeFilter) &&
+      (cadenceFilter === "" || i.cadence === cadenceFilter),
+  );
+
+  const activeFilterLabels: string[] = [];
+  if (filter !== null)
+    activeFilterLabels.push(
+      filter === "overdue" ? "Overdue" : INDICATOR_TREND_LABELS[filter],
+    );
+  if (territoryFilter !== "")
+    activeFilterLabels.push(
+      territoryFilter === "unattached"
+        ? "No territory linkage"
+        : (territories.find((t) => t.id === territoryFilter)?.name ??
+            territoryFilter),
+    );
+  if (typeFilter !== "") activeFilterLabels.push(INDICATOR_TYPE_LABELS[typeFilter]);
+  if (cadenceFilter !== "") activeFilterLabels.push(CADENCE_LABELS[cadenceFilter]);
+  const anyFilterActive = activeFilterLabels.length > 0;
+
+  const clearFilters = () => {
+    setFilter(null);
+    setTerritoryFilter("");
+    setTypeFilter("");
+    setCadenceFilter("");
+  };
 
   // --- grouping by linked territory ---------------------------------------
   const byLastChecked = (a: MonitoringIndicator, b: MonitoringIndicator) =>
     a.dateLastChecked.localeCompare(b.dateLastChecked);
 
-  const knownTerritoryIds = new Set(territories.map((t) => t.id));
   const groups: IndicatorGroup[] = [];
   for (const t of territories) {
     const items = visible.filter((i) => i.territoryId === t.id).sort(byLastChecked);
