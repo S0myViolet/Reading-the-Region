@@ -1,0 +1,148 @@
+import type {
+  ConfidenceLevel,
+  IndicatorTrend,
+  ProvenanceLabel,
+  ReviewStatus,
+  Score,
+  SignalStrength,
+  TerritoryMonitoringStatus,
+} from "@/lib/types";
+import {
+  CONFIDENCE_LABELS,
+  CREDIBILITY_LABELS,
+  INDICATOR_TREND_LABELS,
+  PROVENANCE_LABELS,
+  REVIEW_STATUS_LABELS,
+  SIGNAL_STRENGTH_LABELS,
+  TERRITORY_MONITORING_LABELS,
+} from "@/lib/types";
+
+type Tone = "neutral" | "accent" | "tension" | "caution" | "info";
+
+const TONE_CLASSES: Record<Tone, string> = {
+  neutral: "bg-surface-muted text-ink-soft border-line",
+  accent: "bg-accent-soft text-accent-ink border-accent/30",
+  tension: "bg-tension-soft text-tension border-tension/30",
+  caution: "bg-caution-soft text-caution border-caution/30",
+  info: "bg-info-soft text-info border-info/30",
+};
+
+export function Pill({
+  tone = "neutral",
+  children,
+  title,
+}: {
+  tone?: Tone;
+  children: React.ReactNode;
+  title?: string;
+}) {
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center gap-1 border px-1.5 py-px text-[10.5px] font-medium tracking-wide whitespace-nowrap rounded-[2px] ${TONE_CLASSES[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+const CONFIDENCE_TONES: Record<ConfidenceLevel, Tone> = {
+  low: "caution",
+  medium: "info",
+  high: "accent",
+};
+
+export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
+  return <Pill tone={CONFIDENCE_TONES[level]}>{CONFIDENCE_LABELS[level]}</Pill>;
+}
+
+const REVIEW_TONES: Record<ReviewStatus, Tone> = {
+  draft: "neutral",
+  needs_evidence: "caution",
+  needs_human_review: "caution",
+  ai_suggested: "info",
+  human_reviewed: "info",
+  validated: "accent",
+  rejected: "tension",
+  archived_noise: "neutral",
+  duplicate: "neutral",
+  contradictory: "tension",
+  monitoring: "info",
+};
+
+export function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
+  return <Pill tone={REVIEW_TONES[status]}>{REVIEW_STATUS_LABELS[status]}</Pill>;
+}
+
+export function SourceCredibilityBadge({ score }: { score: Score }) {
+  const tone: Tone = score >= 4 ? "accent" : score === 3 ? "info" : "caution";
+  return (
+    <Pill tone={tone} title={CREDIBILITY_LABELS[score]}>
+      <span className="font-mono">C{score}</span>
+      <span className="hidden sm:inline">· {CREDIBILITY_LABELS[score]}</span>
+    </Pill>
+  );
+}
+
+export function ProvenanceBadge({ label }: { label: ProvenanceLabel }) {
+  const tone: Tone =
+    label === "sourced_fact" || label === "validated_conclusion"
+      ? "accent"
+      : label === "contradiction"
+        ? "tension"
+        : label === "ai_inference" ||
+            label === "hypothesis" ||
+            label === "speculative_possibility"
+          ? "caution"
+          : "info";
+  return <Pill tone={tone}>{PROVENANCE_LABELS[label]}</Pill>;
+}
+
+const STRENGTH_TONES: Record<SignalStrength, Tone> = {
+  weak: "caution",
+  emerging: "info",
+  established: "accent",
+  mainstream: "neutral",
+  declining: "neutral",
+  contradictory: "tension",
+};
+
+export function SignalStrengthBadge({ strength }: { strength: SignalStrength }) {
+  return <Pill tone={STRENGTH_TONES[strength]}>{SIGNAL_STRENGTH_LABELS[strength]}</Pill>;
+}
+
+const TREND_TONES: Record<IndicatorTrend, Tone> = {
+  strengthening: "accent",
+  weakening: "caution",
+  stable: "neutral",
+  contradictory: "tension",
+};
+
+export function TrendBadge({ trend }: { trend: IndicatorTrend }) {
+  return <Pill tone={TREND_TONES[trend]}>{INDICATOR_TREND_LABELS[trend]}</Pill>;
+}
+
+const TERRITORY_STATUS_TONES: Record<TerritoryMonitoringStatus, Tone> = {
+  strengthening: "accent",
+  weakening: "caution",
+  mutating: "info",
+  contradicted: "tension",
+  needs_more_evidence: "caution",
+  dormant: "neutral",
+};
+
+export function TerritoryStatusBadge({ status }: { status: TerritoryMonitoringStatus }) {
+  return <Pill tone={TERRITORY_STATUS_TONES[status]}>{TERRITORY_MONITORING_LABELS[status]}</Pill>;
+}
+
+/** Monospace entity id chip, e.g. SIG-004. */
+export function IdChip({ id }: { id: string }) {
+  return (
+    <span className="font-mono text-[10.5px] text-ink-faint tracking-wide">{id}</span>
+  );
+}
+
+/** Small demo-data marker so sample material is never mistaken for real citations. */
+export function DemoTag() {
+  return <Pill tone="neutral" title="Sample data for demonstration — not a real citation">demo data</Pill>;
+}
