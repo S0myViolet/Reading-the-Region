@@ -200,6 +200,11 @@ export default function NewContradictionPage() {
     const now = new Date().toISOString();
     const contradictionId = nextId("CON", contradictions);
 
+    // A record saved from the simple view has not been scored against the
+    // five dimensions, so it is flagged for human review rather than left as
+    // an ordinary draft.
+    const reviewStatus = mode === "simple" ? "needs_human_review" : "draft";
+
     addContradiction({
       id: contradictionId,
       name: name.trim(),
@@ -218,7 +223,7 @@ export default function NewContradictionPage() {
       strategicImplication: strategicImplication.trim(),
       scenarioRelevance: scenarioRelevance.trim(),
       scores,
-      reviewStatus: "draft",
+      reviewStatus,
       createdAt: now,
       updatedAt: now,
     });

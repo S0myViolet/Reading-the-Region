@@ -6,6 +6,12 @@
  * is computed live against the cluster thresholds on its detail page.
  * Selected signals are linked bidirectionally — the cluster records the
  * signal ids and each signal records the cluster id.
+ *
+ * Visibility layers: creation works in every view. The simple view leads
+ * with the capture fields and folds the nine-dimension scoring behind a
+ * disclosure — candidacy is validated against the thresholds automatically,
+ * and a cluster saved without touching the scores is flagged as needing
+ * human review so unscored work is never silently treated as judged.
  */
 
 import Link from "next/link";
@@ -13,6 +19,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { useViewMode } from "@/components/ViewMode";
 import {
   CheckboxList,
   Field,
@@ -54,6 +61,7 @@ function NewClusterHeader() {
 export default function NewClusterPage() {
   const router = useRouter();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const clusters = useIntelligenceStore((s) => s.clusters);
   const signals = useIntelligenceStore((s) => s.signals);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
@@ -67,6 +75,7 @@ export default function NewClusterPage() {
   const [signalIds, setSignalIds] = useState<string[]>([]);
   const [contradictionIds, setContradictionIds] = useState<string[]>([]);
   const [scores, setScores] = useState<ClusterScores>(DEFAULT_CLUSTER_SCORES);
+  const [scoresTouched, setScoresTouched] = useState(false);
   const [confidence, setConfidence] = useState<ConfidenceLevel>("low");
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -86,6 +95,12 @@ export default function NewClusterPage() {
   }
 
   const nameWarning = topicNameWarning(name);
+  const simple = mode === "simple";
+
+  function setScore(k: keyof ClusterScores, v: Score) {
+    setScores((prev) => ({ ...prev, [k]: v }));
+    setScoresTouched(true);
+  }
 
   function handleSave() {
     const errs: string[] = [];
@@ -116,7 +131,9 @@ export default function NewClusterPage() {
       confidence,
       // Validity is computed, never asserted at creation.
       status: "candidate",
-      reviewStatus: "draft",
+      // A cluster saved with untouched default scores has not been judged on
+      // the nine dimensions yet — flag it so unscored work reaches a human.
+      reviewStatus: scoresTouched ? "draft" : "needs_human_review",
       humanNotes: "",
       createdAt: now,
       updatedAt: now,
@@ -133,6 +150,29 @@ export default function NewClusterPage() {
     router.push(`/clusters/${clusterId}`);
   }
 
+  const scoringFields = (
+    <div className="space-y-4 px-4 py-4">
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {SCORE_KEYS.map((k) => (
+          <ScorePicker
+            key={k}
+            label={CLUSTER_SCORE_LABELS[k]}
+            value={scores[k]}
+            rubric={GENERIC_SCORE_RUBRIC}
+            onChange={(v: Score) => setScore(k, v)}
+          />
+        ))}
+      </div>
+      <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
+        Validation benchmarks: breadth ≥ {CLUSTER_THRESHOLDS.minBreadth}, depth
+        ≥ {CLUSTER_THRESHOLDS.minDepth}, coherence ≥{" "}
+        {CLUSTER_THRESHOLDS.minCoherence}, strategic relevance ≥{" "}
+        {CLUSTER_THRESHOLDS.minStrategicRelevance}. Score honestly — high
+        scores do not validate a cluster whose evidence thresholds fail.
+      </p>
+    </div>
+  );
+
   return (
     <>
       <Breadcrumbs
@@ -144,6 +184,17 @@ export default function NewClusterPage() {
       <NewClusterHeader />
 
       <div className="max-w-3xl space-y-5">
+        {simple ? (
+          <div className="card border-l-2 border-l-info px-4 py-3">
+            <p className="text-[12.5px] leading-relaxed text-ink-soft">
+              Capture the shared logic and its evidence — that is all a candidate
+              needs. Candidacy is validated against the thresholds automatically,
+              and the nine-dimension scoring can be completed later in Analyst
+              view. A candidate saved without scoring is flagged for human review.
+            </p>
+          </div>
+        ) : null}
+
         <section className="card">
           <header className="border-b border-line px-4 py-2.5">
             <h2 className="overline-label">Shared logic</h2>
@@ -290,31 +341,27 @@ export default function NewClusterPage() {
           </div>
         </section>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Cluster scores — nine dimensions</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {SCORE_KEYS.map((k) => (
-                <ScorePicker
-                  key={k}
-                  label={CLUSTER_SCORE_LABELS[k]}
-                  value={scores[k]}
-                  rubric={GENERIC_SCORE_RUBRIC}
-                  onChange={(v: Score) => setScores((prev) => ({ ...prev, [k]: v }))}
-                />
-              ))}
-            </div>
-            <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
-              Validation benchmarks: breadth ≥ {CLUSTER_THRESHOLDS.minBreadth}, depth
-              ≥ {CLUSTER_THRESHOLDS.minDepth}, coherence ≥{" "}
-              {CLUSTER_THRESHOLDS.minCoherence}, strategic relevance ≥{" "}
-              {CLUSTER_THRESHOLDS.minStrategicRelevance}. Score honestly — high
-              scores do not validate a cluster whose evidence thresholds fail.
-            </p>
-          </div>
-        </section>
+        {simple ? (
+          <details className="card">
+            <summary className="cursor-pointer px-4 py-2.5 hover:bg-surface-muted">
+              <span className="overline-label">
+                Scoring (optional now — analyst work)
+              </span>
+              <span className="mt-0.5 block text-[11px] text-ink-faint">
+                Nine 1–5 judgements that support validation. Leave them for
+                Analyst view if you prefer — the candidate saves either way.
+              </span>
+            </summary>
+            <div className="border-t border-line">{scoringFields}</div>
+          </details>
+        ) : (
+          <section className="card">
+            <header className="border-b border-line px-4 py-2.5">
+              <h2 className="overline-label">Cluster scores — nine dimensions</h2>
+            </header>
+            {scoringFields}
+          </section>
+        )}
 
         <section className="card">
           <header className="border-b border-line px-4 py-2.5">
@@ -359,6 +406,9 @@ export default function NewClusterPage() {
           </Link>
           <p className="ml-2 text-[11.5px] text-ink-faint">
             Saved as a candidate — validity is computed on the detail page.
+            {scoresTouched
+              ? ""
+              : " Unscored candidates are flagged as needing human review."}
           </p>
         </div>
       </div>

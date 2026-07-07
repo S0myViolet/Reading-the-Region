@@ -132,3 +132,17 @@ export function RecomputedNote() {
     <span className="text-[10.5px] text-ink-faint">status recomputed from evidence</span>
   );
 }
+
+/**
+ * Task-based next step from the live validation result: name the first
+ * failing test while the pattern is a hypothesis; once validated, move up
+ * the pyramid.
+ */
+export function nextStepForPattern(result: ValidationResult): string {
+  if (result.valid) return "Connect this pattern to possible drivers.";
+  const failing = result.checks.find((c) => !c.passed);
+  if (failing) {
+    return `Not yet validated — the ${failing.label.toLowerCase()} is failing. ${failing.detail}`;
+  }
+  return "Review the pattern statement and evidence window before validation.";
+}

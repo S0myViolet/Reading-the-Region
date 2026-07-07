@@ -652,9 +652,11 @@ function SourcesContent() {
             <h2 className="overline-label">
               {rows.length} of {sources.length} source{sources.length === 1 ? "" : "s"}
             </h2>
-            <p className="text-[11px] text-ink-faint">
-              Credibility ≤ 2 is safe for discovery, unsafe for validation
-            </p>
+            {analyst ? (
+              <p className="text-[11px] text-ink-faint">
+                Credibility ≤ 2 is safe for discovery, unsafe for validation
+              </p>
+            ) : null}
           </header>
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -664,10 +666,16 @@ function SourcesContent() {
                   <th>Type</th>
                   <th>Credibility</th>
                   <th>Roles</th>
-                  <th>Bias tags</th>
-                  <th>Added</th>
-                  <th className="text-right">Obs.</th>
-                  <th className="text-right">Signals</th>
+                  {analyst ? <th>Bias tags</th> : null}
+                  {methodology ? <th>Added</th> : null}
+                  {analyst ? (
+                    <>
+                      <th className="text-right">Obs.</th>
+                      <th className="text-right">Signals</th>
+                    </>
+                  ) : (
+                    <th className="text-right">Linked evidence</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -677,6 +685,8 @@ function SourcesContent() {
                     src={src}
                     observationCount={observationCount(src)}
                     signalCount={signalCount(src)}
+                    analyst={analyst}
+                    methodology={methodology}
                   />
                 ))}
               </tbody>
