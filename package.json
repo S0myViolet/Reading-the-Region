@@ -4,9 +4,9 @@
   "private": true,
   "description": "A strategic foresight intelligence system for detecting, interpreting, and translating regional change across MENA.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 4100",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 4100",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },

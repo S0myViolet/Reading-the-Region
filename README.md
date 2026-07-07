@@ -23,8 +23,9 @@ Observation → Signal → Cluster → Pattern → Contradiction → Driver
 
 ```bash
 npm install
-npm run dev        # development server on http://localhost:3000
+npm run dev        # development server on http://localhost:4100
 npm run build      # production build
+npm start          # production server on http://localhost:4100
 npm run typecheck  # strict TypeScript check
 ```
 
