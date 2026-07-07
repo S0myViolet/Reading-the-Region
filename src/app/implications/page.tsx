@@ -12,8 +12,10 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { modeAtLeast } from "@/lib/viewMode";
 import { DEFINITIONS } from "@/lib/copy";
 import type {
   ConfidenceLevel,
@@ -90,8 +92,35 @@ function ImplicationsHeader({
   );
 }
 
+/**
+ * Methodology view: the traceability rule that governs this layer, spelled
+ * out where the implications are read.
+ */
+function TraceabilityCard() {
+  return (
+    <section className="card mb-5">
+      <header className="border-b border-line px-4 py-2.5">
+        <h2 className="overline-label">Traceability rule</h2>
+      </header>
+      <div className="px-4 py-3">
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          Every implication must trace back down the pyramid: it is anchored to a
+          future territory or scenario, and it cites the evidence signals or
+          drivers that make that future plausible. An implication without an
+          anchor answers no question; an implication without evidence links is an
+          opinion. The grounding checklist on each card applies this rule — an
+          implication that fails it stays flagged as needing grounding and should
+          not drive decisions until evidence is linked.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export default function ImplicationsPage() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
   const implications = useIntelligenceStore((s) => s.implications);
   const territories = useIntelligenceStore((s) => s.territories);
   const scenarios = useIntelligenceStore((s) => s.scenarios);
@@ -157,6 +186,14 @@ export default function ImplicationsPage() {
         onToggleForm={() => setFormOpen((o) => !o)}
       />
       <WalkthroughPanel pageId="implications" />
+      <div className="mb-4">
+        <DepthHint>
+          Grounding checks, opportunity and risk detail, and review status
+        </DepthHint>
+      </div>
+      <ViewGate min="methodology">
+        <TraceabilityCard />
+      </ViewGate>
 
       {formOpen ? <ImplicationForm onClose={() => setFormOpen(false)} /> : null}
 
@@ -181,22 +218,11 @@ export default function ImplicationsPage() {
                 </button>
               ) : null}
             </header>
-            <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Sector">
-                <Select
-                  value={filters.sector}
-                  onChange={(e) =>
-                    setFilter({ sector: e.target.value as Sector | "" })
-                  }
-                >
-                  <option value="">All sectors</option>
-                  {SECTOR_OPTIONS.map((s) => (
-                    <option key={s} value={s}>
-                      {SECTOR_LABELS[s]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+            <div
+              className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
+                analyst ? "lg:grid-cols-4" : "lg:grid-cols-3"
+              }`}
+            >
               <Field label="Audience">
                 <Select
                   value={filters.audience}
@@ -214,43 +240,17 @@ export default function ImplicationsPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Implication type">
+              <Field label="Sector">
                 <Select
-                  value={filters.type}
+                  value={filters.sector}
                   onChange={(e) =>
-                    setFilter({ type: e.target.value as ImplicationType | "" })
+                    setFilter({ sector: e.target.value as Sector | "" })
                   }
                 >
-                  <option value="">All types</option>
-                  {TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {IMPLICATION_TYPE_LABELS[t]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Future territory">
-                <Select
-                  value={filters.territoryId}
-                  onChange={(e) => setFilter({ territoryId: e.target.value })}
-                >
-                  <option value="">All territories</option>
-                  {territories.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.id} · {t.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Scenario">
-                <Select
-                  value={filters.scenarioId}
-                  onChange={(e) => setFilter({ scenarioId: e.target.value })}
-                >
-                  <option value="">All scenarios</option>
-                  {scenarios.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id} · {s.title}
+                  <option value="">All sectors</option>
+                  {SECTOR_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {SECTOR_LABELS[s]}
                     </option>
                   ))}
                 </Select>
@@ -272,21 +272,66 @@ export default function ImplicationsPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Time horizon">
-                <Select
-                  value={filters.horizon}
-                  onChange={(e) =>
-                    setFilter({ horizon: e.target.value as TimeHorizon | "" })
-                  }
-                >
-                  <option value="">All horizons</option>
-                  {HORIZON_OPTIONS.map((h) => (
-                    <option key={h} value={h}>
-                      {TIME_HORIZON_LABELS[h]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+              {analyst ? (
+                <>
+                  <Field label="Implication type">
+                    <Select
+                      value={filters.type}
+                      onChange={(e) =>
+                        setFilter({ type: e.target.value as ImplicationType | "" })
+                      }
+                    >
+                      <option value="">All types</option>
+                      {TYPE_OPTIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {IMPLICATION_TYPE_LABELS[t]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Future territory">
+                    <Select
+                      value={filters.territoryId}
+                      onChange={(e) => setFilter({ territoryId: e.target.value })}
+                    >
+                      <option value="">All territories</option>
+                      {territories.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.id} · {t.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Scenario">
+                    <Select
+                      value={filters.scenarioId}
+                      onChange={(e) => setFilter({ scenarioId: e.target.value })}
+                    >
+                      <option value="">All scenarios</option>
+                      {scenarios.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.id} · {s.title}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Time horizon">
+                    <Select
+                      value={filters.horizon}
+                      onChange={(e) =>
+                        setFilter({ horizon: e.target.value as TimeHorizon | "" })
+                      }
+                    >
+                      <option value="">All horizons</option>
+                      {HORIZON_OPTIONS.map((h) => (
+                        <option key={h} value={h}>
+                          {TIME_HORIZON_LABELS[h]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </>
+              ) : null}
             </div>
           </section>
 

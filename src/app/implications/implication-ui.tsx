@@ -401,9 +401,11 @@ export function ImplicationCard({
                 </select>
               </label>
             </div>
-            <p className="text-[11px] text-ink-faint">
-              Created {fmtDate(imp.createdAt)} · Updated {fmtDate(imp.updatedAt)}
-            </p>
+            <ViewGate min="methodology">
+              <p className="text-[11px] text-ink-faint">
+                Created {fmtDate(imp.createdAt)} · Updated {fmtDate(imp.updatedAt)}
+              </p>
+            </ViewGate>
           </div>
         </div>
       ) : null}
@@ -638,34 +640,36 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Implication type" required>
-            <Select
-              value={draft.implicationType}
-              onChange={(e) =>
-                patch({ implicationType: e.target.value as ImplicationType })
-              }
-            >
-              {TYPE_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {IMPLICATION_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Confidence">
-            <Select
-              value={draft.confidence}
-              onChange={(e) =>
-                patch({ confidence: e.target.value as ConfidenceLevel })
-              }
-            >
-              {CONFIDENCE_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {CONFIDENCE_LABELS[c]}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <ViewGate min="analyst">
+            <Field label="Implication type" required>
+              <Select
+                value={draft.implicationType}
+                onChange={(e) =>
+                  patch({ implicationType: e.target.value as ImplicationType })
+                }
+              >
+                {TYPE_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {IMPLICATION_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Confidence">
+              <Select
+                value={draft.confidence}
+                onChange={(e) =>
+                  patch({ confidence: e.target.value as ConfidenceLevel })
+                }
+              >
+                {CONFIDENCE_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {CONFIDENCE_LABELS[c]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </ViewGate>
           <Field label="Time horizon">
             <Select
               value={draft.timeHorizon}
@@ -711,20 +715,22 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
           <InlineError message={errors.whyItMatters} />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Opportunity" hint="What acting early makes possible.">
-            <TextArea
-              value={draft.opportunity}
-              onChange={(e) => patch({ opportunity: e.target.value })}
-            />
-          </Field>
-          <Field label="Risk" hint="What ignoring this future would cost.">
-            <TextArea
-              value={draft.risk}
-              onChange={(e) => patch({ risk: e.target.value })}
-            />
-          </Field>
-        </div>
+        <ViewGate min="analyst">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Opportunity" hint="What acting early makes possible.">
+              <TextArea
+                value={draft.opportunity}
+                onChange={(e) => patch({ opportunity: e.target.value })}
+              />
+            </Field>
+            <Field label="Risk" hint="What ignoring this future would cost.">
+              <TextArea
+                value={draft.risk}
+                onChange={(e) => patch({ risk: e.target.value })}
+              />
+            </Field>
+          </div>
+        </ViewGate>
 
         <div>
           <Field
@@ -740,6 +746,16 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
           <InlineError message={errors.recommendedAction} />
         </div>
 
+        <ViewGate
+          min="analyst"
+          fallback={
+            <p className="text-[11.5px] text-ink-faint">
+              Classification, confidence, opportunity/risk and evidence linking
+              complete in Analyst view — the implication saves as a draft and is
+              flagged as needing grounding until evidence is linked.
+            </p>
+          }
+        >
         <div className="grid gap-4 lg:grid-cols-2">
           <GroupField
             label="Evidence signals"
@@ -786,6 +802,7 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
             )}
           </GroupField>
         </div>
+        </ViewGate>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
           <p className="mr-auto text-[11px] text-ink-faint">

@@ -13,9 +13,12 @@
 import { useState } from "react";
 import { ConfidenceBadge, IdChip, Pill, TrendBadge } from "@/components/badges";
 import { EntityLink } from "@/components/EntityLink";
+import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { Field, Select, TextArea, TextInput } from "@/components/form";
 import { indicatorOverdue } from "@/lib/derived";
+import { explainConfidenceGeneric, explainIndicator } from "@/lib/explain";
 import { nextId, useIntelligenceStore } from "@/lib/store";
+import { modeAtLeast } from "@/lib/viewMode";
 import type {
   ConfidenceLevel,
   IndicatorTrend,

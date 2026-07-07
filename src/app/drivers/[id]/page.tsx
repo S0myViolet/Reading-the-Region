@@ -1,14 +1,22 @@
 "use client";
 
 /**
- * Driver detail — one underlying force, its statement and what it explains,
- * live validation against the seven driver criteria, the ten-dimension score
- * grid, inferred second- and third-order effect chains, evidence links,
- * contradictions, and review controls. Status is always computed from the
- * evidence; the stored status is never presented on its own, and a weak
- * driver is never shown as validated.
+ * Driver detail — one underlying force, its statement and what it explains.
+ * Status is always computed from the evidence via validateDriver; the stored
+ * status is never presented on its own, and a weak driver is never shown as
+ * validated.
+ *
+ * Visibility layers: the simple view leads with the driver statement, then
+ * what it explains, a plain-language status sentence, confidence with its
+ * reason, the tensions that could contradict it, and a next step. Analyst
+ * view opens the full tabbed workspace — explained scores, validation
+ * checklist, effect chains, evidence links, leading indicators with trends,
+ * and review controls. Methodology view adds the validation thresholds
+ * against this driver's actuals and the audit trail. The relationship trail
+ * is visible in every mode.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -19,18 +27,33 @@ import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
-import { ScoreGrid } from "@/components/ScorePanel";
+import { ScoreBar } from "@/components/ScorePanel";
 import {
   ConfidenceBadge,
   IdChip,
   ProvenanceBadge,
   ReviewStatusBadge,
+  TrendBadge,
 } from "@/components/badges";
 import { SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateDriver, type ValidationResult } from "@/lib/validation";
-import type { ConfidenceLevel, Driver, ReviewStatus, Signal } from "@/lib/types";
+import {
+  explainConfidenceGeneric,
+  explainContradiction,
+  explainDriverStatus,
+} from "@/lib/explain";
+import type {
+  ConfidenceLevel,
+  Contradiction,
+  Driver,
+  DriverScores,
+  MonitoringIndicator,
+  ReviewStatus,
+  Signal,
+} from "@/lib/types";
 import {
   CONFIDENCE_LABELS,
   DRIVER_SCORE_LABELS,
@@ -42,7 +65,9 @@ import {
   RecomputedNote,
   btnPrimary,
   btnSecondary,
-  driverScoresRecord,
+  driverEvidenceNote,
+  driverNextStep,
+  driverScoreReading,
   fmtDate,
   signalsOfDriver,
   statusDisagrees,
@@ -53,11 +78,24 @@ const TRAIL_SIGNAL_CAP = 8;
 /** How many signal links show on the Evidence tab before collapsing. */
 const EVIDENCE_SIGNAL_COLLAPSE = 10;
 
+const DRIVER_SCORE_KEYS = Object.keys(DRIVER_SCORE_LABELS) as Array<
+  keyof DriverScores
+>;
+
 // ---------------------------------------------------------------------------
-// Overview tab
+// Overview — the simple layer. Rendered flat in simple view and as the
+// Overview tab in Analyst view (where its gated sections open up).
 // ---------------------------------------------------------------------------
 
-function OverviewTab({ driver }: { driver: Driver }) {
+function OverviewContent({
+  driver,
+  result,
+  linkedContradictions,
+}: {
+  driver: Driver;
+  result: ValidationResult;
+  linkedContradictions: Contradiction[];
+}) {
   return (
     <div className="space-y-4">
       <section className="card px-4 py-4">
@@ -78,7 +116,9 @@ function OverviewTab({ driver }: { driver: Driver }) {
       <section className="card px-4 py-3">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <p className="overline-label">What it explains</p>
-          <ProvenanceBadge label="human_interpretation" />
+          <ViewGate min="methodology">
+            <ProvenanceBadge label="human_interpretation" />
+          </ViewGate>
         </div>
         <p className="text-[13px] leading-relaxed text-ink-soft">
           {driver.whatItExplains.trim() ? (
@@ -93,59 +133,211 @@ function OverviewTab({ driver }: { driver: Driver }) {
         </p>
       </section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">
-            Possible futures — if this force continues
-          </h3>
-        </header>
-        {driver.possibleFutures.length > 0 ? (
-          <ul className="divide-y divide-line">
-            {driver.possibleFutures.map((f) => (
-              <li key={f} className="flex items-start gap-2.5 px-4 py-2.5">
-                <span className="shrink-0 pt-px">
-                  <ProvenanceBadge label="speculative_possibility" />
-                </span>
-                <span className="text-[13px] leading-relaxed text-ink-soft">{f}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-4 py-3 text-[12px] text-ink-faint">
-            No possible futures articulated yet. A validated driver must
-            produce plausible future scenarios — if none can be stated, the
-            explanation is not yet doing any work.
-          </p>
-        )}
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Where this driver stands</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {explainDriverStatus(driver, result)}
+        </p>
       </section>
 
       <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">Systems affected</p>
-        {driver.systemsAffected.length > 0 ? (
-          <SystemTags systems={driver.systemsAffected} />
-        ) : (
-          <span className="text-[11.5px] text-ink-faint">
-            No systems recorded yet. A structural force should touch at least
-            one named system.
-          </span>
-        )}
+        <p className="overline-label mb-1.5">Confidence</p>
+        <div className="mb-1.5">
+          <ConfidenceBadge level={driver.confidence} />
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {explainConfidenceGeneric(driver.confidence, driverEvidenceNote(driver))}
+        </p>
       </section>
+
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">What could contradict it</h3>
+        </header>
+        <div className="px-4 py-3">
+          {linkedContradictions.length > 0 ? (
+            <ul className="space-y-3">
+              {linkedContradictions.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/contradictions/${c.id}`}
+                    className="text-[12.5px] font-medium text-ink hover:text-accent-ink hover:underline"
+                  >
+                    {c.name}
+                  </Link>
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
+                    {explainContradiction(c)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <NoContradictionNote />
+          )}
+        </div>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Next step</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {driverNextStep(result)}
+        </p>
+      </section>
+
+      <DepthHint>
+        Scoring, effect chains, possible futures, evidence links and validation
+        detail
+      </DepthHint>
+
+      <ViewGate min="analyst">
+        <div className="space-y-4">
+          <section className="card">
+            <header className="border-b border-line px-4 py-2.5">
+              <h3 className="overline-label">
+                Possible futures — if this force continues
+              </h3>
+            </header>
+            {driver.possibleFutures.length > 0 ? (
+              <ul className="divide-y divide-line">
+                {driver.possibleFutures.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 px-4 py-2.5">
+                    <ViewGate min="methodology">
+                      <span className="shrink-0 pt-px">
+                        <ProvenanceBadge label="speculative_possibility" />
+                      </span>
+                    </ViewGate>
+                    <span className="text-[13px] leading-relaxed text-ink-soft">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-4 py-3 text-[12px] text-ink-faint">
+                No possible futures articulated yet. A validated driver must
+                produce plausible future scenarios — if none can be stated, the
+                explanation is not yet doing any work.
+              </p>
+            )}
+          </section>
+
+          <section className="card px-4 py-3">
+            <p className="overline-label mb-1.5">Systems affected</p>
+            {driver.systemsAffected.length > 0 ? (
+              <SystemTags systems={driver.systemsAffected} />
+            ) : (
+              <span className="text-[11.5px] text-ink-faint">
+                No systems recorded yet. A structural force should touch at least
+                one named system.
+              </span>
+            )}
+          </section>
+        </div>
+      </ViewGate>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Validation tab
+// Validation tab (analyst) — checklist plus the ten explained scores;
+// methodology adds the thresholds against this driver's actuals.
 // ---------------------------------------------------------------------------
+
+function ThresholdsCard({
+  driver,
+  driverSignals,
+}: {
+  driver: Driver;
+  driverSignals: Signal[];
+}) {
+  const t = DRIVER_THRESHOLDS;
+  const sectorCount = new Set(driverSignals.flatMap((s) => s.sectors)).size;
+  const rows: Array<{ label: string; required: string; actual: number }> = [
+    {
+      label: "Patterns explained",
+      required: `≥ ${t.minPatterns}`,
+      actual: driver.patternIds.length,
+    },
+    {
+      label: "Signals connected",
+      required: `≥ ${t.minSignals}`,
+      actual: driver.signalIds.length,
+    },
+    {
+      label: "Sectors represented (from linked signals)",
+      required: `≥ ${t.minSectors}`,
+      actual: sectorCount,
+    },
+    {
+      label: "Independent sources",
+      required: `≥ ${t.minIndependentSources}`,
+      actual: driver.independentSourceCount,
+    },
+    {
+      label: "Contradictions linked",
+      required: `≥ ${t.minContradictions}`,
+      actual: driver.contradictionIds.length,
+    },
+    {
+      label: "Possible futures articulated",
+      required: "≥ 1",
+      actual: driver.possibleFutures.length,
+    },
+    {
+      label: "Leading indicators attached",
+      required: "≥ 1",
+      actual: driver.leadingIndicatorIds.length,
+    },
+  ];
+  const met = (row: { required: string; actual: number }) =>
+    row.actual >= Number(row.required.replace("≥", "").trim());
+
+  return (
+    <section className="card">
+      <header className="border-b border-line px-4 py-2.5">
+        <h3 className="overline-label">
+          Validation thresholds — this driver against the rulebook
+        </h3>
+      </header>
+      <div className="overflow-x-auto px-4 py-3">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Criterion</th>
+              <th>Required</th>
+              <th>This driver</th>
+              <th>Met</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <td>{row.label}</td>
+                <td className="font-mono">{row.required}</td>
+                <td className="font-mono">{row.actual}</td>
+                <td className={met(row) ? "text-accent-ink" : "text-caution"}>
+                  {met(row) ? "Met" : "Not met"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+          A driver is only validated when every criterion passes against live
+          evidence. Scores record judgement; these thresholds record evidence.
+        </p>
+      </div>
+    </section>
+  );
+}
 
 function ValidationTab({
   driver,
+  driverSignals,
   result,
 }: {
   driver: Driver;
+  driverSignals: Signal[];
   result: ValidationResult;
 }) {
-  const t = DRIVER_THRESHOLDS;
   return (
     <div className="space-y-4">
       <ValidationChecklist
@@ -158,21 +350,24 @@ function ValidationTab({
         <header className="border-b border-line px-4 py-2.5">
           <h3 className="overline-label">Driver scores — ten dimensions</h3>
         </header>
-        <div className="px-4 py-3">
-          <ScoreGrid
-            scores={driverScoresRecord(driver.scores)}
-            labels={DRIVER_SCORE_LABELS}
-          />
-          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
-            Validation benchmarks: ≥ {t.minPatterns} patterns explained, ≥{" "}
-            {t.minSignals} signals, ≥ {t.minSectors} sectors, ≥{" "}
-            {t.minIndependentSources} independent sources, ≥{" "}
-            {t.minContradictions} contradictions, plus articulated futures and
-            leading indicators. Scores record judgement; the checklist above
-            records evidence.
+        <div className="space-y-3 px-4 py-3">
+          {DRIVER_SCORE_KEYS.map((k) => (
+            <div key={k}>
+              <ScoreBar value={driver.scores[k]} label={DRIVER_SCORE_LABELS[k]} />
+              <p className="mt-0.5 text-[12px] leading-relaxed text-ink-soft">
+                {driverScoreReading(k, driver.scores[k])}
+              </p>
+            </div>
+          ))}
+          <p className="border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+            Scores are analyst judgements against the 1–5 rubric; the checklist
+            above records what the evidence itself supports.
           </p>
         </div>
       </section>
+      <ViewGate min="methodology">
+        <ThresholdsCard driver={driver} driverSignals={driverSignals} />
+      </ViewGate>
     </div>
   );
 }
@@ -194,7 +389,9 @@ function EffectChainSection({
     <section className="card">
       <header className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
         <h3 className="overline-label">{title}</h3>
-        <ProvenanceBadge label="human_interpretation" />
+        <ViewGate min="methodology">
+          <ProvenanceBadge label="human_interpretation" />
+        </ViewGate>
       </header>
       {items.length > 0 ? (
         <ul className="divide-y divide-line">
@@ -241,10 +438,12 @@ function EvidenceTab({
   driver,
   driverSignals,
   driverPatterns,
+  driverIndicators,
 }: {
   driver: Driver;
   driverSignals: Signal[];
   driverPatterns: Array<{ id: string; name: string }>;
+  driverIndicators: MonitoringIndicator[];
 }) {
   const [showAllSignals, setShowAllSignals] = useState(false);
   const minSources = DRIVER_THRESHOLDS.minIndependentSources;
@@ -322,12 +521,34 @@ function EvidenceTab({
           </p>
         )}
       </section>
+
+      <section>
+        <p className="overline-label mb-2">
+          Leading indicators ({driverIndicators.length})
+        </p>
+        {driverIndicators.length > 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {driverIndicators.map((i) => (
+              <div key={i.id} className="space-y-1">
+                <EntityLink kind="indicator" id={i.id} title={i.name} />
+                <TrendBadge trend={i.trend} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11.5px] text-ink-faint">
+            No leading indicators attached yet. Without indicators the driver
+            cannot be monitored — define what should be watched if this force
+            is real.
+          </p>
+        )}
+      </section>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Review tab
+// Review tab (analyst); the audit trail opens in Methodology view.
 // ---------------------------------------------------------------------------
 
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
@@ -415,9 +636,18 @@ function ReviewTab({ driver }: { driver: Driver }) {
           </div>
         </div>
       </section>
-      <p className="text-[11.5px] text-ink-faint">
-        Created {fmtDate(driver.createdAt)} · Last updated {fmtDate(driver.updatedAt)}
-      </p>
+      <ViewGate min="methodology">
+        <section className="card px-4 py-3">
+          <p className="overline-label mb-1">Audit trail</p>
+          <p className="text-[11.5px] leading-relaxed text-ink-faint">
+            Record <span className="font-mono">{driver.id}</span> · Created{" "}
+            {fmtDate(driver.createdAt)} · Last updated {fmtDate(driver.updatedAt)} ·
+            Review status: {REVIEW_STATUS_LABELS[driver.reviewStatus]} · Stored
+            status: {driver.status === "validated" ? "validated" : "hypothesis"}{" "}
+            (the displayed status is always recomputed from evidence)
+          </p>
+        </section>
+      </ViewGate>
     </div>
   );
 }
@@ -463,6 +693,7 @@ function HypothesisGuidanceCard({ result }: { result: ValidationResult }) {
 export default function DriverDetailPage() {
   const params = useParams<{ id: string }>();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const drivers = useIntelligenceStore((s) => s.drivers);
   const signals = useIntelligenceStore((s) => s.signals);
   const patterns = useIntelligenceStore((s) => s.patterns);
@@ -568,6 +799,14 @@ export default function DriverDetailPage() {
     },
   ];
 
+  const overview = (
+    <OverviewContent
+      driver={driver}
+      result={result}
+      linkedContradictions={linkedContradictions}
+    />
+  );
+
   return (
     <>
       <Breadcrumbs items={crumbs} />
@@ -575,88 +814,105 @@ export default function DriverDetailPage() {
         overline={`Interpret & Imagine · ${driver.id}`}
         title={driver.name}
         actions={
-          <div className="flex flex-col items-end gap-1">
-            <DriverStatusPill result={result} />
-            {recomputed ? <RecomputedNote /> : null}
-            <span className="font-mono text-[11px] text-ink-faint">
-              {result.passedCount}/{result.totalCount} criteria met
-            </span>
-          </div>
+          <ViewGate min="analyst">
+            <div className="flex flex-col items-end gap-1">
+              <DriverStatusPill result={result} />
+              {recomputed ? <RecomputedNote /> : null}
+              <span className="font-mono text-[11px] text-ink-faint">
+                {result.passedCount}/{result.totalCount} criteria met
+              </span>
+            </div>
+          </ViewGate>
         }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>
-          <Tabs
-            tabs={[
-              {
-                id: "overview",
-                label: "Overview",
-                content: <OverviewTab driver={driver} />,
-              },
-              {
-                id: "validation",
-                label: "Validation",
-                content: <ValidationTab driver={driver} result={result} />,
-              },
-              {
-                id: "systems",
-                label: "Systems",
-                content: <SystemsTab driver={driver} />,
-              },
-              {
-                id: "evidence",
-                label: "Evidence",
-                content: (
-                  <EvidenceTab
-                    driver={driver}
-                    driverSignals={driverSignals}
-                    driverPatterns={linkedPatterns.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                    }))}
-                  />
-                ),
-              },
-              {
-                id: "contradictions",
-                label: `Contradictions (${linkedContradictions.length})`,
-                content:
-                  linkedContradictions.length > 0 ? (
-                    <div className="space-y-4">
-                      {linkedContradictions.map((c) => (
-                        <ContradictionPanel key={c.id} contradiction={c} />
-                      ))}
-                    </div>
-                  ) : (
-                    <NoContradictionNote />
+          {mode === "simple" ? (
+            overview
+          ) : (
+            <Tabs
+              tabs={[
+                {
+                  id: "overview",
+                  label: "Overview",
+                  content: overview,
+                },
+                {
+                  id: "validation",
+                  label: "Validation",
+                  content: (
+                    <ValidationTab
+                      driver={driver}
+                      driverSignals={driverSignals}
+                      result={result}
+                    />
                   ),
-              },
-              {
-                id: "review",
-                label: "Review",
-                content: <ReviewTab driver={driver} />,
-              },
-            ]}
-          />
+                },
+                {
+                  id: "systems",
+                  label: "Systems",
+                  content: <SystemsTab driver={driver} />,
+                },
+                {
+                  id: "evidence",
+                  label: "Evidence",
+                  content: (
+                    <EvidenceTab
+                      driver={driver}
+                      driverSignals={driverSignals}
+                      driverPatterns={linkedPatterns.map((p) => ({
+                        id: p.id,
+                        name: p.name,
+                      }))}
+                      driverIndicators={linkedIndicators}
+                    />
+                  ),
+                },
+                {
+                  id: "contradictions",
+                  label: `Contradictions (${linkedContradictions.length})`,
+                  content:
+                    linkedContradictions.length > 0 ? (
+                      <div className="space-y-4">
+                        {linkedContradictions.map((c) => (
+                          <ContradictionPanel key={c.id} contradiction={c} />
+                        ))}
+                      </div>
+                    ) : (
+                      <NoContradictionNote />
+                    ),
+                },
+                {
+                  id: "review",
+                  label: "Review",
+                  content: <ReviewTab driver={driver} />,
+                },
+              ]}
+            />
+          )}
         </div>
 
         <aside className="mt-6 space-y-4 lg:mt-0">
-          <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-            <DriverStatusPill result={result} />
-            <ReviewStatusBadge status={driver.reviewStatus} />
-            <ConfidenceBadge level={driver.confidence} />
-            <IdChip id={driver.id} />
-          </div>
+          <ViewGate min="analyst">
+            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
+              <DriverStatusPill result={result} />
+              <ReviewStatusBadge status={driver.reviewStatus} />
+              <ConfidenceBadge level={driver.confidence} />
+              <IdChip id={driver.id} />
+            </div>
+          </ViewGate>
           <RelatedObjectsPanel groups={relatedGroups} />
-          {trailSignalOverflow > 0 ? (
-            <p className="text-[11.5px] text-ink-faint">
-              Signal links in the trail are capped at {TRAIL_SIGNAL_CAP} — and{" "}
-              {trailSignalOverflow} more on the Evidence tab.
-            </p>
-          ) : null}
-          {!result.valid ? <HypothesisGuidanceCard result={result} /> : null}
-          <BiasCheckPanel />
+          <ViewGate min="analyst">
+            {trailSignalOverflow > 0 ? (
+              <p className="text-[11.5px] text-ink-faint">
+                Signal links in the trail are capped at {TRAIL_SIGNAL_CAP} — and{" "}
+                {trailSignalOverflow} more on the Evidence tab.
+              </p>
+            ) : null}
+            {!result.valid ? <HypothesisGuidanceCard result={result} /> : null}
+            <BiasCheckPanel />
+          </ViewGate>
         </aside>
       </div>
     </>

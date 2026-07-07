@@ -2,10 +2,19 @@
 
 /**
  * Scenario detail — one plausible future world evolved from a future
- * territory. Progressive disclosure: the world itself, its consequences, the
- * evidence linkage back down the pyramid, the declared assumptions (the
- * first thing to monitor), the nine quality tests, and review controls.
- * A scenario is presented as a structured possibility, never a prediction.
+ * territory. A scenario is presented as a structured possibility, never a
+ * prediction.
+ *
+ * Visibility layers: the simple reading gives the premise, what has changed,
+ * how people, institutions and brands behave, the evidence-honesty line
+ * (including the assumption-heavy warning), the shaping contradictions as
+ * sentences, the declared assumptions with their provenance labels (labelling
+ * speculation is a reader-facing duty, not analyst depth), and a next step —
+ * with the relationship trail visible in every mode. Analyst view adds world
+ * conditions, winners and losers, early signs, strategic questions, the nine
+ * quality tests, evidence link tables and review controls. Methodology view
+ * adds the evidence-linkage checklist, the quality-test rubric spelled out,
+ * and the audit trail.
  */
 
 import Link from "next/link";
@@ -16,6 +25,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
+import { DepthHint, useViewMode, ViewGate } from "@/components/ViewMode";
 import { NoContradictionNote } from "@/components/ContradictionPanel";
 import {
   EntityLink,
@@ -24,6 +34,7 @@ import {
 } from "@/components/EntityLink";
 import {
   ConfidenceBadge,
+  IdChip,
   Pill,
   ProvenanceBadge,
   ReviewStatusBadge,
@@ -31,6 +42,7 @@ import {
 import { PlainTags } from "@/components/tags";
 import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { explainContradiction, explainScenarioEvidence } from "@/lib/explain";
 import {
   scenarioAssumptionHeavy,
   validateScenario,
@@ -41,6 +53,7 @@ import type {
   Contradiction,
   Driver,
   Pattern,
+  PatternValidationStatus,
   ReviewStatus,
   Scenario,
   Signal,
@@ -49,9 +62,16 @@ import {
   CONFIDENCE_LABELS,
   REVIEW_STATUS_LABELS,
   SCENARIO_HORIZON_LABELS,
+  SCENARIO_QUALITY_LABELS,
   SCENARIO_TYPE_LABELS,
+  SIGNAL_STRENGTH_LABELS,
 } from "@/lib/types";
-import { fmtDate, qualityChecklistResult } from "../scenario-ui";
+import {
+  fmtDate,
+  QUALITY_DETAILS,
+  QUALITY_KEYS,
+  qualityChecklistResult,
+} from "../scenario-ui";
 
 // ---------------------------------------------------------------------------
 // Small building blocks
@@ -90,10 +110,91 @@ function TagListOrNote({ tags, emptyNote }: { tags: string[]; emptyNote: string 
 }
 
 // ---------------------------------------------------------------------------
-// The world tab
+// Simple reading — the default view, and the Overview tab in deeper views
 // ---------------------------------------------------------------------------
 
-function WorldTab({ scenario }: { scenario: Scenario }) {
+/** Shaping contradictions as readable sentences; the absence is explicit. */
+function ShapingContradictions({ items }: { items: Contradiction[] }) {
+  return (
+    <section className="card border-l-2 border-l-tension">
+      <header className="border-b border-line px-4 py-2.5">
+        <h3 className="overline-label">What shapes it</h3>
+      </header>
+      {items.length > 0 ? (
+        <ul className="divide-y divide-line">
+          {items.map((c) => (
+            <li key={c.id} className="px-4 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+              <Link
+                href={`/contradictions/${c.id}`}
+                className="font-medium text-ink hover:text-accent-ink hover:underline"
+              >
+                {c.name}
+              </Link>
+              {" — "}
+              {explainContradiction(c)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="px-4 py-3">
+          <NoContradictionNote />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Declared assumptions with their provenance labels rendered as words.
+ * This stays in the simple reading: labelling speculation is a reader-facing
+ * duty, not analyst depth.
+ */
+function AssumptionsSection({ scenario }: { scenario: Scenario }) {
+  return (
+    <section className="card">
+      <header className="border-b border-line px-4 py-2.5">
+        <h3 className="overline-label">
+          Declared assumptions ({scenario.assumptions.length})
+        </h3>
+      </header>
+      {scenario.assumptions.length > 0 ? (
+        <ul className="divide-y divide-line">
+          {scenario.assumptions.map((a, i) => (
+            <li
+              key={`${i}-${a.text}`}
+              className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5 px-4 py-2.5"
+            >
+              <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+                {a.text}
+              </p>
+              <ProvenanceBadge label={a.label} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="px-4 py-3 text-[11.5px] text-ink-faint">
+          No assumptions declared yet. Every scenario rests on assumptions —
+          leaving them unstated does not remove them, it only hides them from
+          review.
+        </p>
+      )}
+      <p className="border-t border-line px-4 py-2 text-[11.5px] text-ink-faint">
+        Anything not linked to evidence is an assumption, and assumptions are
+        the first thing to monitor.
+      </p>
+    </section>
+  );
+}
+
+function SimpleReading({
+  scenario,
+  assumptionHeavy,
+  shapingContradictions,
+}: {
+  scenario: Scenario;
+  assumptionHeavy: boolean;
+  shapingContradictions: Contradiction[];
+}) {
   return (
     <div className="space-y-4">
       <section className="card px-4 py-4">
@@ -151,46 +252,95 @@ function WorldTab({ scenario }: { scenario: Scenario }) {
         </div>
       </section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Conditions of this world</h3>
-        </header>
-        <dl className="space-y-3 px-4 py-3">
-          <div>
-            <dt className="overline-label mb-1">Key technologies</dt>
-            <dd>
-              <TagListOrNote
-                tags={scenario.keyTechnologies}
-                emptyNote="No key technologies recorded yet."
-              />
-            </dd>
-          </div>
-          <div>
-            <dt className="overline-label mb-1">Key policies</dt>
-            <dd>
-              <TagListOrNote
-                tags={scenario.keyPolicies}
-                emptyNote="No key policies recorded yet."
-              />
-            </dd>
-          </div>
-          <div>
-            <dt className="overline-label mb-1">Key cultural shifts</dt>
-            <dd>
-              <TagListOrNote
-                tags={scenario.keyCulturalShifts}
-                emptyNote="No key cultural shifts recorded yet."
-              />
-            </dd>
-          </div>
-        </dl>
+      <section
+        className={`card px-4 py-3 ${assumptionHeavy ? "border-l-2 border-l-caution" : ""}`}
+      >
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <p className="overline-label">Evidence honesty</p>
+          {assumptionHeavy ? <Pill tone="caution">Assumption-heavy</Pill> : null}
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {explainScenarioEvidence(scenario)}
+        </p>
       </section>
+
+      <ShapingContradictions items={shapingContradictions} />
+
+      <AssumptionsSection scenario={scenario} />
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Next step</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {assumptionHeavy ? (
+            "Strengthen the evidence before this scenario informs strategy: link more supporting signals, patterns and drivers so evidence outweighs assumption."
+          ) : (
+            <>
+              Translate this world into{" "}
+              <Link
+                href="/implications"
+                className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+              >
+                strategic implications
+              </Link>{" "}
+              — what should be done differently now if this future may be
+              forming.
+            </>
+          )}
+        </p>
+      </section>
+
+      <DepthHint>
+        World conditions, winners and losers, quality tests and evidence links
+      </DepthHint>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Consequences tab
+// World conditions tab (analyst)
+// ---------------------------------------------------------------------------
+
+function ConditionsTab({ scenario }: { scenario: Scenario }) {
+  return (
+    <section className="card">
+      <header className="border-b border-line px-4 py-2.5">
+        <h3 className="overline-label">Conditions of this world</h3>
+      </header>
+      <dl className="space-y-3 px-4 py-3">
+        <div>
+          <dt className="overline-label mb-1">Key technologies</dt>
+          <dd>
+            <TagListOrNote
+              tags={scenario.keyTechnologies}
+              emptyNote="No key technologies recorded yet."
+            />
+          </dd>
+        </div>
+        <div>
+          <dt className="overline-label mb-1">Key policies</dt>
+          <dd>
+            <TagListOrNote
+              tags={scenario.keyPolicies}
+              emptyNote="No key policies recorded yet."
+            />
+          </dd>
+        </div>
+        <div>
+          <dt className="overline-label mb-1">Key cultural shifts</dt>
+          <dd>
+            <TagListOrNote
+              tags={scenario.keyCulturalShifts}
+              emptyNote="No key cultural shifts recorded yet."
+            />
+          </dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Consequences tab (analyst)
 // ---------------------------------------------------------------------------
 
 function ConsequencesTab({ scenario }: { scenario: Scenario }) {
@@ -270,46 +420,159 @@ function ConsequencesTab({ scenario }: { scenario: Scenario }) {
 }
 
 // ---------------------------------------------------------------------------
-// Evidence tab
+// Evidence tab (analyst) — link tables back down the pyramid
 // ---------------------------------------------------------------------------
 
-function EvidenceLinkGrid({
-  heading,
-  kind,
-  items,
-  emptyNote,
-}: {
-  heading: string;
-  kind: RelatedGroup["kind"];
-  items: Array<{ id: string; title: string }>;
-  emptyNote: string;
-}) {
+const PATTERN_STATUS_WORDS: Record<PatternValidationStatus, string> = {
+  hypothesis: "Hypothesis",
+  partially_validated: "Partially validated",
+  validated: "Validated",
+};
+
+function SignalLinkTable({ signals }: { signals: Signal[] }) {
   return (
     <section>
-      <p className="overline-label mb-2">
-        {heading} ({items.length})
-      </p>
-      {items.length > 0 ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {items.map((it) => (
-            <EntityLink key={it.id} kind={kind} id={it.id} title={it.title} />
-          ))}
+      <p className="overline-label mb-2">Supporting signals ({signals.length})</p>
+      {signals.length > 0 ? (
+        <div className="card overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Strength</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {signals.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    <Link
+                      href={`/signals/${s.id}`}
+                      className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
+                    >
+                      {s.title}
+                    </Link>{" "}
+                    <IdChip id={s.id} />
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {SIGNAL_STRENGTH_LABELS[s.signalStrength]}
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {CONFIDENCE_LABELS[s.confidence]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <p className="text-[11.5px] text-ink-faint">{emptyNote}</p>
+        <p className="text-[11.5px] text-ink-faint">
+          No supporting signals linked yet. A scenario must trace back to
+          present-day evidence.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function PatternLinkTable({ patterns }: { patterns: Pattern[] }) {
+  return (
+    <section>
+      <p className="overline-label mb-2">Supporting patterns ({patterns.length})</p>
+      {patterns.length > 0 ? (
+        <div className="card overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>Validation status</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {patterns.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <Link
+                      href={`/patterns/${p.id}`}
+                      className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
+                    >
+                      {p.name}
+                    </Link>{" "}
+                    <IdChip id={p.id} />
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {PATTERN_STATUS_WORDS[p.validationStatus]}
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {CONFIDENCE_LABELS[p.confidence]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-[11.5px] text-ink-faint">No supporting patterns linked yet.</p>
+      )}
+    </section>
+  );
+}
+
+function DriverLinkTable({ drivers }: { drivers: Driver[] }) {
+  return (
+    <section>
+      <p className="overline-label mb-2">Supporting drivers ({drivers.length})</p>
+      {drivers.length > 0 ? (
+        <div className="card overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Driver</th>
+                <th>Status</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drivers.map((d) => (
+                <tr key={d.id}>
+                  <td>
+                    <Link
+                      href={`/drivers/${d.id}`}
+                      className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
+                    >
+                      {d.name}
+                    </Link>{" "}
+                    <IdChip id={d.id} />
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {d.status === "validated" ? "Validated driver" : "Driver hypothesis"}
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {CONFIDENCE_LABELS[d.confidence]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-[11.5px] text-ink-faint">
+          No supporting drivers linked yet. The forces that would push the
+          territory into this world are unstated.
+        </p>
       )}
     </section>
   );
 }
 
 function EvidenceTab({
-  result,
   supportingSignals,
   supportingPatterns,
   supportingDrivers,
   shapingContradictions,
 }: {
-  result: ValidationResult;
   supportingSignals: Signal[];
   supportingPatterns: Pattern[];
   supportingDrivers: Driver[];
@@ -317,35 +580,14 @@ function EvidenceTab({
 }) {
   return (
     <div className="space-y-4">
-      <ValidationChecklist
-        result={result}
-        title="Evidence linkage"
-        passedLabel="Evidence-linked"
-        failedLabel="Insufficiently linked"
-      />
       <p className="text-[11.5px] text-ink-faint">
         Claims in this scenario that are not supported by the links below are
-        labelled as assumptions in the Assumptions tab.
+        labelled as assumptions on the Overview.
       </p>
 
-      <EvidenceLinkGrid
-        heading="Supporting signals"
-        kind="signal"
-        items={supportingSignals.map((s) => ({ id: s.id, title: s.title }))}
-        emptyNote="No supporting signals linked yet. A scenario must trace back to present-day evidence."
-      />
-      <EvidenceLinkGrid
-        heading="Supporting patterns"
-        kind="pattern"
-        items={supportingPatterns.map((p) => ({ id: p.id, title: p.name }))}
-        emptyNote="No supporting patterns linked yet."
-      />
-      <EvidenceLinkGrid
-        heading="Supporting drivers"
-        kind="driver"
-        items={supportingDrivers.map((d) => ({ id: d.id, title: d.name }))}
-        emptyNote="No supporting drivers linked yet. The forces that would push the territory into this world are unstated."
-      />
+      <SignalLinkTable signals={supportingSignals} />
+      <PatternLinkTable patterns={supportingPatterns} />
+      <DriverLinkTable drivers={supportingDrivers} />
 
       <section>
         <p className="overline-label mb-2">
@@ -366,68 +608,7 @@ function EvidenceTab({
 }
 
 // ---------------------------------------------------------------------------
-// Assumptions tab
-// ---------------------------------------------------------------------------
-
-function AssumptionsTab({
-  scenario,
-  assumptionHeavy,
-}: {
-  scenario: Scenario;
-  assumptionHeavy: boolean;
-}) {
-  return (
-    <div className="space-y-4">
-      {assumptionHeavy ? (
-        <div className="card border-l-2 border-l-caution px-4 py-3">
-          <p className="overline-label mb-1 text-caution">Assumption-heavy scenario</p>
-          <p className="text-[12.5px] text-ink-soft">
-            This scenario carries more assumptions than evidence links. Review
-            assumptions and link stronger evidence before using this scenario
-            for strategy.
-          </p>
-        </div>
-      ) : null}
-
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">
-            Declared assumptions ({scenario.assumptions.length})
-          </h3>
-        </header>
-        {scenario.assumptions.length > 0 ? (
-          <ul className="divide-y divide-line">
-            {scenario.assumptions.map((a, i) => (
-              <li
-                key={`${i}-${a.text}`}
-                className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5 px-4 py-2.5"
-              >
-                <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
-                  {a.text}
-                </p>
-                <ProvenanceBadge label={a.label} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-4 py-3 text-[11.5px] text-ink-faint">
-            No assumptions declared yet. Every scenario rests on assumptions —
-            leaving them unstated does not remove them, it only hides them from
-            review.
-          </p>
-        )}
-      </section>
-
-      <p className="border border-dashed border-line-strong px-3 py-2 text-[12px] text-ink-soft rounded-[2px]">
-        Anything not linked to evidence is an assumption, and assumptions are
-        the first thing to monitor.
-      </p>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Quality tests tab
+// Quality tests tab (analyst)
 // ---------------------------------------------------------------------------
 
 function QualityTab({ quality }: { quality: ValidationResult }) {
@@ -449,7 +630,7 @@ function QualityTab({ quality }: { quality: ValidationResult }) {
 }
 
 // ---------------------------------------------------------------------------
-// Review tab
+// Review tab (analyst)
 // ---------------------------------------------------------------------------
 
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
@@ -505,10 +686,92 @@ function ReviewTab({ scenario }: { scenario: Scenario }) {
           </Field>
         </div>
       </section>
-      <p className="text-[11.5px] text-ink-faint">
-        Created {fmtDate(scenario.createdAt)} · Last updated{" "}
-        {fmtDate(scenario.updatedAt)}
-      </p>
+      <ViewGate min="methodology">
+        <p className="text-[11.5px] text-ink-faint">
+          Created {fmtDate(scenario.createdAt)} · Last updated{" "}
+          {fmtDate(scenario.updatedAt)}
+        </p>
+      </ViewGate>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Methodology tab (methodology only)
+// ---------------------------------------------------------------------------
+
+function MethodologyTab({
+  scenario,
+  result,
+}: {
+  scenario: Scenario;
+  result: ValidationResult;
+}) {
+  return (
+    <div className="space-y-4">
+      <ValidationChecklist
+        result={result}
+        title="Evidence linkage rules"
+        passedLabel="Evidence-linked"
+        failedLabel="Insufficiently linked"
+      />
+
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">The quality-test rubric</h3>
+        </header>
+        <p className="px-4 pt-3 text-[13px] leading-relaxed text-ink-soft">
+          Each of the nine tests is an analyst judgement recorded on the
+          scenario. This is what each test asks before it may be marked as
+          passed:
+        </p>
+        <ul className="mt-2 divide-y divide-line">
+          {QUALITY_KEYS.map((k) => (
+            <li key={k} className="px-4 py-2.5">
+              <p className="text-[12.5px] font-medium text-ink">
+                {SCENARIO_QUALITY_LABELS[k]}
+              </p>
+              <p className="text-[11.5px] leading-relaxed text-ink-faint">
+                {QUALITY_DETAILS[k]}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">Audit trail</h3>
+        </header>
+        <dl className="divide-y divide-line">
+          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+            <dt className="text-[12px] text-ink-faint">Record id</dt>
+            <dd>
+              <IdChip id={scenario.id} />
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+            <dt className="text-[12px] text-ink-faint">Created</dt>
+            <dd className="text-[12px] text-ink-soft">{fmtDate(scenario.createdAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+            <dt className="text-[12px] text-ink-faint">Last updated</dt>
+            <dd className="text-[12px] text-ink-soft">{fmtDate(scenario.updatedAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+            <dt className="text-[12px] text-ink-faint">Review status</dt>
+            <dd className="text-[12px] text-ink-soft">
+              {REVIEW_STATUS_LABELS[scenario.reviewStatus]}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+            <dt className="text-[12px] text-ink-faint">Confidence</dt>
+            <dd className="text-[12px] text-ink-soft">
+              {CONFIDENCE_LABELS[scenario.confidence]}
+            </dd>
+          </div>
+        </dl>
+      </section>
     </div>
   );
 }
@@ -520,6 +783,7 @@ function ReviewTab({ scenario }: { scenario: Scenario }) {
 export default function ScenarioDetailPage() {
   const params = useParams<{ id: string }>();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const scenarios = useIntelligenceStore((s) => s.scenarios);
   const territories = useIntelligenceStore((s) => s.territories);
   const signals = useIntelligenceStore((s) => s.signals);
@@ -632,6 +896,66 @@ export default function ScenarioDetailPage() {
     },
   ];
 
+  const simpleReading = (
+    <SimpleReading
+      scenario={scenario}
+      assumptionHeavy={assumptionHeavy}
+      shapingContradictions={shapingContradictions}
+    />
+  );
+
+  const analystTabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      content: simpleReading,
+    },
+    {
+      id: "conditions",
+      label: "World conditions",
+      content: <ConditionsTab scenario={scenario} />,
+    },
+    {
+      id: "consequences",
+      label: "Consequences",
+      content: <ConsequencesTab scenario={scenario} />,
+    },
+    {
+      id: "evidence",
+      label: "Evidence",
+      content: (
+        <EvidenceTab
+          supportingSignals={supportingSignals}
+          supportingPatterns={supportingPatterns}
+          supportingDrivers={supportingDrivers}
+          shapingContradictions={shapingContradictions}
+        />
+      ),
+    },
+    {
+      id: "quality",
+      label: `Quality tests (${quality.passedCount}/${quality.totalCount})`,
+      content: <QualityTab quality={quality} />,
+    },
+    {
+      id: "review",
+      label: "Review",
+      content: <ReviewTab scenario={scenario} />,
+    },
+  ];
+
+  const tabs =
+    mode === "methodology"
+      ? [
+          ...analystTabs,
+          {
+            id: "methodology",
+            label: "Methodology",
+            content: <MethodologyTab scenario={scenario} result={result} />,
+          },
+        ]
+      : analystTabs;
+
   return (
     <>
       <Breadcrumbs
@@ -650,71 +974,27 @@ export default function ScenarioDetailPage() {
           <div className="flex max-w-xs flex-wrap items-center justify-end gap-1.5">
             <Pill tone="info">{SCENARIO_TYPE_LABELS[scenario.scenarioType]}</Pill>
             <Pill>{SCENARIO_HORIZON_LABELS[scenario.horizon]}</Pill>
-            <ConfidenceBadge level={scenario.confidence} />
-            <ReviewStatusBadge status={scenario.reviewStatus} />
+            <ViewGate min="analyst">
+              <ConfidenceBadge level={scenario.confidence} />
+              <ReviewStatusBadge status={scenario.reviewStatus} />
+            </ViewGate>
           </div>
         }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
-        <div>
-          <Tabs
-            tabs={[
-              {
-                id: "world",
-                label: "The world",
-                content: <WorldTab scenario={scenario} />,
-              },
-              {
-                id: "consequences",
-                label: "Consequences",
-                content: <ConsequencesTab scenario={scenario} />,
-              },
-              {
-                id: "evidence",
-                label: "Evidence",
-                content: (
-                  <EvidenceTab
-                    result={result}
-                    supportingSignals={supportingSignals}
-                    supportingPatterns={supportingPatterns}
-                    supportingDrivers={supportingDrivers}
-                    shapingContradictions={shapingContradictions}
-                  />
-                ),
-              },
-              {
-                id: "assumptions",
-                label: `Assumptions (${scenario.assumptions.length})`,
-                content: (
-                  <AssumptionsTab
-                    scenario={scenario}
-                    assumptionHeavy={assumptionHeavy}
-                  />
-                ),
-              },
-              {
-                id: "quality",
-                label: `Quality tests (${quality.passedCount}/${quality.totalCount})`,
-                content: <QualityTab quality={quality} />,
-              },
-              {
-                id: "review",
-                label: "Review",
-                content: <ReviewTab scenario={scenario} />,
-              },
-            ]}
-          />
-        </div>
+        <div>{mode === "simple" ? simpleReading : <Tabs tabs={tabs} />}</div>
 
         <aside className="mt-6 space-y-4 lg:mt-0">
           <RelatedObjectsPanel groups={relatedGroups} />
-          <BiasCheckPanel
-            extraQuestions={[
-              "Is this a scenario or a prediction in disguise?",
-              "Would a different, equally plausible world contradict this one?",
-            ]}
-          />
+          <ViewGate min="analyst">
+            <BiasCheckPanel
+              extraQuestions={[
+                "Is this a scenario or a prediction in disguise?",
+                "Would a different, equally plausible world contradict this one?",
+              ]}
+            />
+          </ViewGate>
         </aside>
       </div>
     </>
