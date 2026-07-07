@@ -1054,9 +1054,9 @@ export default function MethodologyPage() {
             ))}
           </ol>
 
-          <div className="card mt-6 max-w-3xl px-4 py-4">
-            <p className="overline-label">Revisit the introduction</p>
-            <p className="mt-1.5 text-[13px] text-ink-soft">
+          <div className="mt-10 max-w-2xl">
+            <h3 className="text-[13px] font-medium text-ink">Revisit the introduction</h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
               The onboarding sequence walks through the pipeline, where to start, and how evidence
               moves upward. Replaying it does not touch your data.
             </p>
@@ -1064,14 +1064,14 @@ export default function MethodologyPage() {
               <button
                 type="button"
                 onClick={() => store.resetOnboarding()}
-                className="mt-3 border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
+                className="mt-3 rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink"
               >
                 Replay the introduction
               </button>
             ) : (
               <p className="mt-3 text-[12px] text-ink-faint">Loading the intelligence base…</p>
             )}
-            <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+            <p className="mt-4 text-[11.5px] text-ink-faint">
               Guided Mode keeps the walkthrough panels and step-by-step prompts visible on every
               page. The toggle lives in the sidebar and in Settings.
             </p>
