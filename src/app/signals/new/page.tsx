@@ -828,7 +828,7 @@ function NewSignalContent() {
     const l3Len = form.systemChanged.trim().length;
     return (
       <div className="space-y-4">
-        <p className="border border-dashed border-line-strong px-4 py-2.5 text-[12px] text-ink-soft rounded-[2px]">
+        <p className="text-[12px] leading-relaxed text-ink-faint">
           The zooming ladder is mandatory. The method does not allow a jump from event straight
           to future — Levels 2 and 3 are what make the future claim defensible.
         </p>
@@ -1039,10 +1039,10 @@ function NewSignalContent() {
       .map((c) => c.name);
 
     return (
-      <div className="space-y-4">
-        <section className="card px-4 py-3">
-          <p className="overline-label mb-2">Signal record</p>
-          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+      <div className="space-y-8">
+        <section>
+          <GroupHeading>Signal record</GroupHeading>
+          <dl className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2">
             <SummaryItem label="Title">{form.title.trim() || "—"}</SummaryItem>
             <SummaryItem label="Dates">
               Observed {fmtDate(form.dateObserved || null)} · Event{" "}
@@ -1109,9 +1109,9 @@ function NewSignalContent() {
           </dl>
         </section>
 
-        <section className="card px-4 py-3">
-          <p className="overline-label mb-2">Zooming ladder</p>
-          <ol className="space-y-2">
+        <section>
+          <GroupHeading>Zooming ladder</GroupHeading>
+          <ol className="mt-3 space-y-3 border-l border-line pl-4">
             {[
               { q: "L1 What happened?", text: form.whatHappened },
               { q: "L2 What behaviour changed?", text: form.behaviourChanged },
@@ -1120,7 +1120,7 @@ function NewSignalContent() {
             ].map((l) => (
               <li key={l.q}>
                 <p className="font-mono text-[10.5px] text-ink-faint">{l.q}</p>
-                <p className="text-[12.5px] leading-relaxed text-ink-soft">
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
                   {l.text.trim() || "—"}
                 </p>
               </li>
