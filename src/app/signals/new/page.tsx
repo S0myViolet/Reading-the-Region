@@ -1135,13 +1135,13 @@ function NewSignalContent() {
           failedLabel="Gaps remain"
         />
 
-        <section className="card px-4 py-3">
+        <section>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="overline-label">Review status on save</p>
+            <GroupHeading>Review status on save</GroupHeading>
             <ReviewStatusBadge status={decision.status} />
           </div>
           {decision.reasons.length > 0 ? (
-            <ul className="mt-1.5 space-y-1">
+            <ul className="mt-2 space-y-1">
               {decision.reasons.map((r) => (
                 <li key={r} className="text-[12px] text-ink-soft">
                   {r}
@@ -1149,7 +1149,7 @@ function NewSignalContent() {
               ))}
             </ul>
           ) : (
-            <p className="mt-1.5 text-[12px] text-ink-faint">
+            <p className="mt-2 text-[12px] text-ink-faint">
               Saved as a draft. It moves to human review or validation as evidence and review
               decisions accumulate.
             </p>
@@ -1157,7 +1157,7 @@ function NewSignalContent() {
         </section>
 
         {saveError ? (
-          <div className="border border-tension/40 bg-tension-soft px-3 py-2.5 rounded-[2px]">
+          <div className="border-l-2 border-tension pl-3">
             <p className="text-[12.5px] font-medium text-tension">Promotion blocked</p>
             <p className="mt-0.5 text-[12px] leading-relaxed text-ink-soft">{saveError}</p>
             {fromObservation ? (
@@ -1191,8 +1191,8 @@ function NewSignalContent() {
 
       {fromObservation ? (
         obsForPromotion ? (
-          <div className="mb-4 border border-info/30 bg-info-soft px-3 py-2.5 rounded-[2px]">
-            <p className="text-[12px] text-ink-soft">
+          <div className="mb-6 max-w-2xl border-l-2 border-info pl-3">
+            <p className="text-[12px] leading-relaxed text-ink-soft">
               Promoting observation <IdChip id={obsForPromotion.id} /> —{" "}
               {obsForPromotion.title}. Fields are prefilled from the observation record; saving
               will mark it as promoted and link it to the new signal.
@@ -1207,8 +1207,8 @@ function NewSignalContent() {
             ) : null}
           </div>
         ) : (
-          <div className="mb-4 border border-caution/40 bg-caution-soft px-3 py-2.5 rounded-[2px]">
-            <p className="text-[12px] text-ink-soft">
+          <div className="mb-6 max-w-2xl border-l-2 border-caution pl-3">
+            <p className="text-[12px] leading-relaxed text-ink-soft">
               Observation <span className="font-mono text-[11px]">{fromObservation}</span> was
               not found in the Scan Inbox, so promotion will fail on save. Return to the{" "}
               <Link href="/inbox" className="text-accent-ink underline">
@@ -1221,12 +1221,14 @@ function NewSignalContent() {
         )
       ) : null}
 
-      {/* Step indicator */}
-      <nav aria-label="Wizard progress" className="card mb-5 px-4 py-3">
-        <p className="font-mono text-[11px] text-ink-faint">
-          Step {step} of {STEP_TITLES.length} — {STEP_TITLES[step - 1]}
+      {/* Step indicator — plain numbered text, current step in ink */}
+      <nav aria-label="Wizard progress" className="mb-8">
+        <p className="text-[12px] text-ink-faint">
+          Step <span className="font-mono">{step}</span> of{" "}
+          <span className="font-mono">{STEP_TITLES.length}</span> —{" "}
+          <span className="text-ink-soft">{STEP_TITLES[step - 1]}</span>
         </p>
-        <ol className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        <ol className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
           {STEP_TITLES.map((t, i) => {
             const n = i + 1;
             return (
@@ -1238,14 +1240,14 @@ function NewSignalContent() {
                       setErrors([]);
                       setStep(n);
                     }}
-                    className="text-[11px] text-ink-soft hover:text-accent-ink hover:underline"
+                    className="text-[11.5px] text-ink-faint underline-offset-2 hover:text-ink hover:underline"
                   >
                     <span className="font-mono">{n}</span> {t}
                   </button>
                 ) : (
                   <span
-                    className={`text-[11px] ${
-                      n === step ? "font-medium text-accent-ink" : "text-ink-faint"
+                    className={`text-[11.5px] ${
+                      n === step ? "font-medium text-ink" : "text-ink-faint"
                     }`}
                   >
                     <span className="font-mono">{n}</span> {t}
@@ -1257,14 +1259,14 @@ function NewSignalContent() {
         </ol>
       </nav>
 
-      <section className="card px-5 py-4">{stepRenderers[step]()}</section>
+      <section className="max-w-2xl">{stepRenderers[step]()}</section>
 
       {errors.length > 0 ? (
-        <div className="mt-4 border border-caution/40 bg-caution-soft px-3 py-2.5 rounded-[2px]">
+        <div className="mt-6 max-w-2xl border-l-2 border-caution pl-3">
           <p className="text-[12px] font-medium text-caution">
             Complete the required fields before continuing
           </p>
-          <ul className="mt-1 list-disc pl-4">
+          <ul className="mt-1 space-y-0.5">
             {errors.map((e) => (
               <li key={e} className="text-[12px] text-ink-soft">
                 {e}
@@ -1274,7 +1276,7 @@ function NewSignalContent() {
         </div>
       ) : null}
 
-      <div className="mt-5 flex items-center justify-between">
+      <div className="mt-8 flex max-w-2xl items-center justify-between">
         <button
           type="button"
           onClick={handleBack}

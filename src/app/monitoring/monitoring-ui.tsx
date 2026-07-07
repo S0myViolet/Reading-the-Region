@@ -1,17 +1,19 @@
 "use client";
 
 /**
- * Monitoring — page-local UI: the indicator card with its inline
- * record-check form, the add-indicator form, the territory monitoring
- * questions reference, and the cadence rhythm strip.
+ * Monitoring — page-local UI: the indicator list row with its analyst
+ * disclosure and inline record-check form, the add-indicator form, the
+ * territory monitoring questions reference, and the cadence rhythm.
  *
  * Monitoring is the living part of the system: a future territory is never
  * published and forgotten — its leading indicators are checked on a cadence
- * and the trend is updated with evidence.
+ * and the trend is updated with evidence. Everything here is quiet and
+ * boxless: rows separated by hairlines, detail indented, forms under plain
+ * headings.
  */
 
 import { useState } from "react";
-import { ConfidenceBadge, IdChip, Pill, TrendBadge } from "@/components/badges";
+import { IdChip, TrendBadge } from "@/components/badges";
 import { EntityLink } from "@/components/EntityLink";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { Field, Select, TextArea, TextInput } from "@/components/form";
@@ -33,10 +35,10 @@ import {
   INDICATOR_TYPE_LABELS,
 } from "@/lib/types";
 
-const primaryBtn =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-const secondaryBtn =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+const btnPrimary =
+  "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink";
+const btnText =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -63,8 +65,8 @@ const NEXT_CHECK_DAYS: Record<MonitoringCadence, number> = {
   annual: 366,
 };
 
-/** "Next check due by …" in words, from the cadence and the last check date. */
-function nextCheckLine(i: MonitoringIndicator): string {
+/** Short next-check phrase for the row's metadata line. */
+function nextCheckPhrase(i: MonitoringIndicator): string {
   const due = new Date(
     new Date(i.dateLastChecked).getTime() + NEXT_CHECK_DAYS[i.cadence] * 86_400_000,
   );
@@ -73,10 +75,9 @@ function nextCheckLine(i: MonitoringIndicator): string {
     month: "short",
     year: "numeric",
   });
-  const cadenceWord = CADENCE_LABELS[i.cadence].toLowerCase();
   return indicatorOverdue(i)
-    ? `Check overdue — it was due by ${dueText}; this indicator is checked ${cadenceWord}.`
-    : `Next check due by ${dueText} — this indicator is checked ${cadenceWord}.`;
+    ? `check was due ${dueText}`
+    : `next check due ${dueText}`;
 }
 
 const TREND_OPTIONS = Object.entries(INDICATOR_TREND_LABELS) as Array<
@@ -93,7 +94,7 @@ const CONFIDENCE_OPTIONS = Object.entries(CONFIDENCE_LABELS) as Array<
 >;
 
 // ---------------------------------------------------------------------------
-// Territory monitoring questions — compact collapsible reference
+// Territory monitoring questions — quiet collapsible reference
 // ---------------------------------------------------------------------------
 
 const MONITORING_QUESTIONS: string[] = [
@@ -109,22 +110,25 @@ const MONITORING_QUESTIONS: string[] = [
   "Is resistance increasing?",
 ];
 
-export function MonitoringQuestionsCard() {
+export function MonitoringQuestions() {
   const [expanded, setExpanded] = useState(false);
   return (
-    <section className="card mb-5">
-      <header className="flex items-center justify-between px-4 py-2.5">
+    <section className="mt-12">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <button
           type="button"
+          aria-expanded={expanded}
           onClick={() => setExpanded((e) => !e)}
-          className="overline-label hover:text-accent-ink"
+          className="text-[13px] font-medium text-ink hover:text-accent-ink"
         >
-          {expanded ? "▾" : "▸"} Territory monitoring questions
+          Territory monitoring questions
         </button>
-        <span className="text-[11px] text-ink-faint">Ask these at every check</span>
-      </header>
+        <span className="text-[11.5px] text-ink-faint">
+          Ask these at every check — {expanded ? "hide" : "show"}
+        </span>
+      </div>
       {expanded ? (
-        <ul className="grid gap-x-6 gap-y-1 border-t border-line px-4 py-3 sm:grid-cols-2">
+        <ul className="mt-3 grid max-w-3xl gap-x-8 gap-y-1.5 sm:grid-cols-2">
           {MONITORING_QUESTIONS.map((q) => (
             <li key={q} className="text-[12.5px] text-ink-soft">
               {q}
@@ -137,7 +141,7 @@ export function MonitoringQuestionsCard() {
 }
 
 // ---------------------------------------------------------------------------
-// Cadence rhythm strip
+// Cadence rhythm
 // ---------------------------------------------------------------------------
 
 const CADENCE_RHYTHM: Array<{ label: string; focus: string }> = [
@@ -148,17 +152,15 @@ const CADENCE_RHYTHM: Array<{ label: string; focus: string }> = [
   { label: "Annually", focus: "Future territory refresh" },
 ];
 
-export function CadenceStrip() {
+export function CadenceRhythm() {
   return (
-    <section className="card mb-5">
-      <header className="border-b border-line px-4 py-2">
-        <h3 className="overline-label">Monitoring rhythm</h3>
-      </header>
-      <div className="grid divide-y divide-line sm:grid-cols-5 sm:divide-x sm:divide-y-0">
+    <section className="mt-12">
+      <h3 className="text-[13px] font-medium text-ink">Monitoring rhythm</h3>
+      <div className="mt-2.5 flex flex-wrap gap-x-10 gap-y-3">
         {CADENCE_RHYTHM.map((c) => (
-          <div key={c.label} className="px-4 py-2.5">
-            <p className="overline-label">{c.label}</p>
-            <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">{c.focus}</p>
+          <div key={c.label}>
+            <p className="text-[11px] text-ink-faint">{c.label}</p>
+            <p className="text-[12.5px] leading-snug text-ink-soft">{c.focus}</p>
           </div>
         ))}
       </div>
@@ -185,7 +187,6 @@ function RecordCheckForm({
 
   return (
     <form
-      className="mt-3 border-t border-line pt-3"
       onSubmit={(e) => {
         e.preventDefault();
         updateIndicator(indicator.id, {
@@ -198,10 +199,11 @@ function RecordCheckForm({
         onDone();
       }}
     >
-      <p className="overline-label mb-2">
-        Record check — will be dated {formatDate(todayIso())}
+      <p className="text-[13px] font-medium text-ink">Record check</p>
+      <p className="mt-0.5 text-[11.5px] text-ink-faint">
+        Will be dated {formatDate(todayIso())}.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <Field label="Trend">
           <Select
             value={trend}
@@ -238,11 +240,11 @@ function RecordCheckForm({
           </Field>
         </div>
       </div>
-      <div className="mt-3 flex gap-2">
-        <button type="submit" className={primaryBtn}>
+      <div className="mt-4 flex items-center gap-4">
+        <button type="submit" className={btnPrimary}>
           Save check
         </button>
-        <button type="button" onClick={onDone} className={secondaryBtn}>
+        <button type="button" onClick={onDone} className={btnText}>
           Cancel
         </button>
       </div>
@@ -251,7 +253,7 @@ function RecordCheckForm({
 }
 
 // ---------------------------------------------------------------------------
-// Indicator card
+// Indicator row
 // ---------------------------------------------------------------------------
 
 export interface LinkedRef {
@@ -259,7 +261,8 @@ export interface LinkedRef {
   title: string;
 }
 
-export function MonitoringIndicatorCard({
+/** Analyst disclosure under a row: evidence, confidence, notes, links, check. */
+function IndicatorDetail({
   indicator,
   territory,
   driver,
@@ -271,98 +274,52 @@ export function MonitoringIndicatorCard({
   signal: LinkedRef | null;
 }) {
   const [checking, setChecking] = useState(false);
-  const mode = useViewMode();
-  const analyst = modeAtLeast(mode, "analyst");
-  const overdue = indicatorOverdue(indicator);
   const hasLinks = territory !== null || driver !== null || signal !== null;
 
   return (
-    <article className="card px-4 py-3.5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 max-w-2xl">
-          <p className="overline-label mb-0.5">
-            Monitoring indicator
-            {analyst ? (
-              <>
-                {" "}
-                · <IdChip id={indicator.id} />
-              </>
-            ) : null}
-          </p>
-          <h3 className="text-[14.5px] font-medium leading-snug text-ink">
-            {indicator.name}
-          </h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {analyst ? (
-              <Pill>{INDICATOR_TYPE_LABELS[indicator.indicatorType]}</Pill>
-            ) : null}
-            <TrendBadge trend={indicator.trend} />
-            {overdue ? (
-              <Pill
-                tone="caution"
-                title="Past its review cadence — check and update the status."
-              >
-                Overdue
-              </Pill>
-            ) : null}
-          </div>
-        </div>
-        {analyst ? (
-          <button
-            type="button"
-            onClick={() => setChecking((c) => !c)}
-            className={secondaryBtn + " shrink-0"}
-          >
-            {checking ? "Close check form" : "Record check"}
-          </button>
-        ) : null}
-      </div>
-
-      <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
+    <div className="mt-4 space-y-4 border-l border-line pl-5">
+      <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
         {indicator.description}
       </p>
+      <p className="text-[12px] text-ink-faint">
+        {INDICATOR_TYPE_LABELS[indicator.indicatorType]} · checked{" "}
+        {CADENCE_LABELS[indicator.cadence].toLowerCase()} · last checked{" "}
+        {formatDate(indicator.dateLastChecked)} · <IdChip id={indicator.id} />
+      </p>
 
-      <div className="mt-2.5">
-        <p className="overline-label">Reading</p>
-        <p className="text-[12.5px] leading-relaxed text-ink-soft">
-          {indicator.currentStatus.trim() ? (
-            explainIndicator(indicator)
+      <div>
+        <p className="mb-1 text-[11px] text-ink-faint">Evidence</p>
+        <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+          {indicator.evidence.trim() ? (
+            indicator.evidence
           ) : (
-            <>
-              <span className="text-ink-faint">
-                No status recorded yet — a check should capture what the
-                indicator shows.
-              </span>{" "}
-              {explainIndicator(indicator).trim()}
-            </>
+            <span className="text-ink-faint">
+              No evidence recorded — a trend without evidence is an opinion.
+            </span>
           )}
-        </p>
-        <p
-          className={`mt-1 text-[12px] ${overdue ? "text-caution" : "text-ink-faint"}`}
-        >
-          {nextCheckLine(indicator)}
         </p>
       </div>
 
-      <ViewGate min="analyst">
-        <dl className="mt-2.5 space-y-1.5">
-          <div>
-            <dt className="overline-label">Evidence</dt>
-            <dd className="text-[12.5px] text-ink-soft">
-              {indicator.evidence.trim() ? (
-                indicator.evidence
-              ) : (
-                <span className="text-ink-faint">
-                  No evidence recorded — a trend without evidence is an opinion.
-                </span>
-              )}
-            </dd>
-          </div>
-        </dl>
-      </ViewGate>
+      <p className="max-w-2xl text-[12px] leading-relaxed text-ink-soft">
+        {explainConfidenceGeneric(
+          indicator.confidence,
+          indicator.evidence.trim()
+            ? "based on the evidence recorded at the last check."
+            : "no evidence recorded yet — record a check citing material before this trend carries weight.",
+        )}
+      </p>
+
+      {indicator.notes.trim() ? (
+        <div>
+          <p className="mb-1 text-[11px] text-ink-faint">Notes</p>
+          <p className="max-w-2xl text-[11.5px] leading-relaxed text-ink-faint">
+            {indicator.notes}
+          </p>
+        </div>
+      ) : null}
 
       {hasLinks ? (
-        <div className="mt-2.5 grid gap-1.5 sm:grid-cols-3">
+        <div className="grid gap-1.5 sm:grid-cols-3">
           {territory ? (
             <EntityLink kind="territory" id={territory.id} title={territory.title} />
           ) : null}
@@ -375,48 +332,95 @@ export function MonitoringIndicatorCard({
         </div>
       ) : null}
 
-      <ViewGate min="analyst">
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
-          <span className="text-[11.5px] text-ink-faint">
-            Last checked{" "}
-            <span className="font-mono text-ink-soft">
-              {formatDate(indicator.dateLastChecked)}
-            </span>
-          </span>
-          <span className="text-[11.5px] text-ink-faint">
-            Cadence{" "}
-            <span className="text-ink-soft">{CADENCE_LABELS[indicator.cadence]}</span>
-          </span>
-          <ConfidenceBadge level={indicator.confidence} />
-        </div>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
-          {explainConfidenceGeneric(
-            indicator.confidence,
-            indicator.evidence.trim()
-              ? "based on the evidence recorded at the last check."
-              : "no evidence recorded yet — record a check citing material before this trend carries weight.",
-          )}
-        </p>
-
-        {indicator.notes.trim() ? (
-          <div className="mt-2">
-            <p className="overline-label">Notes</p>
-            <p className="text-[11.5px] leading-relaxed text-ink-faint">
-              {indicator.notes}
-            </p>
-          </div>
-        ) : null}
-      </ViewGate>
-
       <ViewGate min="methodology">
-        <p className="mt-2 border-t border-line pt-2 text-[11px] text-ink-faint">
+        <p className="text-[11px] text-ink-faint">
           Created {formatDate(indicator.createdAt)} · Updated{" "}
           {formatDate(indicator.updatedAt)}
         </p>
       </ViewGate>
 
-      {analyst && checking ? (
+      {checking ? (
         <RecordCheckForm indicator={indicator} onDone={() => setChecking(false)} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setChecking(true)}
+          className="rounded-[4px] bg-surface-muted px-2.5 py-1 text-[12px] text-ink-soft hover:text-ink"
+        >
+          Record check
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function MonitoringIndicatorRow({
+  indicator,
+  territory,
+  driver,
+  signal,
+}: {
+  indicator: MonitoringIndicator;
+  territory: LinkedRef | null;
+  driver: LinkedRef | null;
+  signal: LinkedRef | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
+  const overdue = indicatorOverdue(indicator);
+
+  const reading = indicator.currentStatus.trim()
+    ? explainIndicator(indicator)
+    : `No reading recorded yet — ${explainIndicator(indicator).trim()}`;
+
+  const summary = (
+    <>
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink">
+          {indicator.name}
+          {overdue ? (
+            <span
+              className="ml-2 text-[11.5px] font-normal text-caution"
+              title="Past its review cadence — check and update the status."
+            >
+              overdue
+            </span>
+          ) : null}
+        </p>
+        <span className="shrink-0">
+          <TrendBadge trend={indicator.trend} />
+        </span>
+      </div>
+      <p className="mt-1 flex gap-1.5 text-[12px] text-ink-faint">
+        <span className="min-w-0 truncate">{reading}</span>
+        <span className="shrink-0">· {nextCheckPhrase(indicator)}</span>
+      </p>
+    </>
+  );
+
+  return (
+    <article className="list-row">
+      {analyst ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((e) => !e)}
+          className="block w-full text-left"
+          title={expanded ? "Collapse analyst detail" : "Expand analyst detail"}
+        >
+          {summary}
+        </button>
+      ) : (
+        <div>{summary}</div>
+      )}
+      {analyst && expanded ? (
+        <IndicatorDetail
+          indicator={indicator}
+          territory={territory}
+          driver={driver}
+          signal={signal}
+        />
       ) : null}
     </article>
   );
@@ -508,16 +512,25 @@ export function AddIndicatorForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <section className="card mb-5 border-l-2 border-l-accent">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">New monitoring indicator</h3>
-        <p className="mt-0.5 text-[11.5px] text-ink-faint">
-          A leading indicator is observable, checkable on a cadence, and anchored
-          to the territory or driver it monitors.
-        </p>
-      </header>
+    <section className="mb-10 border-b border-line pb-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-[15px] font-medium text-ink">
+          New monitoring indicator
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[12px] text-ink-faint hover:text-ink"
+        >
+          Close
+        </button>
+      </div>
+      <p className="mt-1 max-w-2xl text-[12px] text-ink-faint">
+        A leading indicator is observable, checkable on a cadence, and anchored
+        to the territory or driver it monitors.
+      </p>
       <form
-        className="px-4 py-3"
+        className="mt-5 max-w-3xl"
         onSubmit={(e) => {
           e.preventDefault();
           save();
@@ -656,11 +669,11 @@ export function AddIndicatorForm({ onClose }: { onClose: () => void }) {
           </ul>
         ) : null}
 
-        <div className="mt-4 flex gap-2 border-t border-line pt-3">
-          <button type="submit" className={primaryBtn}>
+        <div className="mt-6 flex items-center gap-4">
+          <button type="submit" className={btnPrimary}>
             Add indicator
           </button>
-          <button type="button" onClick={onClose} className={secondaryBtn}>
+          <button type="button" onClick={onClose} className={btnText}>
             Cancel
           </button>
         </div>
