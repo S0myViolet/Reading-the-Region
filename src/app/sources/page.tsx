@@ -4,16 +4,25 @@
  * Source Library — tracks where evidence comes from and how much weight it
  * should receive. Credibility and role are assessed separately: a source can
  * be a strong discovery source and a weak validation source at the same time.
+ *
+ * Calm layout: header, one control bar, the source list. The add-source form
+ * opens inline from the single header action; the credibility band, exact
+ * min/max bounds and bias filters live behind "More filters".
  */
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
 import { SourceBiasTags } from "@/components/tags";
+import {
+  ControlBar,
+  ControlSearch,
+  ControlSelect,
+} from "@/components/ControlBar";
 import {
   CheckboxList,
   Field,
@@ -32,7 +41,13 @@ import {
   SOURCE_ROLE_LABELS,
   SOURCE_TYPE_LABELS,
 } from "@/lib/types";
-import { RolePills, btnPrimary, btnSecondary, fmtDate } from "./source-ui";
+import {
+  CredibilityCautionPill,
+  btnPrimary,
+  btnQuiet,
+  fmtDate,
+  rolesLine,
+} from "./source-ui";
 
 // ---------------------------------------------------------------------------
 // Option lists
@@ -47,110 +62,36 @@ const CRED_VALUES = [1, 2, 3, 4, 5] as const;
 // Header (also used for the pre-hydration skeleton)
 // ---------------------------------------------------------------------------
 
-function SourcesHeader() {
+function SourcesHeader({ onAdd }: { onAdd?: () => void }) {
   return (
     <PageHeader
-      overline="Scan & Classify"
       title="Source Library"
-      description="Every source is assessed twice, and separately: credibility scores how far it can be trusted, role records the job it performs in the workflow. Neither judgement substitutes for the other."
+      description="Where evidence comes from and how much weight it can carry. Credibility and role are assessed separately — a source can be strong at one job and unsafe for another."
+      actions={
+        onAdd ? (
+          <button type="button" onClick={onAdd} className={btnPrimary}>
+            Add source
+          </button>
+        ) : undefined
+      }
     />
   );
 }
 
 // ---------------------------------------------------------------------------
-// Credibility-vs-role principle strip
+// Add-source form — boxless, one quiet heading, one primary button
 // ---------------------------------------------------------------------------
 
-function PrincipleStrip() {
-  return (
-    <section className="card mb-5">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">Credibility is not role</h2>
-      </header>
-      <div className="px-4 py-3">
-        <p className="text-[13px] text-ink-soft">
-          A source&apos;s credibility says how far its claims can be trusted; its role
-          says what job it does for the workflow. The two are recorded independently,
-          because a source can be excellent at one job and unsafe for another.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="border border-line bg-surface-muted px-3 py-2 rounded-[2px]">
-            <p className="text-[12px] font-medium text-ink">Social platforms</p>
-            <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-faint">
-              Strong discovery, weak validation. They surface early behaviour before
-              stronger sources notice it, but they rarely confirm scale — evidence found
-              there requires independent validation before it supports a conclusion.
-            </p>
-          </div>
-          <div className="border border-line bg-surface-muted px-3 py-2 rounded-[2px]">
-            <p className="text-[12px] font-medium text-ink">Government reports</p>
-            <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-faint">
-              Strong validation, weaker discovery. Authoritative when confirming scale,
-              policy, or infrastructure, but slow to register new behaviour — and their
-              claims should still be read against a government-agenda bias tag.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Credibility scale (methodology view)
-// ---------------------------------------------------------------------------
-
-function CredibilityScaleCard() {
-  return (
-    <section className="card mb-5">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">Credibility scale</h2>
-      </header>
-      <div className="px-4 py-3">
-        <p className="text-[12px] text-ink-soft">
-          Every source carries one credibility score from 1 to 5. The score is a
-          judgement about the source itself, recorded once and weighed everywhere
-          the source is cited.
-        </p>
-        <div className="mt-2 overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Score</th>
-                <th>Meaning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {([5, 4, 3, 2, 1] as const).map((n) => (
-                <tr key={n}>
-                  <td className="font-mono text-[12px] text-ink-soft">{n}</td>
-                  <td className="text-[12.5px] text-ink-soft">
-                    {CREDIBILITY_LABELS[n]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-2 text-[11.5px] text-ink-faint">
-          Sources scoring 2 or below are safe for discovery but unsafe for
-          validation — evidence found through them must be confirmed by an
-          independent, higher-credibility source before it supports a conclusion.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Add-source inline form
-// ---------------------------------------------------------------------------
-
-function AddSourceForm() {
+function AddSourceForm({
+  onClose,
+  onAdded,
+}: {
+  onClose: () => void;
+  onAdded: (message: string) => void;
+}) {
   const sources = useIntelligenceStore((s) => s.sources);
   const addSource = useIntelligenceStore((s) => s.addSource);
 
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [sourceType, setSourceType] = useState<SourceType>("news_publication");
@@ -159,18 +100,6 @@ function AddSourceForm() {
   const [roles, setRoles] = useState<SourceRole[]>([]);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
-
-  function reset() {
-    setName("");
-    setUrl("");
-    setSourceType("news_publication");
-    setCredibility(3);
-    setBiasTags([]);
-    setRoles([]);
-    setNotes("");
-    setError(null);
-  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -191,170 +120,165 @@ function AddSourceForm() {
       isDemo: false,
     };
     addSource(src);
-    setConfirmation(`${src.id} — ${src.name} added to the library.`);
-    reset();
-    setOpen(false);
+    onAdded(`${src.id} — ${src.name} added to the library.`);
   }
 
   return (
-    <section id="add-source" className="card mb-5">
-      <header
-        className={`flex items-center justify-between gap-3 px-4 py-2.5 ${
-          open ? "border-b border-line" : ""
-        }`}
-      >
-        <div>
-          <h2 className="overline-label">Add source</h2>
-          <p className="mt-0.5 text-[11px] text-ink-faint">
-            Record where evidence comes from before citing it. Credibility and roles
-            are set here and weighed on every page that uses the source.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setOpen((o) => !o);
-            setConfirmation(null);
-          }}
-          className={open ? btnSecondary : btnPrimary}
-        >
-          {open ? "Close" : "Add source"}
-        </button>
-      </header>
-      {confirmation && !open ? (
-        <p className="border-t border-line px-4 py-2 text-[12px] text-accent-ink">
-          {confirmation}
-        </p>
-      ) : null}
-      {open ? (
-        <form onSubmit={submit} className="space-y-4 px-4 py-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" required>
-              <TextInput
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Gulf urban policy bulletin"
-              />
-            </Field>
-            <Field
-              label="URL"
-              hint="Optional. Record the real URL only — never invent one. Leave blank if no link exists."
-            >
-              <TextInput
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://…"
-                inputMode="url"
-              />
-            </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Source type">
-              <Select
-                value={sourceType}
-                onChange={(e) => setSourceType(e.target.value as SourceType)}
-              >
-                {TYPE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <ViewGate min="analyst">
-              <Field
-                label="Credibility"
-                hint="How far can claims from this source be trusted, on their own?"
-              >
-                <ScorePicker
-                  label="Credibility"
-                  value={credibility}
-                  rubric={CREDIBILITY_LABELS}
-                  onChange={setCredibility}
-                />
-              </Field>
-            </ViewGate>
-          </div>
-          <ViewGate
-            min="analyst"
-            fallback={
-              <p className="text-[11.5px] text-ink-faint">
-                Credibility, roles and bias tags are assessed in Analyst view.
-                Until then the source is recorded at medium credibility with no
-                roles, and its evidence is weighted accordingly.
-              </p>
-            }
+    <section id="add-source" className="mb-10">
+      <h2 className="text-[13px] font-medium text-ink">Add source</h2>
+      <p className="mt-0.5 text-[12px] text-ink-faint">
+        Record where evidence comes from before citing it. Credibility and roles set
+        here are weighed on every page that uses the source.
+      </p>
+      <form onSubmit={submit} className="mt-4 max-w-2xl space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name" required>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Gulf urban policy bulletin"
+            />
+          </Field>
+          <Field
+            label="URL"
+            hint="Optional. Record the real URL only — never invent one. Leave blank if no link exists."
           >
-            <Field
-              label="Roles"
-              hint="The jobs this source performs in the workflow. Roles do not raise or lower credibility."
+            <TextInput
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+              inputMode="url"
+            />
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Source type">
+            <Select
+              value={sourceType}
+              onChange={(e) => setSourceType(e.target.value as SourceType)}
             >
-              <CheckboxList
-                options={ROLE_OPTIONS.map(([value, label]) => ({ value, label }))}
-                selected={roles}
-                onChange={setRoles}
-                columns={2}
-              />
-            </Field>
+              {TYPE_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <ViewGate min="analyst">
             <Field
-              label="Bias tags"
-              hint="Known distortions to weigh whenever this source is cited."
+              label="Credibility"
+              hint="How far can claims from this source be trusted, on their own?"
             >
-              <CheckboxList
-                options={BIAS_OPTIONS.map(([value, label]) => ({ value, label }))}
-                selected={biasTags}
-                onChange={setBiasTags}
-                columns={2}
-              />
-            </Field>
-            <Field label="Notes">
-              <TextArea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Coverage, method, known limitations, how it has performed as evidence…"
+              <ScorePicker
+                label="Credibility"
+                value={credibility}
+                rubric={CREDIBILITY_LABELS}
+                onChange={setCredibility}
               />
             </Field>
           </ViewGate>
-          {error ? <p className="text-[12px] text-tension">{error}</p> : null}
-          <div className="flex items-center gap-2">
-            <button type="submit" className={btnPrimary}>
-              Add to library
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                reset();
-                setOpen(false);
-              }}
-              className={btnSecondary}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
+        </div>
+        <ViewGate
+          min="analyst"
+          fallback={
+            <p className="text-[11.5px] text-ink-faint">
+              Credibility, roles and bias tags are assessed in Analyst view. Until
+              then the source is recorded at medium credibility with no roles, and
+              its evidence is weighted accordingly.
+            </p>
+          }
+        >
+          <Field
+            label="Roles"
+            hint="The jobs this source performs in the workflow. Roles do not raise or lower credibility."
+          >
+            <CheckboxList
+              options={ROLE_OPTIONS.map(([value, label]) => ({ value, label }))}
+              selected={roles}
+              onChange={setRoles}
+              columns={2}
+            />
+          </Field>
+          <Field
+            label="Bias tags"
+            hint="Known distortions to weigh whenever this source is cited."
+          >
+            <CheckboxList
+              options={BIAS_OPTIONS.map(([value, label]) => ({ value, label }))}
+              selected={biasTags}
+              onChange={setBiasTags}
+              columns={2}
+            />
+          </Field>
+          <Field label="Notes">
+            <TextArea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Coverage, method, known limitations, how it has performed as evidence…"
+            />
+          </Field>
+        </ViewGate>
+        {error ? <p className="text-[12px] text-tension">{error}</p> : null}
+        <div className="flex items-center gap-4">
+          <button type="submit" className={btnPrimary}>
+            Add to library
+          </button>
+          <button type="button" onClick={onClose} className={btnQuiet}>
+            Cancel
+          </button>
+        </div>
+      </form>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Table row
+// Simple view — list rows
 // ---------------------------------------------------------------------------
 
-function SourceRow({
+function SourceListRow({ src }: { src: Source }) {
+  const secondary = [
+    SOURCE_TYPE_LABELS[src.sourceType],
+    CREDIBILITY_LABELS[src.credibility],
+    rolesLine(src.roles),
+  ].join(" · ");
+  return (
+    <Link href={`/sources/${src.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+          {src.name}
+          {src.isDemo ? (
+            <span className="ml-2">
+              <DemoTag />
+            </span>
+          ) : null}
+        </p>
+        {src.credibility <= 2 ? (
+          <span className="shrink-0">
+            <CredibilityCautionPill />
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 truncate text-[12px] text-ink-faint">{secondary}</p>
+    </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Analyst view — comparison table (≤6 columns)
+// ---------------------------------------------------------------------------
+
+function SourceTableRow({
   src,
   observationCount,
   signalCount,
-  analyst,
   methodology,
 }: {
   src: Source;
   observationCount: number;
   signalCount: number;
-  analyst: boolean;
   methodology: boolean;
 }) {
-  const linkedCount = observationCount + signalCount;
   return (
     <tr>
       <td>
@@ -367,58 +291,36 @@ function SourceRow({
           </Link>
           {src.isDemo ? <DemoTag /> : null}
         </div>
-        {analyst ? (
-          <div className="mt-0.5">
-            <IdChip id={src.id} />
-          </div>
-        ) : null}
+        <p className="mt-0.5">
+          <IdChip id={src.id} />
+          {methodology ? (
+            <span className="text-[10.5px] text-ink-faint">
+              {" "}
+              · added {fmtDate(src.dateAdded)}
+            </span>
+          ) : null}
+        </p>
       </td>
-      <td className="text-[12.5px] text-ink-soft">{SOURCE_TYPE_LABELS[src.sourceType]}</td>
-      <td>
-        {analyst ? (
-          <SourceCredibilityBadge score={src.credibility} />
-        ) : (
-          <span className="text-[12.5px] text-ink-soft">
-            {CREDIBILITY_LABELS[src.credibility]}
-          </span>
-        )}
+      <td className="text-[12.5px] text-ink-soft">
+        {SOURCE_TYPE_LABELS[src.sourceType]}
       </td>
       <td>
-        <RolePills roles={src.roles} />
+        <SourceCredibilityBadge score={src.credibility} />
       </td>
-      {analyst ? (
-        <td>
-          <SourceBiasTags tags={src.biasTags} />
-        </td>
-      ) : null}
-      {methodology ? (
-        <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
-          {fmtDate(src.dateAdded)}
-        </td>
-      ) : null}
-      {analyst ? (
-        <>
-          <td
-            className="text-right font-mono text-[12px] text-ink-soft"
-            title="Observations citing this source"
-          >
-            {observationCount}
-          </td>
-          <td
-            className="text-right font-mono text-[12px] text-ink-soft"
-            title="Signals citing this source"
-          >
-            {signalCount}
-          </td>
-        </>
-      ) : (
-        <td
-          className="text-right text-[12.5px] text-ink-soft"
-          title="Observations and signals citing this source"
-        >
-          {linkedCount} linked item{linkedCount === 1 ? "" : "s"}
-        </td>
-      )}
+      <td
+        className={`text-[12px] ${src.roles.length === 0 ? "text-ink-faint" : "text-ink-soft"}`}
+      >
+        {rolesLine(src.roles)}
+      </td>
+      <td>
+        <SourceBiasTags tags={src.biasTags} />
+      </td>
+      <td
+        className="whitespace-nowrap text-right font-mono text-[12px] text-ink-soft"
+        title="Observations and signals citing this source"
+      >
+        {observationCount} obs · {signalCount} sig
+      </td>
     </tr>
   );
 }
@@ -439,11 +341,29 @@ function SourcesContent() {
 
   // ?credibility=low preselects the low-credibility band (≤ 2).
   const lowPreset = searchParams.get("credibility") === "low";
+  const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | SourceType>("all");
   const [roleFilter, setRoleFilter] = useState<"all" | SourceRole>("all");
   const [biasFilter, setBiasFilter] = useState<"all" | BiasTag>("all");
   const [minCred, setMinCred] = useState<Score>(1);
   const [maxCred, setMaxCred] = useState<Score>(lowPreset ? 2 : 5);
+  const [adding, setAdding] = useState(false);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return sources
+      .filter(
+        (src) =>
+          (typeFilter === "all" || src.sourceType === typeFilter) &&
+          src.credibility >= minCred &&
+          src.credibility <= maxCred &&
+          (roleFilter === "all" || src.roles.includes(roleFilter)) &&
+          (biasFilter === "all" || src.biasTags.includes(biasFilter)) &&
+          (!q || `${src.name} ${src.notes}`.toLowerCase().includes(q)),
+      )
+      .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
+  }, [sources, query, typeFilter, roleFilter, biasFilter, minCred, maxCred]);
 
   if (!hydrated) {
     return (
@@ -460,22 +380,22 @@ function SourcesContent() {
   const signalCount = (src: Source) =>
     signals.filter((sg) => sg.sourceIds.includes(src.id)).length;
 
-  const filtered = sources.filter(
-    (src) =>
-      (typeFilter === "all" || src.sourceType === typeFilter) &&
-      src.credibility >= minCred &&
-      src.credibility <= maxCred &&
-      (roleFilter === "all" || src.roles.includes(roleFilter)) &&
-      (biasFilter === "all" || src.biasTags.includes(biasFilter)),
-  );
-  const rows = [...filtered].sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
-
   const filtersActive =
+    query.trim() !== "" ||
     typeFilter !== "all" ||
     roleFilter !== "all" ||
     biasFilter !== "all" ||
     minCred !== 1 ||
     maxCred !== 5;
+
+  const resetFilters = () => {
+    setQuery("");
+    setTypeFilter("all");
+    setRoleFilter("all");
+    setBiasFilter("all");
+    setMinCred(1);
+    setMaxCred(5);
+  };
 
   // Simple view offers credibility as a named band; Analyst view exposes the
   // underlying min/max bounds. Both drive the same state.
@@ -507,193 +427,209 @@ function SourcesContent() {
 
   return (
     <>
-      <SourcesHeader />
+      <SourcesHeader
+        onAdd={() => {
+          setAdding(true);
+          setConfirmation(null);
+        }}
+      />
       <WalkthroughPanel pageId="sources" />
-      <div className="mb-4">
+
+      {adding ? (
+        <AddSourceForm
+          onClose={() => setAdding(false)}
+          onAdded={(message) => {
+            setConfirmation(message);
+            setAdding(false);
+          }}
+        />
+      ) : null}
+      {confirmation && !adding ? (
+        <p className="mb-4 text-[12px] text-accent-ink">{confirmation}</p>
+      ) : null}
+
+      <ControlBar
+        right={
+          <>
+            {filtersActive ? (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+              >
+                Reset filters
+              </button>
+            ) : null}
+            <span className="text-[12px] text-ink-faint">
+              {rows.length} of {sources.length} source{sources.length === 1 ? "" : "s"}
+            </span>
+          </>
+        }
+        more={
+          <>
+            {analyst ? (
+              <>
+                <ControlSelect
+                  label="Min credibility"
+                  value={String(minCred)}
+                  onChange={(v) => setMinCred(Number(v) as Score)}
+                  options={CRED_VALUES.map((n) => ({
+                    value: String(n),
+                    label: `${n} — ${CREDIBILITY_LABELS[n]}`,
+                  }))}
+                />
+                <ControlSelect
+                  label="Max credibility"
+                  value={String(maxCred)}
+                  onChange={(v) => setMaxCred(Number(v) as Score)}
+                  options={CRED_VALUES.map((n) => ({
+                    value: String(n),
+                    label: `${n} — ${CREDIBILITY_LABELS[n]}`,
+                  }))}
+                />
+                <ControlSelect
+                  label="Bias tag"
+                  value={biasFilter}
+                  onChange={(v) => setBiasFilter(v as "all" | BiasTag)}
+                  options={[
+                    { value: "all", label: "All bias tags" },
+                    ...BIAS_OPTIONS.map(([value, label]) => ({ value, label })),
+                  ]}
+                />
+              </>
+            ) : (
+              <ControlSelect
+                label="Credibility"
+                value={credBand}
+                onChange={setCredBand}
+                options={[
+                  { value: "all", label: "All credibility levels" },
+                  { value: "high", label: "High or very high credibility" },
+                  { value: "medium", label: "Medium credibility" },
+                  { value: "low", label: "Low or low–medium credibility" },
+                  ...(credBand === "custom"
+                    ? [{ value: "custom", label: "Custom range (set in Analyst view)" }]
+                    : []),
+                ]}
+              />
+            )}
+          </>
+        }
+      >
+        <ControlSearch value={query} onChange={setQuery} placeholder="Search sources…" />
+        <ControlSelect
+          label="Type"
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v as "all" | SourceType)}
+          options={[
+            { value: "all", label: "All types" },
+            ...TYPE_OPTIONS.map(([value, label]) => ({ value, label })),
+          ]}
+        />
+        <ControlSelect
+          label="Role"
+          value={roleFilter}
+          onChange={(v) => setRoleFilter(v as "all" | SourceRole)}
+          options={[
+            { value: "all", label: "All roles" },
+            ...ROLE_OPTIONS.map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </ControlBar>
+
+      {minCred > maxCred ? (
+        <p className="mb-4 text-[11.5px] text-caution">
+          Minimum credibility is above maximum credibility — no source can match.
+          Adjust one of the two bounds.
+        </p>
+      ) : null}
+
+      {sources.length === 0 ? (
+        <EmptyState message="The Source Library is empty. Every observation and signal should trace back to a recorded source with a credibility score, roles, and bias tags — otherwise evidence cannot be weighed. Use Add source above to record the first one." />
+      ) : rows.length === 0 ? (
+        <EmptyState message="No sources match the current filters. Widen the credibility range or clear the search, type, role, and bias filters — every source stays in the library even when it is filtered out of view." />
+      ) : analyst ? (
+        <section aria-label="Sources" className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Type</th>
+                <th>Credibility</th>
+                <th>Roles</th>
+                <th>Bias tags</th>
+                <th className="text-right">Linked evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((src) => (
+                <SourceTableRow
+                  key={src.id}
+                  src={src}
+                  observationCount={observationCount(src)}
+                  signalCount={signalCount(src)}
+                  methodology={methodology}
+                />
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : (
+        <section aria-label="Sources">
+          {rows.map((src) => (
+            <SourceListRow key={src.id} src={src} />
+          ))}
+        </section>
+      )}
+
+      <div className="mt-8">
         <DepthHint>
           Bias tags, the credibility scale and role weighting detail
         </DepthHint>
       </div>
+
       <ViewGate min="methodology">
-        <PrincipleStrip />
-        <CredibilityScaleCard />
-      </ViewGate>
-      <AddSourceForm />
-
-      <section className="card mb-4">
-        <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-          <h2 className="overline-label">Filters</h2>
-          {filtersActive ? (
-            <button
-              type="button"
-              onClick={() => {
-                setTypeFilter("all");
-                setRoleFilter("all");
-                setBiasFilter("all");
-                setMinCred(1);
-                setMaxCred(5);
-              }}
-              className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-            >
-              Reset filters
-            </button>
-          ) : null}
-        </header>
-        <div
-          className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
-            analyst ? "lg:grid-cols-5" : "lg:grid-cols-3"
-          }`}
-        >
-          <Field label="Source type">
-            <Select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as "all" | SourceType)}
-            >
-              <option value="all">All types</option>
-              {TYPE_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
+        <section className="mt-12 max-w-2xl space-y-8">
+          <div>
+            <h2 className="text-[13px] font-medium text-ink">Credibility is not role</h2>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+              A source&apos;s credibility says how far its claims can be trusted; its
+              role says what job it does for the workflow. The two are recorded
+              independently, because a source can be excellent at one job and unsafe
+              for another. Social platforms are typically strong discovery but weak
+              validation — they surface early behaviour before stronger sources
+              notice it, yet rarely confirm scale. Government reports are the
+              reverse: strong validation but slow discovery, and their claims should
+              still be read against a government-agenda bias tag.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-[13px] font-medium text-ink">Credibility scale</h2>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+              Every source carries one credibility score from 1 to 5 — a judgement
+              about the source itself, recorded once and weighed everywhere the
+              source is cited.
+            </p>
+            <dl className="mt-3 space-y-1.5">
+              {([5, 4, 3, 2, 1] as const).map((n) => (
+                <div key={n} className="flex gap-3">
+                  <dt className="w-4 shrink-0 font-mono text-[11px] leading-[1.7] text-ink-faint">
+                    {n}
+                  </dt>
+                  <dd className="text-[12.5px] text-ink-soft">
+                    {CREDIBILITY_LABELS[n]}
+                  </dd>
+                </div>
               ))}
-            </Select>
-          </Field>
-          {analyst ? (
-            <>
-              <Field label="Min credibility">
-                <Select
-                  value={String(minCred)}
-                  onChange={(e) => setMinCred(Number(e.target.value) as Score)}
-                >
-                  {CRED_VALUES.map((n) => (
-                    <option key={n} value={n}>
-                      {n} — {CREDIBILITY_LABELS[n]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Max credibility">
-                <Select
-                  value={String(maxCred)}
-                  onChange={(e) => setMaxCred(Number(e.target.value) as Score)}
-                >
-                  {CRED_VALUES.map((n) => (
-                    <option key={n} value={n}>
-                      {n} — {CREDIBILITY_LABELS[n]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </>
-          ) : (
-            <Field label="Credibility">
-              <Select value={credBand} onChange={(e) => setCredBand(e.target.value)}>
-                <option value="all">All credibility levels</option>
-                <option value="high">High or very high credibility</option>
-                <option value="medium">Medium credibility</option>
-                <option value="low">Low or low–medium credibility</option>
-                {credBand === "custom" ? (
-                  <option value="custom" disabled>
-                    Custom range (set in Analyst view)
-                  </option>
-                ) : null}
-              </Select>
-            </Field>
-          )}
-          <Field label="Role">
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as "all" | SourceRole)}
-            >
-              <option value="all">All roles</option>
-              {ROLE_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          {analyst ? (
-            <Field label="Bias tag">
-              <Select
-                value={biasFilter}
-                onChange={(e) => setBiasFilter(e.target.value as "all" | BiasTag)}
-              >
-                <option value="all">All bias tags</option>
-                {BIAS_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          ) : null}
-        </div>
-        {minCred > maxCred ? (
-          <p className="border-t border-line px-4 py-2 text-[11.5px] text-caution">
-            Minimum credibility is above maximum credibility — no source can match.
-            Adjust one of the two bounds.
-          </p>
-        ) : null}
-      </section>
-
-      {sources.length === 0 ? (
-        <EmptyState
-          message="The Source Library is empty. Every observation and signal should trace back to a recorded source with a credibility score, roles, and bias tags — otherwise evidence cannot be weighed. Use the Add source form above to record the first one."
-          actionLabel="Add a source"
-          actionHref="#add-source"
-        />
-      ) : rows.length === 0 ? (
-        <EmptyState
-          message="No sources match the current filters. Widen the credibility range or clear the type, role, and bias filters — every source stays in the library even when it is filtered out of view."
-        />
-      ) : (
-        <section className="card">
-          <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">
-              {rows.length} of {sources.length} source{sources.length === 1 ? "" : "s"}
-            </h2>
-            {analyst ? (
-              <p className="text-[11px] text-ink-faint">
-                Credibility ≤ 2 is safe for discovery, unsafe for validation
-              </p>
-            ) : null}
-          </header>
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Source</th>
-                  <th>Type</th>
-                  <th>Credibility</th>
-                  <th>Roles</th>
-                  {analyst ? <th>Bias tags</th> : null}
-                  {methodology ? <th>Added</th> : null}
-                  {analyst ? (
-                    <>
-                      <th className="text-right">Obs.</th>
-                      <th className="text-right">Signals</th>
-                    </>
-                  ) : (
-                    <th className="text-right">Linked evidence</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((src) => (
-                  <SourceRow
-                    key={src.id}
-                    src={src}
-                    observationCount={observationCount(src)}
-                    signalCount={signalCount(src)}
-                    analyst={analyst}
-                    methodology={methodology}
-                  />
-                ))}
-              </tbody>
-            </table>
+            </dl>
+            <p className="mt-2.5 text-[11.5px] leading-relaxed text-ink-faint">
+              Sources scoring 2 or below are safe for discovery but unsafe for
+              validation — evidence found through them must be confirmed by an
+              independent, higher-credibility source before it supports a conclusion.
+            </p>
           </div>
         </section>
-      )}
+      </ViewGate>
     </>
   );
 }

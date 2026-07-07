@@ -6,11 +6,12 @@
  * contradictions, and review controls. Validity is always computed from the
  * evidence; the stored status is never presented on its own.
  *
- * Visibility layers: the simple view reads as prose — statement, status in
- * plain language, evidence summary, what could contradict it, next step —
- * with the relationship trail alongside. Analyst view opens the full tabs
- * (validation checklist, nine-dimension scores, per-signal table, review
- * controls); Methodology view adds the threshold table and audit trail.
+ * Visibility layers: the simple view reads as one article — statement,
+ * status in plain language, evidence summary, what could contradict it,
+ * next step — separated by whitespace, not boxes. Analyst view opens the
+ * full tabs (validation checklist, nine-dimension scores, per-signal table,
+ * review controls); Methodology view adds the threshold table and audit
+ * trail as plain definition lines.
  */
 
 import Link from "next/link";
@@ -26,12 +27,7 @@ import { ContradictionPanel, NoContradictionNote } from "@/components/Contradict
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { ScoreGrid } from "@/components/ScorePanel";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
-import {
-  ConfidenceBadge,
-  IdChip,
-  ReviewStatusBadge,
-  SignalStrengthBadge,
-} from "@/components/badges";
+import { ConfidenceBadge, SignalStrengthBadge } from "@/components/badges";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
@@ -64,8 +60,32 @@ import {
   signalsOfCluster,
 } from "../cluster-ui";
 
+/** Article-style section: small heading, prose underneath, no box. */
+function Section({
+  heading,
+  children,
+}: {
+  heading: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="max-w-2xl">
+      <h2 className="mb-2 text-[13px] font-medium text-ink">{heading}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Prose({ children }: { children: React.ReactNode }) {
+  return <p className="text-[13px] leading-relaxed text-ink-soft">{children}</p>;
+}
+
+function MissingNote({ children }: { children: React.ReactNode }) {
+  return <p className="text-[12px] text-ink-faint">{children}</p>;
+}
+
 // ---------------------------------------------------------------------------
-// Simple view — the cluster as readable prose, depth on demand
+// Simple view — the cluster as one readable article, depth on demand
 // ---------------------------------------------------------------------------
 
 function SimpleView({
@@ -78,48 +98,36 @@ function SimpleView({
   linkedContradictions: Contradiction[];
 }) {
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Cluster statement</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {cluster.clusterStatement.trim() ? (
-            cluster.clusterStatement
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No cluster statement recorded yet.
-            </span>
-          )}
-        </p>
-      </section>
+    <div className="space-y-8">
+      <Section heading="Cluster statement">
+        {cluster.clusterStatement.trim() ? (
+          <Prose>{cluster.clusterStatement}</Prose>
+        ) : (
+          <MissingNote>No cluster statement recorded yet.</MissingNote>
+        )}
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">Status</p>
+      <Section heading="Status">
         <div className="mb-1.5">
           <ClusterValidityPill result={result} />
         </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {explainClusterStatus(cluster, result)}
-        </p>
-      </section>
+        <Prose>{explainClusterStatus(cluster, result)}</Prose>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Evidence summary</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {cluster.evidenceSummary.trim() ? (
-            cluster.evidenceSummary
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No evidence summary recorded yet. Summarise what the linked signals
-              show — and where they disagree.
-            </span>
-          )}
-        </p>
-      </section>
+      <Section heading="Evidence summary">
+        {cluster.evidenceSummary.trim() ? (
+          <Prose>{cluster.evidenceSummary}</Prose>
+        ) : (
+          <MissingNote>
+            No evidence summary recorded yet. Summarise what the linked signals
+            show — and where they disagree.
+          </MissingNote>
+        )}
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">What could contradict this</p>
+      <Section heading="What could contradict this">
         {linkedContradictions.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {linkedContradictions.map((c) => (
               <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
                 {explainContradiction(c)}{" "}
@@ -135,14 +143,11 @@ function SimpleView({
         ) : (
           <NoContradictionNote />
         )}
-      </section>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Next step</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {nextStepForCluster(cluster, result)}
-        </p>
-      </section>
+      <Section heading="Next step">
+        <Prose>{nextStepForCluster(cluster, result)}</Prose>
+      </Section>
 
       <DepthHint>
         Validation checks, nine-dimension scores, per-signal detail and review
@@ -165,57 +170,48 @@ function OverviewTab({
 }) {
   const facts = deriveClusterFacts(clusterSignals);
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Unifying question</p>
-        <p className="text-[14px] italic leading-relaxed text-ink">
-          {cluster.unifyingQuestion.trim() ? (
-            cluster.unifyingQuestion
-          ) : (
-            <span className="not-italic text-[12px] text-ink-faint">
-              No unifying question recorded. A cluster is organised around one
-              question, not a topic — add it in Review.
-            </span>
-          )}
-        </p>
-      </section>
+    <div className="space-y-8">
+      <Section heading="Unifying question">
+        {cluster.unifyingQuestion.trim() ? (
+          <p className="text-[14px] italic leading-relaxed text-ink">
+            {cluster.unifyingQuestion}
+          </p>
+        ) : (
+          <MissingNote>
+            No unifying question recorded. A cluster is organised around one
+            question, not a topic — add it in Review.
+          </MissingNote>
+        )}
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Cluster statement</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {cluster.clusterStatement.trim() ? (
-            cluster.clusterStatement
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No cluster statement recorded yet.
-            </span>
-          )}
-        </p>
-      </section>
+      <Section heading="Cluster statement">
+        {cluster.clusterStatement.trim() ? (
+          <Prose>{cluster.clusterStatement}</Prose>
+        ) : (
+          <MissingNote>No cluster statement recorded yet.</MissingNote>
+        )}
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Evidence summary</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {cluster.evidenceSummary.trim() ? (
-            cluster.evidenceSummary
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No evidence summary recorded yet. Summarise what the linked signals
-              show — and where they disagree.
-            </span>
-          )}
-        </p>
-      </section>
+      <Section heading="Evidence summary">
+        {cluster.evidenceSummary.trim() ? (
+          <Prose>{cluster.evidenceSummary}</Prose>
+        ) : (
+          <MissingNote>
+            No evidence summary recorded yet. Summarise what the linked signals
+            show — and where they disagree.
+          </MissingNote>
+        )}
+      </Section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">
-            Derived from linked signals — not asserted
-          </h3>
-        </header>
-        <dl className="space-y-3 px-4 py-3">
+      <section className="max-w-2xl">
+        <h2 className="text-[13px] font-medium text-ink">Derived from linked signals</h2>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          Sectors, geographies, actor types and systems come from the evidence —
+          they are never asserted.
+        </p>
+        <dl className="mt-3 space-y-3.5">
           <div>
-            <dt className="overline-label mb-1">Sectors involved</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Sectors involved</dt>
             <dd>
               {facts.sectors.length > 0 ? (
                 <SectorTags sectors={facts.sectors} />
@@ -227,7 +223,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Geographies</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Geographies</dt>
             <dd>
               {facts.countries.length > 0 ? (
                 <PlainTags tags={facts.countries} />
@@ -239,7 +235,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Actor types</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Actor types</dt>
             <dd>
               {facts.actorTypes.length > 0 ? (
                 <PlainTags tags={facts.actorTypes.map((a) => ACTOR_TYPE_LABELS[a])} />
@@ -251,7 +247,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Systems affected</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Systems affected</dt>
             <dd>
               {facts.systems.length > 0 ? (
                 <SystemTags systems={facts.systems} />
@@ -341,30 +337,28 @@ function ValidationTab({
 }) {
   const t = CLUSTER_THRESHOLDS;
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl space-y-8">
       <ValidationChecklist
         result={result}
         title="Cluster validation thresholds"
         passedLabel="Valid cluster"
         failedLabel="Candidate — not yet valid"
       />
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Cluster scores — nine dimensions</h3>
-        </header>
-        <div className="px-4 py-3">
-          <ScoreGrid
-            scores={clusterScoresRecord(cluster.scores)}
-            labels={CLUSTER_SCORE_LABELS}
-          />
-          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
-            Validation benchmarks: breadth ≥ {t.minBreadth}, depth ≥ {t.minDepth},
-            coherence ≥ {t.minCoherence}, strategic relevance ≥{" "}
-            {t.minStrategicRelevance}. Scores are analyst judgements against the
-            1–5 rubric — they support validation, they do not replace the evidence
-            thresholds.
-          </p>
-        </div>
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
+          Cluster scores — nine dimensions
+        </h3>
+        <ScoreGrid
+          scores={clusterScoresRecord(cluster.scores)}
+          labels={CLUSTER_SCORE_LABELS}
+        />
+        <p className="mt-3 text-[11.5px] text-ink-faint">
+          Validation benchmarks: breadth ≥ {t.minBreadth}, depth ≥ {t.minDepth},
+          coherence ≥ {t.minCoherence}, strategic relevance ≥{" "}
+          {t.minStrategicRelevance}. Scores are analyst judgements against the
+          1–5 rubric — they support validation, they do not replace the evidence
+          thresholds.
+        </p>
       </section>
     </div>
   );
@@ -373,6 +367,15 @@ function ValidationTab({
 // ---------------------------------------------------------------------------
 // Methodology tab — thresholds spelled out + audit trail
 // ---------------------------------------------------------------------------
+
+function AuditLine({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt className="w-52 shrink-0 text-[11.5px] text-ink-faint">{label}</dt>
+      <dd className="text-[12.5px] text-ink-soft">{value}</dd>
+    </div>
+  );
+}
 
 function MethodologyTab({
   cluster,
@@ -394,12 +397,12 @@ function MethodologyTab({
     ["Minimum strategic relevance score", `${t.minStrategicRelevance}/5`],
   ];
   return (
-    <div className="space-y-4">
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Cluster validation thresholds</h3>
-        </header>
-        <div className="overflow-x-auto px-4 py-3">
+    <div className="max-w-2xl space-y-8">
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
+          Cluster validation thresholds
+        </h3>
+        <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
@@ -416,53 +419,43 @@ function MethodologyTab({
               ))}
             </tbody>
           </table>
-          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
-            A cluster is valid only when every requirement passes, plus a clear
-            unifying question. The score minimums support validation; they never
-            override the evidence thresholds. This cluster currently passes{" "}
-            {result.passedCount} of {result.totalCount} checks.
-          </p>
         </div>
+        <p className="mt-3 text-[11.5px] text-ink-faint">
+          A cluster is valid only when every requirement passes, plus a clear
+          unifying question. The score minimums support validation; they never
+          override the evidence thresholds. This cluster currently passes{" "}
+          {result.passedCount} of {result.totalCount} checks.
+        </p>
       </section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Audit trail</h3>
-        </header>
-        <dl className="space-y-2.5 px-4 py-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Record id</dt>
-            <dd>
-              <IdChip id={cluster.id} />
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Created</dt>
-            <dd className="text-[12.5px] text-ink">{fmtDate(cluster.createdAt)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Last updated</dt>
-            <dd className="text-[12.5px] text-ink">{fmtDate(cluster.updatedAt)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Review status</dt>
-            <dd>
-              <ReviewStatusBadge status={cluster.reviewStatus} />
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Stored status field</dt>
-            <dd className="font-mono text-[11.5px] text-ink-soft">{cluster.status}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Computed from evidence</dt>
-            <dd className="font-mono text-[11.5px] text-ink-soft">
-              {result.valid ? "valid" : "candidate"} · {result.passedCount}/
-              {result.totalCount} checks
-            </dd>
-          </div>
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">Audit trail</h3>
+        <dl className="space-y-2">
+          <AuditLine
+            label="Record id"
+            value={<span className="font-mono text-[11.5px]">{cluster.id}</span>}
+          />
+          <AuditLine label="Created" value={fmtDate(cluster.createdAt)} />
+          <AuditLine label="Last updated" value={fmtDate(cluster.updatedAt)} />
+          <AuditLine
+            label="Review status"
+            value={REVIEW_STATUS_LABELS[cluster.reviewStatus]}
+          />
+          <AuditLine
+            label="Stored status field"
+            value={<span className="font-mono text-[11.5px]">{cluster.status}</span>}
+          />
+          <AuditLine
+            label="Computed from evidence"
+            value={
+              <span className="font-mono text-[11.5px]">
+                {result.valid ? "valid" : "candidate"} · {result.passedCount}/
+                {result.totalCount} checks
+              </span>
+            }
+          />
         </dl>
-        <p className="border-t border-line px-4 py-2.5 text-[11.5px] text-ink-faint">
+        <p className="mt-3 text-[11.5px] text-ink-faint">
           Review status is a human decision recorded in the Review tab. It is
           stored separately from computed validity and never overrides it.
         </p>
@@ -484,82 +477,82 @@ function ReviewTab({ cluster }: { cluster: Cluster }) {
   const [saved, setSaved] = useState(false);
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Human review</h3>
-        </header>
-        <div className="space-y-4 px-4 py-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Review status"
-              hint="A review decision about the record — separate from computed validity."
-            >
-              <Select
-                value={cluster.reviewStatus}
-                onChange={(e) =>
-                  updateCluster(cluster.id, {
-                    reviewStatus: e.target.value as ReviewStatus,
-                  })
-                }
-              >
-                {REVIEW_STATUS_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {REVIEW_STATUS_LABELS[r]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              label="Confidence"
-              hint="How much weight the cluster interpretation should carry."
-            >
-              <Select
-                value={cluster.confidence}
-                onChange={(e) =>
-                  updateCluster(cluster.id, {
-                    confidence: e.target.value as ConfidenceLevel,
-                  })
-                }
-              >
-                {CONFIDENCE_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
-                    {CONFIDENCE_LABELS[c]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <Field
-            label="Human notes"
-            hint="Interpretation, doubts, and next evidence to look for."
+    <div className="max-w-2xl space-y-5">
+      <div>
+        <h3 className="text-[13px] font-medium text-ink">Human review</h3>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          Review decisions are stored separately from computed validity and
+          never override it.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Review status"
+          hint="A review decision about the record — separate from computed validity."
+        >
+          <Select
+            value={cluster.reviewStatus}
+            onChange={(e) =>
+              updateCluster(cluster.id, {
+                reviewStatus: e.target.value as ReviewStatus,
+              })
+            }
           >
-            <TextArea
-              rows={5}
-              value={notes}
-              onChange={(e) => {
-                setNotes(e.target.value);
-                setSaved(false);
-              }}
-            />
-          </Field>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={btnPrimary}
-              onClick={() => {
-                updateCluster(cluster.id, { humanNotes: notes });
-                setSaved(true);
-              }}
-            >
-              Save notes
-            </button>
-            {saved ? (
-              <span className="text-[11.5px] text-accent-ink">Notes saved.</span>
-            ) : null}
-          </div>
-        </div>
-      </section>
+            {REVIEW_STATUS_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {REVIEW_STATUS_LABELS[r]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          label="Confidence"
+          hint="How much weight the cluster interpretation should carry."
+        >
+          <Select
+            value={cluster.confidence}
+            onChange={(e) =>
+              updateCluster(cluster.id, {
+                confidence: e.target.value as ConfidenceLevel,
+              })
+            }
+          >
+            {CONFIDENCE_OPTIONS.map((c) => (
+              <option key={c} value={c}>
+                {CONFIDENCE_LABELS[c]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Field
+        label="Human notes"
+        hint="Interpretation, doubts, and next evidence to look for."
+      >
+        <TextArea
+          rows={5}
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            setSaved(false);
+          }}
+        />
+      </Field>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className={btnPrimary}
+          onClick={() => {
+            updateCluster(cluster.id, { humanNotes: notes });
+            setSaved(true);
+          }}
+        >
+          Save notes
+        </button>
+        {saved ? (
+          <span className="text-[11.5px] text-accent-ink">Notes saved.</span>
+        ) : null}
+      </div>
       <p className="text-[11.5px] text-ink-faint">
         Created {fmtDate(cluster.createdAt)} · Last updated {fmtDate(cluster.updatedAt)}
       </p>
@@ -568,36 +561,34 @@ function ReviewTab({ cluster }: { cluster: Cluster }) {
 }
 
 // ---------------------------------------------------------------------------
-// Right column — relationship trail + candidate guidance
+// Right rail — candidate guidance as a quiet aside, not a box
 // ---------------------------------------------------------------------------
 
-function CandidateGuidanceCard({ result }: { result: ValidationResult }) {
+function CandidateGuidance({ result }: { result: ValidationResult }) {
   const failing = result.checks.filter((c) => !c.passed);
   return (
-    <section className="card border-l-2 border-l-caution">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">What this cluster still needs</h3>
-      </header>
-      <div className="px-4 py-3">
-        <p className="text-[12.5px] text-ink-soft">
-          This cluster is still a candidate. Add more evidence before validating.
-        </p>
-        <ul className="mt-2 space-y-1.5">
-          {failing.map((c) => (
-            <li key={c.label} className="border-l-2 border-caution/40 pl-2.5">
-              <p className="text-[12px] font-medium text-ink">{c.label}</p>
-              <p className="text-[11.5px] text-ink-faint">{c.detail}</p>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/signals"
-          className="mt-3 inline-block text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
-        >
-          Find related signals in the Signal Library
-        </Link>
-      </div>
-    </section>
+    <aside className="border-l-2 border-caution/40 pl-4">
+      <h3 className="text-[13px] font-medium text-ink">
+        What this cluster still needs
+      </h3>
+      <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
+        This cluster is still a candidate. Add more evidence before validating.
+      </p>
+      <ul className="mt-2.5 space-y-2">
+        {failing.map((c) => (
+          <li key={c.label}>
+            <p className="text-[12px] font-medium text-ink">{c.label}</p>
+            <p className="text-[11.5px] text-ink-faint">{c.detail}</p>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/signals"
+        className="mt-3 inline-block text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
+      >
+        Find related signals in the Signal Library
+      </Link>
+    </aside>
   );
 }
 
@@ -620,7 +611,7 @@ export default function ClusterDetailPage() {
     return (
       <>
         <Breadcrumbs items={[{ label: "Signal Clusters", href: "/clusters" }]} />
-        <PageHeader overline="Connect & Synthesize" title="Cluster" />
+        <PageHeader title="Cluster" />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
@@ -638,7 +629,7 @@ export default function ClusterDetailPage() {
             { label: "Not found" },
           ]}
         />
-        <PageHeader overline="Connect & Synthesize" title="Cluster not found" />
+        <PageHeader title="Cluster not found" />
         <EmptyState
           message={`No cluster carries the id “${id}”. It may have been created in a different browser (the intelligence base is stored locally) or the id may be mistyped. Browse the cluster list to find the record you need.`}
           actionLabel="Back to Signal Clusters"
@@ -721,7 +712,7 @@ export default function ClusterDetailPage() {
       label: `Contradictions (${linkedContradictions.length})`,
       content:
         linkedContradictions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {linkedContradictions.map((c) => (
               <ContradictionPanel key={c.id} contradiction={c} />
             ))}
@@ -748,23 +739,9 @@ export default function ClusterDetailPage() {
     <>
       <Breadcrumbs items={crumbs} />
       <PageHeader
-        overline={`Connect & Synthesize · ${cluster.id}`}
         title={cluster.name}
-        description={
-          simple && cluster.unifyingQuestion.trim()
-            ? cluster.unifyingQuestion
-            : undefined
-        }
-        actions={
-          simple ? undefined : (
-            <div className="flex flex-col items-end gap-1">
-              <ClusterValidityPill result={result} />
-              <span className="font-mono text-[11px] text-ink-faint">
-                {result.passedCount}/{result.totalCount} checks passed
-              </span>
-            </div>
-          )
-        }
+        description={cluster.unifyingQuestion.trim() || undefined}
+        actions={simple ? undefined : <ClusterValidityPill result={result} />}
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
@@ -780,17 +757,10 @@ export default function ClusterDetailPage() {
           )}
         </div>
 
-        <aside className="mt-6 space-y-4 lg:mt-0">
-          <ViewGate min="analyst">
-            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-              <ReviewStatusBadge status={cluster.reviewStatus} />
-              <ConfidenceBadge level={cluster.confidence} />
-              <IdChip id={cluster.id} />
-            </div>
-          </ViewGate>
+        <aside className="mt-10 space-y-8 lg:mt-0">
           <RelatedObjectsPanel groups={relatedGroups} />
           <ViewGate min="analyst">
-            {!result.valid ? <CandidateGuidanceCard result={result} /> : null}
+            {!result.valid ? <CandidateGuidance result={result} /> : null}
           </ViewGate>
         </aside>
       </div>

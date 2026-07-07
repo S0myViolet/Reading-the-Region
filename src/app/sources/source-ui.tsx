@@ -16,10 +16,11 @@ import {
 } from "@/lib/types";
 
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
+  "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink";
 
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+/** Secondary actions are quiet text links, never bordered buttons. */
+export const btnQuiet =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -77,18 +78,24 @@ export function credibilityLine(src: Source): string {
   return `${cred} — ${type}; ${roleClause}.`;
 }
 
-/** Compact role pills for table rows. */
-export function RolePills({ roles }: { roles: SourceRole[] }) {
-  if (roles.length === 0)
-    return <span className="text-[11px] text-ink-faint">No roles recorded</span>;
+/** Roles as one quiet metadata phrase, joined by " · ". */
+export function rolesLine(roles: SourceRole[]): string {
+  if (roles.length === 0) return "No roles recorded";
+  return roles.map((r) => SOURCE_ROLE_LABELS[r]).join(" · ");
+}
+
+/**
+ * The one warning a low-credibility source carries in lists: credibility 2 or
+ * below is safe for discovery but unsafe for validation.
+ */
+export function CredibilityCautionPill() {
   return (
-    <span className="inline-flex flex-wrap gap-1">
-      {roles.map((r) => (
-        <Pill key={r} title={ROLE_WEIGHT_NOTES[r]}>
-          {SOURCE_ROLE_LABELS[r]}
-        </Pill>
-      ))}
-    </span>
+    <Pill
+      tone="caution"
+      title="Credibility 2 or below — safe for discovery, unsafe for validation. Evidence found here must be confirmed by an independent, higher-credibility source."
+    >
+      Unsafe for validation
+    </Pill>
   );
 }
 

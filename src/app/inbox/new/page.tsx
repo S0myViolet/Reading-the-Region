@@ -4,6 +4,9 @@
  * Capture a new observation into the Scan Inbox. Saving does not promote:
  * every new observation lands as "unreviewed" and is triaged on its detail
  * page against the 9-item promotion checklist.
+ *
+ * The form is a single calm flow — field groups separated by whitespace
+ * under quiet headings, one primary Save action at the end.
  */
 
 import Link from "next/link";
@@ -52,10 +55,28 @@ function todayIso(): string {
 function NewObservationHeader() {
   return (
     <PageHeader
-      overline="Scan & Classify"
       title="Add observation"
       description="Capture raw material before judging it. Saving an observation does not create a signal — it enters the inbox as unreviewed and must pass the promotion checklist in triage."
     />
+  );
+}
+
+/** Quiet form group: heading, optional hint, fields — separated by whitespace, no box. */
+function FormSection({
+  heading,
+  hint,
+  children,
+}: {
+  heading: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-[15px] font-medium text-ink">{heading}</h2>
+      {hint ? <p className="mt-0.5 text-[12px] text-ink-faint">{hint}</p> : null}
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
   );
 }
 
@@ -186,72 +207,77 @@ export default function NewObservationPage() {
       />
       <NewObservationHeader />
 
-      <div className="max-w-3xl space-y-5">
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">What was observed</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field label="Title" required>
-              <TextInput
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="One line naming the observed event or behaviour"
-              />
-            </Field>
-            <Field
-              label="Description"
-              required
-              hint="Factual account of what was seen. Interpretation comes later, in the signal's zooming analysis."
-            >
-              <TextArea
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Field>
-          </div>
-        </section>
+      <div className="max-w-3xl">
+        <FormSection heading="What you observed">
+          <Field label="Title" required>
+            <TextInput
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="One line naming the observed event or behaviour"
+            />
+          </Field>
+          <Field
+            label="Description"
+            required
+            hint="Factual account of what was seen. Interpretation comes later, in the signal's zooming analysis."
+          >
+            <TextArea
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Field>
+          <Field label="Initial notes">
+            <TextArea
+              value={initialNotes}
+              onChange={(e) => setInitialNotes(e.target.value)}
+            />
+          </Field>
+          <Field
+            label="Potential future relevance"
+            hint="Why might this matter later? A hunch is acceptable at capture."
+          >
+            <TextArea
+              value={potentialFutureRelevance}
+              onChange={(e) => setPotentialFutureRelevance(e.target.value)}
+            />
+          </Field>
+        </FormSection>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Source</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field
-              label="Existing source"
-              hint="Pick a registered source, or leave as “— new source —” to record one from scratch."
+        <FormSection heading="Where it came from">
+          <Field
+            label="Existing source"
+            hint="Pick a registered source, or leave as “— new source —” to record one from scratch."
+          >
+            <Select
+              value={existingSourceId}
+              onChange={(e) => setExistingSourceId(e.target.value)}
             >
-              <Select
-                value={existingSourceId}
-                onChange={(e) => setExistingSourceId(e.target.value)}
-              >
-                <option value="">— new source —</option>
-                {sources.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · C{s.credibility} · {SOURCE_TYPE_LABELS[s.sourceType]}
-                  </option>
-                ))}
-              </Select>
+              <option value="">— new source —</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} · C{s.credibility} · {SOURCE_TYPE_LABELS[s.sourceType]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Source name" required={!existingSource}>
+              <TextInput
+                value={existingSource ? existingSource.name : sourceName}
+                onChange={(e) => setSourceName(e.target.value)}
+                disabled={!!existingSource}
+                placeholder="Publication, dataset, person, or place"
+              />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Source name" required={!existingSource}>
-                <TextInput
-                  value={existingSource ? existingSource.name : sourceName}
-                  onChange={(e) => setSourceName(e.target.value)}
-                  disabled={!!existingSource}
-                  placeholder="Publication, dataset, person, or place"
-                />
-              </Field>
-              <Field label="Source URL" hint="Optional.">
-                <TextInput
-                  value={existingSource ? existingSource.url ?? "" : sourceUrl}
-                  onChange={(e) => setSourceUrl(e.target.value)}
-                  disabled={!!existingSource}
-                  placeholder="https://…"
-                />
-              </Field>
-            </div>
+            <Field label="Source URL" hint="Optional.">
+              <TextInput
+                value={existingSource ? existingSource.url ?? "" : sourceUrl}
+                onChange={(e) => setSourceUrl(e.target.value)}
+                disabled={!!existingSource}
+                placeholder="https://…"
+              />
+            </Field>
             <Field label="Source type">
               <Select
                 value={existingSource ? existingSource.sourceType : sourceType}
@@ -265,21 +291,18 @@ export default function NewObservationPage() {
                 ))}
               </Select>
             </Field>
-            {!existingSource ? (
-              <p className="text-[11.5px] text-ink-faint">
-                A new source record is created with default medium credibility (C3)
-                and a discovery role. Assess its credibility and bias tags in the
-                source library before using it for validation.
-              </p>
-            ) : null}
           </div>
-        </section>
+          {!existingSource ? (
+            <p className="text-[11.5px] leading-relaxed text-ink-faint">
+              A new source record is created with default medium credibility (C3)
+              and a discovery role. Assess its credibility and bias tags in the
+              source library before using it for validation.
+            </p>
+          ) : null}
+        </FormSection>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">When and where</h2>
-          </header>
-          <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+        <FormSection heading="Where and what it touches">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Date observed" required>
               <TextInput
                 type="date"
@@ -317,79 +340,48 @@ export default function NewObservationPage() {
                 placeholder="Optional"
               />
             </Field>
-          </div>
-        </section>
-
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Classification</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field label="Sectors">
-              <CheckboxList<Sector>
-                options={SECTOR_OPTIONS}
-                selected={sectors}
-                onChange={setSectors}
-              />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Subsector">
-                <TextInput
-                  value={subsector}
-                  onChange={(e) => setSubsector(e.target.value)}
-                  placeholder="Optional"
-                />
-              </Field>
-              <Field label="Actor involved">
-                <TextInput
-                  value={actorInvolved}
-                  onChange={(e) => setActorInvolved(e.target.value)}
-                  placeholder="Who is acting — institution, brand, community…"
-                />
-              </Field>
-            </div>
-          </div>
-        </section>
-
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Notes</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field label="Initial notes">
-              <TextArea
-                value={initialNotes}
-                onChange={(e) => setInitialNotes(e.target.value)}
-              />
-            </Field>
-            <Field
-              label="Potential future relevance"
-              hint="Why might this matter later? A hunch is acceptable at capture."
-            >
-              <TextArea
-                value={potentialFutureRelevance}
-                onChange={(e) => setPotentialFutureRelevance(e.target.value)}
+            <Field label="Actor involved">
+              <TextInput
+                value={actorInvolved}
+                onChange={(e) => setActorInvolved(e.target.value)}
+                placeholder="Who is acting — institution, brand, community…"
               />
             </Field>
           </div>
-        </section>
+          <Field label="Sectors">
+            <CheckboxList<Sector>
+              options={SECTOR_OPTIONS}
+              selected={sectors}
+              onChange={setSectors}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Subsector">
+              <TextInput
+                value={subsector}
+                onChange={(e) => setSubsector(e.target.value)}
+                placeholder="Optional"
+              />
+            </Field>
+          </div>
+        </FormSection>
 
-        <section className="card">
-          <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
+        <section className="mt-10">
+          <div className="flex items-baseline justify-between gap-4">
             {viewMode === "simple" ? (
               <button
                 type="button"
                 onClick={() => setCriteriaOpen((o) => !o)}
-                className="overline-label hover:text-accent-ink"
+                className="text-left text-[15px] font-medium text-ink hover:text-accent-ink"
                 aria-expanded={criteriaOpen}
               >
                 {criteriaOpen ? "▾" : "▸"} Optional: first-pass promotion criteria
               </button>
             ) : (
-              <h2 className="overline-label">Promotion checklist</h2>
+              <h2 className="text-[15px] font-medium text-ink">Promotion checklist</h2>
             )}
             <span
-              className={`font-mono text-[11.5px] ${
+              className={`shrink-0 text-[12px] ${
                 criteriaMet >= PROMOTION_MIN_CRITERIA
                   ? "text-accent-ink"
                   : "text-ink-faint"
@@ -397,47 +389,47 @@ export default function NewObservationPage() {
             >
               {criteriaMet}/{PROMOTION_CRITERIA.length} criteria
             </span>
-          </header>
+          </div>
           {viewMode === "simple" && !criteriaOpen ? (
-            <p className="px-4 py-3 text-[11.5px] text-ink-faint">
+            <p className="mt-2 text-[12px] leading-relaxed text-ink-faint">
               You can save without touching this — the observation lands as
               unreviewed and is triaged on its detail page. Open the checklist to
               record a first pass on the {PROMOTION_CRITERIA.length} promotion
               criteria now.
             </p>
           ) : (
-          <div className="space-y-3 px-4 py-4">
-            <CheckboxList<keyof PromotionChecklist>
-              options={PROMOTION_CRITERIA.map((c) => ({
-                value: c.key,
-                label: c.label,
-              }))}
-              selected={PROMOTION_CRITERIA.filter((c) => checklist[c.key]).map(
-                (c) => c.key,
-              )}
-              onChange={(next) =>
-                setChecklist(
-                  PROMOTION_CRITERIA.reduce(
-                    (acc, c) => ({ ...acc, [c.key]: next.includes(c.key) }),
-                    { ...EMPTY_CHECKLIST },
-                  ),
-                )
-              }
-            />
-            <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
-              Promotion to a signal requires at least {PROMOTION_MIN_CRITERIA} of{" "}
-              {PROMOTION_CRITERIA.length} criteria. Ticking criteria here does not
-              promote anything — the observation is saved as unreviewed and can only
-              be promoted from its triage panel.
-            </p>
-          </div>
+            <div className="mt-4 space-y-3">
+              <CheckboxList<keyof PromotionChecklist>
+                options={PROMOTION_CRITERIA.map((c) => ({
+                  value: c.key,
+                  label: c.label,
+                }))}
+                selected={PROMOTION_CRITERIA.filter((c) => checklist[c.key]).map(
+                  (c) => c.key,
+                )}
+                onChange={(next) =>
+                  setChecklist(
+                    PROMOTION_CRITERIA.reduce(
+                      (acc, c) => ({ ...acc, [c.key]: next.includes(c.key) }),
+                      { ...EMPTY_CHECKLIST },
+                    ),
+                  )
+                }
+              />
+              <p className="text-[11.5px] leading-relaxed text-ink-faint">
+                Promotion to a signal requires at least {PROMOTION_MIN_CRITERIA} of{" "}
+                {PROMOTION_CRITERIA.length} criteria. Ticking criteria here does not
+                promote anything — the observation is saved as unreviewed and can only
+                be promoted from its triage panel.
+              </p>
+            </div>
           )}
         </section>
 
         {errors.length > 0 ? (
-          <div className="card border-l-2 border-l-tension px-4 py-3">
-            <p className="overline-label mb-1 text-tension">Cannot save yet</p>
-            <ul className="list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
+          <div className="mt-10 border-l-2 border-tension pl-4">
+            <p className="text-[13px] font-medium text-tension">Cannot save yet</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
               {errors.map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -445,14 +437,14 @@ export default function NewObservationPage() {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2 pb-4">
+        <div className="mt-10 flex items-center gap-4 pb-4">
           <button type="button" onClick={handleSave} className={btnPrimary}>
             Save observation
           </button>
           <Link href="/inbox" className={btnSecondary}>
             Cancel
           </Link>
-          <p className="ml-2 text-[11.5px] text-ink-faint">
+          <p className="text-[11.5px] text-ink-faint">
             Saved observations enter the inbox as unreviewed.
           </p>
         </div>

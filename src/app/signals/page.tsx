@@ -3,10 +3,10 @@
 /**
  * Signal Library — the core evidence base of the platform. Every signal is
  * present-day evidence suggesting a future possibility; nothing here is a
- * trend. Simple view is a readable card list with the essential filters;
- * Analyst view opens dense filtering, sorting, the table view, and the mono
- * score chips, cross-linking into clusters, contradictions, and the rest of
- * the pipeline.
+ * trend. Layout has exactly four layers: header, one control bar, the signal
+ * list, and the collapsed page guide. Search, sector, confidence and sort are
+ * always visible; every other filter waits behind "More filters". Analyst
+ * view adds a quiet list/table toggle.
  */
 
 import Link from "next/link";
@@ -16,16 +16,13 @@ import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import {
-  ConfidenceBadge,
-  IdChip,
-  ReviewStatusBadge,
-  SignalStrengthBadge,
-} from "@/components/badges";
-import { SectorTags } from "@/components/tags";
-import { Select, TextInput } from "@/components/form";
-import { DepthHint, useViewMode } from "@/components/ViewMode";
+  ControlBar,
+  ControlSearch,
+  ControlSelect,
+} from "@/components/ControlBar";
+import { ConfidenceBadge, ReviewStatusBadge, SignalStrengthBadge } from "@/components/badges";
+import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
-import { scoreHeadline } from "@/lib/explain";
 import { zoomComplete } from "@/lib/validation";
 import { DEFINITIONS } from "@/lib/copy";
 import type {
@@ -35,8 +32,6 @@ import type {
   Sector,
   Signal,
   SignalStrength,
-  Source,
-  SourceType,
   SystemAffected,
   TimeHorizon,
 } from "@/lib/types";
@@ -46,12 +41,10 @@ import {
   REVIEW_STATUS_LABELS,
   SECTOR_LABELS,
   SIGNAL_STRENGTH_LABELS,
-  SOURCE_TYPE_LABELS,
   SYSTEM_LABELS,
   TIME_HORIZON_LABELS,
-  TIME_HORIZON_SHORT,
 } from "@/lib/types";
-import { ScoreChips, btnPrimary, fmtDate, optionsFrom } from "./signal-ui";
+import { ScoreChips, btnPrimary, fmtDate, optionsFrom, signalRowSummary } from "./signal-ui";
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -59,10 +52,7 @@ import { ScoreChips, btnPrimary, fmtDate, optionsFrom } from "./signal-ui";
 
 interface Filters {
   country: string;
-  city: string;
   sector: "" | Sector;
-  sourceType: "" | SourceType;
-  minCredibility: number;
   strength: "" | SignalStrength;
   confidence: "" | ConfidenceLevel;
   horizon: "" | TimeHorizon;
@@ -84,10 +74,7 @@ interface Filters {
 
 const DEFAULT_FILTERS: Filters = {
   country: "",
-  city: "",
   sector: "",
-  sourceType: "",
-  minCredibility: 1,
   strength: "",
   confidence: "",
   horizon: "",
@@ -119,6 +106,22 @@ function countActiveFilters(f: Filters): number {
   });
   return n;
 }
+
+/** Prepend an "Any" choice to an enum option list for a ControlSelect. */
+function withAny<T extends string>(
+  anyLabel: string,
+  options: Array<{ value: T; label: string }>,
+): Array<{ value: string; label: string }> {
+  return [{ value: "", label: anyLabel }, ...options];
+}
+
+const MIN_SCORE_OPTIONS = [
+  { value: "1", label: "Any" },
+  { value: "2", label: "2+" },
+  { value: "3", label: "3+" },
+  { value: "4", label: "4+" },
+  { value: "5", label: "5" },
+];
 
 // ---------------------------------------------------------------------------
 // Sorting
@@ -194,7 +197,6 @@ function sortSignals(list: Signal[], key: SortKey): Signal[] {
 function SignalsHeader() {
   return (
     <PageHeader
-      overline="Scan & Classify"
       title="Signal Library"
       description={DEFINITIONS.signal}
       actions={
@@ -206,96 +208,24 @@ function SignalsHeader() {
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
-        {label}
-      </span>
-      <span className="mt-0.5 block">{children}</span>
-    </label>
-  );
-}
+/** Strength only earns space on a row when it says something actionable. */
+const MEANINGFUL_STRENGTHS: SignalStrength[] = ["weak", "contradictory", "established"];
 
-const MIN_SCORE_CHOICES = [
-  { value: 1, label: "Any" },
-  { value: 2, label: "2 or more" },
-  { value: 3, label: "3 or more" },
-  { value: 4, label: "4 or more" },
-  { value: 5, label: "5 only" },
-];
-
-function MinScoreSelect({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function SignalRow({ signal }: { signal: Signal }) {
   return (
-    <Select value={value} onChange={(e) => onChange(Number(e.target.value))}>
-      {MIN_SCORE_CHOICES.map((c) => (
-        <option key={c.value} value={c.value}>
-          {c.label}
-        </option>
-      ))}
-    </Select>
-  );
-}
-
-function SignalCard({ signal, simple }: { signal: Signal; simple: boolean }) {
-  return (
-    <article className="card flex flex-col px-4 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <IdChip id={signal.id} />
-        <span className="text-[10.5px] text-ink-faint">{fmtDate(signal.dateObserved)}</span>
-      </div>
-      <Link
-        href={`/signals/${signal.id}`}
-        className="mt-1 font-display text-[15px] leading-snug text-ink hover:text-accent-ink hover:underline"
-      >
-        {signal.title}
-      </Link>
-      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-soft">
-        {signal.description}
-      </p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <SignalStrengthBadge strength={signal.signalStrength} />
-        <ConfidenceBadge level={signal.confidence} />
-        <ReviewStatusBadge status={signal.reviewStatus} />
-        {!simple ? <ScoreChips scores={signal.scores} /> : null}
-      </div>
-      {simple ? (
-        <p className="mt-1.5 text-[11.5px] text-ink-soft">
-          {scoreHeadline("novelty", signal.scores.novelty)} ·{" "}
-          {scoreHeadline("momentum", signal.scores.momentum)}
+    <Link href={`/signals/${signal.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+          {signal.title}
         </p>
-      ) : null}
-      {signal.sectors.length > 0 ? (
-        <div className="mt-2">
-          <SectorTags sectors={signal.sectors} />
-        </div>
-      ) : null}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-2 text-[11px] text-ink-faint">
-        <span>
-          {signal.country}
-          {signal.city ? ` · ${signal.city}` : ""}
-        </span>
-        {!simple ? (
-          <span
-            className="font-mono"
-            title={TIME_HORIZON_LABELS[signal.timeHorizon]}
-          >
-            {TIME_HORIZON_SHORT[signal.timeHorizon]}
+        {MEANINGFUL_STRENGTHS.includes(signal.signalStrength) ? (
+          <span className="shrink-0">
+            <SignalStrengthBadge strength={signal.signalStrength} />
           </span>
         ) : null}
-        <span title="Linked clusters and contradictions">
-          {signal.clusterIds.length} cluster{signal.clusterIds.length === 1 ? "" : "s"} ·{" "}
-          {signal.contradictionIds.length} contradiction
-          {signal.contradictionIds.length === 1 ? "" : "s"}
-        </span>
       </div>
-    </article>
+      <p className="mt-1 text-[12px] text-ink-faint">{signalRowSummary(signal)}</p>
+    </Link>
   );
 }
 
@@ -306,14 +236,10 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Id</th>
               <th>Signal</th>
               <th>Strength</th>
               <th>Confidence</th>
               <th>N / M / E / S</th>
-              <th>Sectors</th>
-              <th>Geography</th>
-              <th>Horizon</th>
               <th>Review</th>
               <th>Observed</th>
             </tr>
@@ -321,9 +247,6 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
           <tbody>
             {signals.map((s) => (
               <tr key={s.id}>
-                <td>
-                  <IdChip id={s.id} />
-                </td>
                 <td>
                   <Link
                     href={`/signals/${s.id}`}
@@ -340,25 +263,6 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
                 </td>
                 <td>
                   <ScoreChips scores={s.scores} />
-                </td>
-                <td>
-                  {s.sectors.length > 0 ? (
-                    <SectorTags sectors={s.sectors} />
-                  ) : (
-                    <span className="text-[11px] text-ink-faint">Unclassified</span>
-                  )}
-                </td>
-                <td className="text-[12.5px] text-ink-soft">
-                  {s.country}
-                  {s.city ? <span className="text-ink-faint"> · {s.city}</span> : null}
-                </td>
-                <td>
-                  <span
-                    className="font-mono text-[11.5px] text-ink-soft whitespace-nowrap"
-                    title={TIME_HORIZON_LABELS[s.timeHorizon]}
-                  >
-                    {TIME_HORIZON_SHORT[s.timeHorizon]}
-                  </span>
                 </td>
                 <td>
                   <ReviewStatusBadge status={s.reviewStatus} />
@@ -384,7 +288,6 @@ function SignalsContent() {
   const mode = useViewMode();
   const searchParams = useSearchParams();
   const signals = useIntelligenceStore((s) => s.signals);
-  const sources = useIntelligenceStore((s) => s.sources);
 
   const [filters, setFilters] = useState<Filters>(() => {
     const sectorParam = searchParams.get("sector");
@@ -398,44 +301,37 @@ function SignalsContent() {
       zoomIncomplete: searchParams.get("zoom") === "incomplete",
     };
   });
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(
-    () => countActiveFilters(filters) > 0,
-  );
-  const [view, setView] = useState<"cards" | "table">("cards");
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"list" | "table">("list");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
 
-  const sourceById = useMemo(() => {
-    const map = new Map<string, Source>();
-    sources.forEach((s) => map.set(s.id, s));
-    return map;
-  }, [sources]);
-
   const countryOptions = useMemo(
-    () => Array.from(new Set(signals.map((s) => s.country))).sort(),
+    () => [
+      { value: "", label: "All countries" },
+      ...Array.from(new Set(signals.map((s) => s.country)))
+        .sort()
+        .map((c) => ({ value: c, label: c })),
+    ],
     [signals],
   );
-  const cityOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(signals.map((s) => s.city).filter((c): c is string => Boolean(c))),
-      ).sort(),
+  const tagOptions = useMemo(
+    () => [
+      { value: "", label: "Any tag" },
+      ...Array.from(new Set(signals.flatMap((s) => s.tags)))
+        .sort()
+        .map((t) => ({ value: t, label: t })),
+    ],
     [signals],
   );
 
   const filtered = useMemo(() => {
     const f = filters;
-    const tagQuery = f.tag.trim().toLowerCase();
+    const q = query.trim().toLowerCase();
     return signals.filter((s) => {
+      if (q && !`${s.title} ${s.description} ${s.tags.join(" ")}`.toLowerCase().includes(q))
+        return false;
       if (f.country && s.country !== f.country) return false;
-      if (f.city && (s.city ?? "") !== f.city) return false;
       if (f.sector && !s.sectors.includes(f.sector)) return false;
-      const linked = s.sourceIds
-        .map((id) => sourceById.get(id))
-        .filter((src): src is Source => Boolean(src));
-      if (f.sourceType && !linked.some((src) => src.sourceType === f.sourceType))
-        return false;
-      if (f.minCredibility > 1 && !linked.some((src) => src.credibility >= f.minCredibility))
-        return false;
       if (f.strength && s.signalStrength !== f.strength) return false;
       if (f.confidence && s.confidence !== f.confidence) return false;
       if (f.horizon && s.timeHorizon !== f.horizon) return false;
@@ -446,14 +342,14 @@ function SignalsContent() {
       if (f.system && !s.systemsAffected.includes(f.system)) return false;
       if (f.actorType && !s.actorTypes.includes(f.actorType)) return false;
       if (f.review && s.reviewStatus !== f.review) return false;
-      if (tagQuery && !s.tags.some((t) => t.toLowerCase().includes(tagQuery))) return false;
+      if (f.tag && !s.tags.includes(f.tag)) return false;
       if (f.attentionNovelty && !(s.scores.novelty >= 4 && s.confidence === "low"))
         return false;
       if (f.unclustered && s.clusterIds.length !== 0) return false;
       if (f.zoomIncomplete && zoomComplete(s).valid) return false;
       return true;
     });
-  }, [signals, sourceById, filters]);
+  }, [signals, filters, query]);
 
   const sorted = useMemo(() => sortSignals(filtered, sortKey), [filtered, sortKey]);
 
@@ -468,6 +364,7 @@ function SignalsContent() {
 
   const simple = mode === "simple";
   const activeCount = countActiveFilters(filters);
+  const isFiltered = activeCount > 0 || query.trim().length > 0;
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((f) => ({ ...f, [key]: value }));
 
@@ -483,7 +380,7 @@ function SignalsContent() {
     },
     {
       key: "unclustered",
-      label: "Unclustered only",
+      label: "Unclustered",
       title: "Signals not yet connected to any cluster candidate",
     },
     {
@@ -496,289 +393,158 @@ function SignalsContent() {
   return (
     <>
       <SignalsHeader />
-      {simple ? (
-        <div className="-mt-3 mb-4">
-          <DepthHint>Full filters, scoring columns and table view</DepthHint>
-        </div>
-      ) : null}
       <WalkthroughPanel pageId="signals" />
 
-      {/* Filter bar */}
-      <section className="card mb-4">
-        <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((o) => !o)}
-            className="overline-label hover:text-accent-ink"
-          >
-            {filtersOpen ? "▾" : "▸"} Filters
-            {activeCount > 0 ? (
-              <span className="ml-1.5 font-mono text-[10.5px] text-accent-ink normal-case">
-                {activeCount} active
-              </span>
-            ) : null}
-          </button>
-          {activeCount > 0 ? (
-            <button
-              type="button"
-              onClick={() => setFilters({ ...DEFAULT_FILTERS })}
-              className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-            >
-              Reset all filters
-            </button>
-          ) : null}
-        </header>
-        {filtersOpen ? (
-          <div className="border-t border-line px-4 py-3">
-            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-              <FilterField label="Country">
-                <Select
-                  value={filters.country}
-                  onChange={(e) => set("country", e.target.value)}
-                >
-                  <option value="">Any</option>
-                  {countryOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              {!simple ? (
-                <FilterField label="City">
-                  <Select value={filters.city} onChange={(e) => set("city", e.target.value)}>
-                    <option value="">Any</option>
-                    {cityOptions.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </Select>
-                </FilterField>
-              ) : null}
-              <FilterField label="Sector">
-                <Select
-                  value={filters.sector}
-                  onChange={(e) => set("sector", e.target.value as Filters["sector"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(SECTOR_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              {!simple ? (
-                <>
-                  <FilterField label="Source type">
-                    <Select
-                      value={filters.sourceType}
-                      onChange={(e) =>
-                        set("sourceType", e.target.value as Filters["sourceType"])
-                      }
-                    >
-                      <option value="">Any</option>
-                      {optionsFrom(SOURCE_TYPE_LABELS).map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FilterField>
-                  <FilterField label="Min source credibility">
-                    <MinScoreSelect
-                      value={filters.minCredibility}
-                      onChange={(v) => set("minCredibility", v)}
-                    />
-                  </FilterField>
-                  <FilterField label="Signal strength">
-                    <Select
-                      value={filters.strength}
-                      onChange={(e) => set("strength", e.target.value as Filters["strength"])}
-                    >
-                      <option value="">Any</option>
-                      {optionsFrom(SIGNAL_STRENGTH_LABELS).map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FilterField>
-                </>
-              ) : null}
-              <FilterField label="Confidence">
-                <Select
-                  value={filters.confidence}
-                  onChange={(e) => set("confidence", e.target.value as Filters["confidence"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(CONFIDENCE_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              {!simple ? (
-                <>
-                  <FilterField label="Time horizon">
-                    <Select
-                      value={filters.horizon}
-                      onChange={(e) => set("horizon", e.target.value as Filters["horizon"])}
-                    >
-                      <option value="">Any</option>
-                      {optionsFrom(TIME_HORIZON_LABELS).map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FilterField>
-                  <FilterField label="Min novelty">
-                    <MinScoreSelect
-                      value={filters.minNovelty}
-                      onChange={(v) => set("minNovelty", v)}
-                    />
-                  </FilterField>
-                  <FilterField label="Min momentum">
-                    <MinScoreSelect
-                      value={filters.minMomentum}
-                      onChange={(v) => set("minMomentum", v)}
-                    />
-                  </FilterField>
-                  <FilterField label="Min evidence">
-                    <MinScoreSelect
-                      value={filters.minEvidence}
-                      onChange={(v) => set("minEvidence", v)}
-                    />
-                  </FilterField>
-                  <FilterField label="Min strategic relevance">
-                    <MinScoreSelect
-                      value={filters.minStrategic}
-                      onChange={(v) => set("minStrategic", v)}
-                    />
-                  </FilterField>
-                  <FilterField label="System affected">
-                    <Select
-                      value={filters.system}
-                      onChange={(e) => set("system", e.target.value as Filters["system"])}
-                    >
-                      <option value="">Any</option>
-                      {optionsFrom(SYSTEM_LABELS).map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FilterField>
-                  <FilterField label="Actor type">
-                    <Select
-                      value={filters.actorType}
-                      onChange={(e) =>
-                        set("actorType", e.target.value as Filters["actorType"])
-                      }
-                    >
-                      <option value="">Any</option>
-                      {optionsFrom(ACTOR_TYPE_LABELS).map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FilterField>
-                </>
-              ) : null}
-              <FilterField label="Review status">
-                <Select
-                  value={filters.review}
-                  onChange={(e) => set("review", e.target.value as Filters["review"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(REVIEW_STATUS_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              <FilterField label="Tag contains">
-                <TextInput
-                  value={filters.tag}
-                  onChange={(e) => set("tag", e.target.value)}
-                  placeholder="e.g. heritage"
+      <ControlBar
+        more={
+          <>
+            <ControlSelect
+              label="Country"
+              value={filters.country}
+              onChange={(v) => set("country", v)}
+              options={countryOptions}
+            />
+            <ControlSelect
+              label="Strength"
+              value={filters.strength}
+              onChange={(v) => set("strength", v as Filters["strength"])}
+              options={withAny("Any strength", optionsFrom(SIGNAL_STRENGTH_LABELS))}
+            />
+            <ControlSelect
+              label="Horizon"
+              value={filters.horizon}
+              onChange={(v) => set("horizon", v as Filters["horizon"])}
+              options={withAny("Any horizon", optionsFrom(TIME_HORIZON_LABELS))}
+            />
+            <ControlSelect
+              label="Novelty"
+              value={String(filters.minNovelty)}
+              onChange={(v) => set("minNovelty", Number(v))}
+              options={MIN_SCORE_OPTIONS}
+            />
+            <ControlSelect
+              label="Momentum"
+              value={String(filters.minMomentum)}
+              onChange={(v) => set("minMomentum", Number(v))}
+              options={MIN_SCORE_OPTIONS}
+            />
+            <ControlSelect
+              label="Evidence"
+              value={String(filters.minEvidence)}
+              onChange={(v) => set("minEvidence", Number(v))}
+              options={MIN_SCORE_OPTIONS}
+            />
+            <ControlSelect
+              label="Strategic"
+              value={String(filters.minStrategic)}
+              onChange={(v) => set("minStrategic", Number(v))}
+              options={MIN_SCORE_OPTIONS}
+            />
+            <ControlSelect
+              label="System"
+              value={filters.system}
+              onChange={(v) => set("system", v as Filters["system"])}
+              options={withAny("Any system", optionsFrom(SYSTEM_LABELS))}
+            />
+            <ControlSelect
+              label="Actor"
+              value={filters.actorType}
+              onChange={(v) => set("actorType", v as Filters["actorType"])}
+              options={withAny("Any actor", optionsFrom(ACTOR_TYPE_LABELS))}
+            />
+            <ControlSelect
+              label="Review"
+              value={filters.review}
+              onChange={(v) => set("review", v as Filters["review"])}
+              options={withAny("Any status", optionsFrom(REVIEW_STATUS_LABELS))}
+            />
+            <ControlSelect
+              label="Tag"
+              value={filters.tag}
+              onChange={(v) => set("tag", v)}
+              options={tagOptions}
+            />
+            {specialToggles.map((t) => (
+              <label
+                key={t.key}
+                title={t.title}
+                className="flex cursor-pointer items-center gap-1.5 text-[12px] text-ink-faint hover:text-ink-soft"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-[#29513f]"
+                  checked={filters[t.key]}
+                  onChange={() => set(t.key, !filters[t.key])}
                 />
-              </FilterField>
-            </div>
+                {t.label}
+              </label>
+            ))}
+          </>
+        }
+        right={
+          <>
+            {isFiltered ? (
+              <>
+                <span className="text-[12px] text-ink-faint">
+                  {sorted.length} of {signals.length} match
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters({ ...DEFAULT_FILTERS });
+                    setQuery("");
+                  }}
+                  className="text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+                >
+                  Reset
+                </button>
+              </>
+            ) : null}
             {!simple ? (
-              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
-                {specialToggles.map((t) => (
+              <span className="flex items-center gap-2 text-[12px]">
+                {(
+                  [
+                    { key: "list", label: "List" },
+                    { key: "table", label: "Table" },
+                  ] as const
+                ).map((v) => (
                   <button
-                    key={t.key}
+                    key={v.key}
                     type="button"
-                    title={t.title}
-                    onClick={() => set(t.key, !filters[t.key])}
-                    className={`border px-2.5 py-1 text-[11.5px] rounded-[2px] ${
-                      filters[t.key]
-                        ? "border-accent bg-accent-soft font-medium text-accent-ink"
-                        : "border-line bg-surface text-ink-soft hover:border-line-strong"
-                    }`}
+                    aria-pressed={view === v.key}
+                    onClick={() => setView(v.key)}
+                    className={
+                      view === v.key ? "text-ink" : "text-ink-faint hover:text-ink-soft"
+                    }
                   >
-                    {t.label}
+                    {v.label}
                   </button>
                 ))}
-              </div>
+              </span>
             ) : null}
-          </div>
-        ) : null}
-      </section>
-
-      {/* Toolbar: count, plus sort and view controls in Analyst view */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[11.5px] text-ink-faint">
-          <span className="font-mono">{sorted.length}</span> of{" "}
-          <span className="font-mono">{signals.length}</span> signals match
-        </p>
-        {!simple ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
-              Sort
-              <Select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className="w-auto"
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <div className="flex overflow-hidden rounded-[2px] border border-line">
-              {(
-                [
-                  { key: "cards", label: "Cards" },
-                  { key: "table", label: "Table" },
-                ] as const
-              ).map((v) => (
-                <button
-                  key={v.key}
-                  type="button"
-                  onClick={() => setView(v.key)}
-                  className={`px-2.5 py-1 text-[11.5px] ${
-                    view === v.key
-                      ? "bg-accent-soft font-medium text-accent-ink"
-                      : "bg-surface text-ink-soft hover:text-ink"
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
+          </>
+        }
+      >
+        <ControlSearch value={query} onChange={setQuery} placeholder="Search signals…" />
+        <ControlSelect
+          label="Sector"
+          value={filters.sector}
+          onChange={(v) => set("sector", v as Filters["sector"])}
+          options={withAny("All sectors", optionsFrom(SECTOR_LABELS))}
+        />
+        <ControlSelect
+          label="Confidence"
+          value={filters.confidence}
+          onChange={(v) => set("confidence", v as Filters["confidence"])}
+          options={withAny("Any", optionsFrom(CONFIDENCE_LABELS))}
+        />
+        <ControlSelect
+          label="Sort"
+          value={sortKey}
+          onChange={(v) => setSortKey(v as SortKey)}
+          options={SORT_OPTIONS}
+        />
+      </ControlBar>
 
       {signals.length === 0 ? (
         <EmptyState
@@ -787,26 +553,15 @@ function SignalsContent() {
           actionHref="/signals/new"
         />
       ) : sorted.length === 0 ? (
-        <>
-          <EmptyState message="No signals match the current filters. The library holds signals outside this slice — relax one filter at a time (score minimums and source credibility narrow results fastest), or reset all filters to see the full evidence base." />
-          <div className="mt-3 text-center">
-            <button
-              type="button"
-              onClick={() => setFilters({ ...DEFAULT_FILTERS })}
-              className="text-[12px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-ink"
-            >
-              Reset all filters
-            </button>
-          </div>
-        </>
-      ) : simple || view === "cards" ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {sorted.map((s) => (
-            <SignalCard key={s.id} signal={s} simple={simple} />
-          ))}
-        </div>
-      ) : (
+        <EmptyState message="No signals match the current filters. The library holds signals outside this slice — relax one filter at a time (score minimums narrow results fastest), or reset the filters to see the full evidence base." />
+      ) : !simple && view === "table" ? (
         <SignalsTable signals={sorted} />
+      ) : (
+        <section aria-label="Signals">
+          {sorted.map((s) => (
+            <SignalRow key={s.id} signal={s} />
+          ))}
+        </section>
       )}
     </>
   );

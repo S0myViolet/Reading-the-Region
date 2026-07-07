@@ -9,17 +9,12 @@
  * created by the convergence of multiple drivers. It is not a trend, a theme,
  * a category, a campaign idea, or a prediction — and this layer's UI keeps
  * that discipline visible: readiness for scenarios is stated plainly, and the
- * monitoring status always carries its plain-language meaning.
+ * monitoring status always carries its plain-language meaning. In the calm
+ * redesign the analyst extras fold into faint text as words, not chips.
  */
 
-import { Pill } from "@/components/badges";
 import { explainTerritoryStatus } from "@/lib/explain";
 import type { FutureTerritory, Score, TerritoryMonitoringStatus } from "@/lib/types";
-
-export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -31,34 +26,20 @@ export function fmtDate(iso: string): string {
 
 type Readiness = FutureTerritory["scenarioReadiness"];
 
-const READINESS_LABELS: Record<Readiness, string> = {
-  not_ready: "Not ready for scenarios",
-  ready: "Ready for scenarios",
-  scenarios_active: "Scenarios active",
+/** Scenario readiness in plain words, for folding into faint metadata lines. */
+export const READINESS_WORDS: Record<Readiness, string> = {
+  not_ready: "not ready for scenarios",
+  ready: "ready for scenarios",
+  scenarios_active: "scenarios active",
 };
 
-const READINESS_TONES: Record<Readiness, "caution" | "info" | "accent"> = {
-  not_ready: "caution",
-  ready: "info",
-  scenarios_active: "accent",
-};
-
-const READINESS_TITLES: Record<Readiness, string> = {
+export const READINESS_TITLES: Record<Readiness, string> = {
   not_ready:
     "The territory's evidence base is not yet strong enough to explore scenarios from it.",
   ready:
     "The territory is sufficiently grounded to generate scenarios — none exist yet.",
   scenarios_active: "Scenarios are being developed from this territory.",
 };
-
-/** Scenario readiness pill: caution / info / accent by readiness state. */
-export function ScenarioReadinessPill({ readiness }: { readiness: Readiness }) {
-  return (
-    <Pill tone={READINESS_TONES[readiness]} title={READINESS_TITLES[readiness]}>
-      {READINESS_LABELS[readiness]}
-    </Pill>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Plain-language helpers for the visibility layers
@@ -88,8 +69,8 @@ export function countInWords(n: number, singular: string, plural?: string): stri
 
 /**
  * The indicator-movement sentence from explainTerritoryStatus — the short
- * plain reading that sits next to the status badge on list cards. Falls back
- * to the full explanation if the sentence split ever fails.
+ * plain reading that sits next to the status badge on list entries. Falls
+ * back to the full explanation if the sentence split ever fails.
  */
 export function territoryStatusSentence(t: FutureTerritory): string {
   const full = explainTerritoryStatus(t);
@@ -114,15 +95,9 @@ const EVIDENCE_STRENGTH_SHORT: Record<Score, string> = {
   5: "very strong",
 };
 
-/** Evidence-strength chip: the score never appears without its word. */
-export function EvidenceStrengthChip({ value }: { value: Score }) {
-  const tone: "accent" | "info" | "caution" =
-    value >= 4 ? "accent" : value === 3 ? "info" : "caution";
-  return (
-    <Pill tone={tone} title={EVIDENCE_STRENGTH_WORDS[value]}>
-      Evidence {value}/5 · {EVIDENCE_STRENGTH_SHORT[value]}
-    </Pill>
-  );
+/** Evidence strength as faint words: the score never appears without its word. */
+export function evidenceStrengthWords(value: Score): string {
+  return `evidence ${value}/5, ${EVIDENCE_STRENGTH_SHORT[value]}`;
 }
 
 /**

@@ -7,12 +7,16 @@
  */
 
 import type { ConfidenceLevel, Region, SignalScores } from "@/lib/types";
-import { SCORE_DIMENSION_LABELS, SCORE_RUBRICS } from "@/lib/types";
+import { CONFIDENCE_LABELS, SCORE_DIMENSION_LABELS, SCORE_RUBRICS } from "@/lib/types";
+import { scoreHeadline } from "@/lib/explain";
 
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
+  "bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink";
 export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "rounded-[4px] bg-surface-muted px-3.5 py-1.5 text-[12.5px] text-ink-soft hover:text-ink";
+/** Quiet text-link alternative to a second button. */
+export const btnText =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 export function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -99,9 +103,9 @@ export function sensitiveTags(tags: string[]): string[] {
 }
 
 /**
- * Compact mono score chips for the four headline dimensions, e.g.
- * "N4 M3 E2 S5". The full rubric anchor appears as a tooltip. The evidence
- * chip turns amber when evidence is weak (≤ 2).
+ * Compact mono score readout for the four headline dimensions, e.g.
+ * "N4 M3 E2 S5" — plain text, no chip borders. The full rubric anchor
+ * appears as a tooltip; the evidence figure turns amber when weak (≤ 2).
  */
 export function ScoreChips({ scores }: { scores: SignalScores }) {
   const chips: Array<{ letter: string; key: keyof SignalScores }> = [
@@ -111,18 +115,14 @@ export function ScoreChips({ scores }: { scores: SignalScores }) {
     { letter: "S", key: "strategicRelevance" },
   ];
   return (
-    <span className="inline-flex gap-1 font-mono text-[10.5px]">
+    <span className="inline-flex gap-2 font-mono text-[11px]">
       {chips.map(({ letter, key }) => {
         const weakEvidence = key === "evidence" && scores[key] <= 2;
         return (
           <span
             key={key}
             title={`${SCORE_DIMENSION_LABELS[key]} ${scores[key]}/5 — ${SCORE_RUBRICS[key][scores[key]]}`}
-            className={`border px-1 py-px rounded-[2px] ${
-              weakEvidence
-                ? "border-caution/30 bg-caution-soft text-caution"
-                : "border-line bg-surface-muted text-ink-soft"
-            }`}
+            className={weakEvidence ? "text-caution" : "text-ink-soft"}
           >
             {letter}
             {scores[key]}
@@ -131,6 +131,28 @@ export function ScoreChips({ scores }: { scores: SignalScores }) {
       })}
     </span>
   );
+}
+
+/**
+ * Plain-words secondary line for a signal list row: the two strongest
+ * headline scores, the confidence level, and the country, joined by " · ".
+ */
+export function signalRowSummary(signal: {
+  scores: SignalScores;
+  confidence: ConfidenceLevel;
+  country: string;
+}): string {
+  const headline: Array<keyof SignalScores> = [
+    "novelty",
+    "momentum",
+    "evidence",
+    "strategicRelevance",
+  ];
+  const strongest = [...headline]
+    .sort((a, b) => signal.scores[b] - signal.scores[a])
+    .slice(0, 2)
+    .map((dim) => scoreHeadline(dim, signal.scores[dim]));
+  return [...strongest, CONFIDENCE_LABELS[signal.confidence], signal.country].join(" · ");
 }
 
 /**

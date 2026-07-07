@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Observation detail — the full captured record on the left, the triage
- * panel on the right. Triage decides whether the observation is promoted
- * to a signal (minimum 3 of 9 criteria), archived as noise, held for more
- * evidence, marked duplicate, split, or merged. Every filtering decision
- * requires a rationale so the noise archive stays auditable.
+ * Observation detail — the captured record reads as an article on the left;
+ * the triage panel on the right is the page's task. Triage decides whether
+ * the observation is promoted to a signal (minimum 3 of 9 criteria),
+ * archived as noise, held for more evidence, marked duplicate, split, or
+ * merged. Every filtering decision requires a rationale so the noise
+ * archive stays auditable.
  */
 
 import Link from "next/link";
@@ -18,29 +19,19 @@ import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
 import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { SectorTags, SourceBiasTags } from "@/components/tags";
 import { EntityLink, RelatedObjectsPanel } from "@/components/EntityLink";
-import { CheckboxList, TextArea, TextInput } from "@/components/form";
+import { TextArea, TextInput } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import {
   canPromoteObservation,
   promotionCriteriaMet,
 } from "@/lib/validation";
-import type {
-  Observation,
-  ObservationStatus,
-  PromotionChecklist,
-} from "@/lib/types";
+import type { Observation, ObservationStatus } from "@/lib/types";
 import {
   PROMOTION_CRITERIA,
   PROMOTION_MIN_CRITERIA,
   SOURCE_TYPE_LABELS,
 } from "@/lib/types";
-import {
-  EMPTY_CHECKLIST,
-  ObservationStatusPill,
-  btnPrimary,
-  btnSecondary,
-  fmtDate,
-} from "../observation-ui";
+import { ObservationStatusPill, btnPrimary, btnSecondary, fmtDate } from "../observation-ui";
 
 // ---------------------------------------------------------------------------
 // Triage actions requiring a rationale
@@ -132,41 +123,49 @@ function TriagePanel({ obs }: { obs: Observation }) {
   }
 
   return (
-    <section className="card">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">Triage — promotion checklist</h2>
-      </header>
-      <div className="space-y-3 px-4 py-3">
-        <CheckboxList<keyof PromotionChecklist>
-          options={PROMOTION_CRITERIA.map((c) => ({ value: c.key, label: c.label }))}
-          selected={PROMOTION_CRITERIA.filter((c) => obs.checklist[c.key]).map(
-            (c) => c.key,
-          )}
-          onChange={(next) =>
-            updateObservation(obs.id, {
-              checklist: PROMOTION_CRITERIA.reduce(
-                (acc, c) => ({ ...acc, [c.key]: next.includes(c.key) }),
-                { ...EMPTY_CHECKLIST },
-              ),
-            })
-          }
-          columns={1}
-        />
-        <p
-          className={`border-t border-line pt-2.5 font-mono text-[11.5px] ${
-            promotable ? "text-accent-ink" : "text-ink-faint"
-          }`}
-        >
-          {met} of {total} criteria met — minimum {PROMOTION_MIN_CRITERIA} to promote
-        </p>
+    <section aria-label="Triage">
+      <h2 className="text-[13px] font-medium text-ink">Triage</h2>
+      <p className="mt-0.5 text-[12px] text-ink-faint">
+        Tick the promotion criteria that genuinely hold, then decide.
+      </p>
 
-        {obs.status === "promoted" ? (
-          <p className="text-[11.5px] text-ink-faint">
-            Triage is complete — this observation was promoted. Further evidence work
-            happens on the signal.
-          </p>
-        ) : (
-          <div className="space-y-2">
+      <div className="mt-4 space-y-2">
+        {PROMOTION_CRITERIA.map((c) => (
+          <label
+            key={c.key}
+            className="flex items-start gap-2 text-[12.5px] leading-snug text-ink-soft"
+          >
+            <input
+              type="checkbox"
+              checked={obs.checklist[c.key]}
+              onChange={(e) =>
+                updateObservation(obs.id, {
+                  checklist: { ...obs.checklist, [c.key]: e.target.checked },
+                })
+              }
+              className="mt-0.5 accent-[#29513f]"
+            />
+            {c.label}
+          </label>
+        ))}
+      </div>
+
+      <p
+        className={`mt-3 text-[12px] ${
+          promotable ? "text-accent-ink" : "text-ink-faint"
+        }`}
+      >
+        {met} of {total} criteria met — minimum {PROMOTION_MIN_CRITERIA} to promote
+      </p>
+
+      {obs.status === "promoted" ? (
+        <p className="mt-4 text-[12px] leading-relaxed text-ink-faint">
+          Triage is complete — this observation was promoted. Further evidence
+          work happens on the signal.
+        </p>
+      ) : (
+        <>
+          <div className="mt-4">
             {promotable ? (
               <Link
                 href={`/signals/new?fromObservation=${obs.id}`}
@@ -179,11 +178,11 @@ function TriagePanel({ obs }: { obs: Observation }) {
                 <button
                   type="button"
                   disabled
-                  className="w-full cursor-not-allowed border border-line bg-surface-muted px-3 py-1.5 text-[12.5px] text-ink-faint rounded-[2px]"
+                  className="w-full cursor-not-allowed rounded-[4px] bg-surface-muted px-3.5 py-1.5 text-[12.5px] text-ink-faint"
                 >
                   Promote to signal
                 </button>
-                <p className="mt-1 text-[11px] text-ink-faint">
+                <p className="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
                   Promotion is locked: only {met} of {total} criteria hold, and at
                   least {PROMOTION_MIN_CRITERIA} are required. Tick only the criteria
                   that genuinely apply — an observation is not promoted just because
@@ -191,72 +190,105 @@ function TriagePanel({ obs }: { obs: Observation }) {
                 </p>
               </div>
             )}
-
-            {TRIAGE_ACTIONS.map((action) => (
-              <div key={action.key}>
-                <button
-                  type="button"
-                  onClick={() => openAction(action.key)}
-                  className={`${btnSecondary} block w-full text-center`}
-                >
-                  {action.label}
-                </button>
-                {activeAction === action.key ? (
-                  <div className="mt-2 space-y-2 border border-line bg-surface-muted/40 p-2.5 rounded-[2px]">
-                    <p className="text-[11.5px] text-ink-soft">{action.prompt}</p>
-                    {action.key === "merge" ? (
-                      <TextInput
-                        value={mergeTarget}
-                        onChange={(e) => setMergeTarget(e.target.value)}
-                        placeholder="Target observation id, e.g. OBS-004"
-                      />
-                    ) : null}
-                    <TextArea
-                      value={rationale}
-                      onChange={(e) => setRationale(e.target.value)}
-                      placeholder="Rationale (required)"
-                      rows={3}
-                    />
-                    {error ? (
-                      <p className="text-[11.5px] text-tension">{error}</p>
-                    ) : null}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => confirmAction(action)}
-                        className={btnPrimary}
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveAction(null)}
-                        className={btnSecondary}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-
-            {obs.status === "split" ? (
-              <p className="text-[11.5px] text-ink-faint">
-                This observation was split. Create each resulting signal from{" "}
-                <Link
-                  href="/signals/new"
-                  className="text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
-                >
-                  Signals → New signal
-                </Link>{" "}
-                so every part carries its own evidence and scores.
-              </p>
-            ) : null}
           </div>
-        )}
-      </div>
+
+          <div className="mt-6">
+            <p className="text-[11px] text-ink-faint">Or file it instead</p>
+            <div className="mt-1.5 space-y-1">
+              {TRIAGE_ACTIONS.map((action) => (
+                <div key={action.key}>
+                  <button
+                    type="button"
+                    onClick={() => openAction(action.key)}
+                    aria-expanded={activeAction === action.key}
+                    className={`block py-0.5 text-left text-[12.5px] underline-offset-2 hover:underline ${
+                      activeAction === action.key
+                        ? "text-ink"
+                        : "text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    {action.label}
+                  </button>
+                  {activeAction === action.key ? (
+                    <div className="mb-4 mt-2 space-y-2 border-l-2 border-line pl-3">
+                      <p className="text-[11.5px] leading-relaxed text-ink-faint">
+                        {action.prompt}
+                      </p>
+                      {action.key === "merge" ? (
+                        <TextInput
+                          value={mergeTarget}
+                          onChange={(e) => setMergeTarget(e.target.value)}
+                          placeholder="Target observation id, e.g. OBS-004"
+                        />
+                      ) : null}
+                      <TextArea
+                        value={rationale}
+                        onChange={(e) => setRationale(e.target.value)}
+                        placeholder="Rationale (required)"
+                        rows={3}
+                      />
+                      {error ? (
+                        <p className="text-[11.5px] text-tension">{error}</p>
+                      ) : null}
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => confirmAction(action)}
+                          className={btnPrimary}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveAction(null)}
+                          className={btnSecondary}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {obs.status === "split" ? (
+            <p className="mt-4 text-[11.5px] leading-relaxed text-ink-faint">
+              This observation was split. Create each resulting signal from{" "}
+              <Link
+                href="/signals/new"
+                className="text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
+              >
+                Signals → New signal
+              </Link>{" "}
+              so every part carries its own evidence and scores.
+            </p>
+          ) : null}
+        </>
+      )}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Calm labelled fact for the record's definition block
+// ---------------------------------------------------------------------------
+
+function Fact({
+  label,
+  wide = false,
+  children,
+}: {
+  label: string;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={wide ? "sm:col-span-2" : undefined}>
+      <dt className="text-[11px] text-ink-faint">{label}</dt>
+      <dd className="mt-1 text-[13px] leading-relaxed text-ink-soft">{children}</dd>
+    </div>
   );
 }
 
@@ -290,7 +322,7 @@ export default function ObservationDetailPage() {
         <Breadcrumbs
           items={[{ label: "Scan Inbox", href: "/inbox" }, { label: "Observation" }]}
         />
-        <PageHeader overline="Scan & Classify" title="Observation" />
+        <PageHeader title="Observation" />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
@@ -303,7 +335,7 @@ export default function ObservationDetailPage() {
         <Breadcrumbs
           items={[{ label: "Scan Inbox", href: "/inbox" }, { label: id || "Unknown" }]}
         />
-        <PageHeader overline="Scan & Classify" title="Observation not found" />
+        <PageHeader title="Observation not found" />
         <EmptyState
           message={`No observation with id “${id}” exists in the intelligence base. It may have been removed by a data reset, or the id may be mistyped. Return to the Scan Inbox to review current observations or capture a new one.`}
           actionLabel="Back to Scan Inbox"
@@ -327,189 +359,155 @@ export default function ObservationDetailPage() {
         items={[{ label: "Scan Inbox", href: "/inbox" }, { label: obs.title }]}
       />
       <PageHeader
-        overline="Scan & Classify · Observation"
         title={obs.title}
         actions={<ObservationStatusPill status={obs.status} />}
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
-        {/* Left column — the full captured record */}
-        <div className="space-y-4">
+        {/* Left column — the captured record, read as an article */}
+        <div className="space-y-8">
           {obs.status === "promoted" && obs.promotedSignalId ? (
-            <div className="card border-l-2 border-l-accent px-4 py-3">
-              <p className="overline-label mb-1 text-accent-ink">Promoted</p>
-              <p className="mb-2 text-[12.5px] text-ink-soft">
-                This observation was promoted — the signal now carries the evidence
-                forward.
+            <section className="border-l-2 border-accent pl-4">
+              <p className="text-[13px] leading-relaxed text-ink-soft">
+                This observation was promoted — the signal now carries the
+                evidence forward.
               </p>
-              <EntityLink
-                kind="signal"
-                id={obs.promotedSignalId}
-                title={promotedSignal?.title ?? "Promoted signal"}
-              />
-            </div>
+              <div className="mt-1.5">
+                <EntityLink
+                  kind="signal"
+                  id={obs.promotedSignalId}
+                  title={promotedSignal?.title ?? "Promoted signal"}
+                />
+              </div>
+            </section>
           ) : null}
 
           {obs.status !== "promoted" && obs.triageRationale ? (
-            <div className="card border-l-2 border-l-caution px-4 py-3">
-              <p className="overline-label mb-1">{rationaleHeading}</p>
-              <p className="text-[13px] leading-relaxed text-ink-soft">
+            <section className="border-l-2 border-caution pl-4">
+              <h2 className="text-[13px] font-medium text-ink">{rationaleHeading}</h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
                 {obs.triageRationale}
               </p>
-            </div>
+            </section>
           ) : null}
 
-          <section className="card">
-            <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-              <h2 className="overline-label">Observation record</h2>
-              <IdChip id={obs.id} />
-            </header>
-            <div className="space-y-4 px-4 py-4">
-              <div>
-                <p className="overline-label mb-1">Description</p>
-                <p className="text-[13px] leading-relaxed text-ink-soft">
-                  {obs.description}
-                </p>
-              </div>
+          <p className="max-w-prose text-[13.5px] leading-relaxed text-ink-soft">
+            {obs.description}
+          </p>
 
-              <div>
-                <p className="overline-label mb-1">Source</p>
-                <div className="border border-line bg-surface-muted/40 px-3 py-2.5 rounded-[2px]">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[13px] font-medium text-ink">
-                      {obs.sourceName}
-                    </span>
-                    {source ? (
-                      <SourceCredibilityBadge score={source.credibility} />
-                    ) : null}
-                    {source?.isDemo ? <DemoTag /> : null}
-                  </div>
-                  <p className="mt-0.5 text-[11.5px] text-ink-faint">
-                    {SOURCE_TYPE_LABELS[obs.sourceType]}
-                  </p>
+          <section aria-label="Record details">
+            <h2 className="text-[13px] font-medium text-ink">Record</h2>
+            <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+              <Fact label="Source" wide>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-ink">{obs.sourceName}</span>
                   {source ? (
-                    <ViewGate min="analyst">
-                      <div className="mt-1.5">
-                        <SourceBiasTags tags={source.biasTags} />
-                      </div>
-                    </ViewGate>
-                  ) : (
-                    <p className="mt-1.5 text-[11px] text-ink-faint">
-                      Quick-capture source — not yet registered in the source
-                      library, so credibility and bias are unassessed.
-                    </p>
-                  )}
-                  <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                    {obs.sourceUrl ? (
-                      <a
-                        href={obs.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="break-all text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
-                      >
-                        {obs.sourceUrl}
-                      </a>
-                    ) : null}
-                    {source ? (
+                    <SourceCredibilityBadge score={source.credibility} />
+                  ) : null}
+                  {source?.isDemo ? <DemoTag /> : null}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-ink-faint">
+                  {SOURCE_TYPE_LABELS[obs.sourceType]}
+                  {source ? (
+                    <>
+                      {" · "}
                       <Link
                         href={`/sources/${source.id}`}
-                        className="text-[11.5px] text-accent-ink hover:underline"
+                        className="hover:text-accent-ink hover:underline"
                       >
-                        Source record · <span className="font-mono">{source.id}</span>
+                        source record <span className="font-mono">{source.id}</span>
                       </Link>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                <div>
-                  <dt className="overline-label">Date observed</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-                    {fmtDate(obs.dateObserved)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="overline-label">Event date</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-                    {obs.eventDate ? (
-                      fmtDate(obs.eventDate)
-                    ) : (
-                      <span className="text-ink-faint">Not recorded</span>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="overline-label">Region</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">{obs.region}</dd>
-                </div>
-                <div>
-                  <dt className="overline-label">Country / city</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-                    {obs.country}
-                    {obs.city ? ` · ${obs.city}` : ""}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="overline-label">Sectors</dt>
-                  <dd className="mt-1">
-                    {obs.sectors.length > 0 ? (
-                      <SectorTags sectors={obs.sectors} />
-                    ) : (
-                      <span className="text-[11.5px] text-ink-faint">
-                        No sectors assigned yet.
-                      </span>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="overline-label">Subsector</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-                    {obs.subsector ?? (
-                      <span className="text-ink-faint">Not recorded</span>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="overline-label">Actor involved</dt>
-                  <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-                    {obs.actorInvolved ?? (
-                      <span className="text-ink-faint">Not recorded</span>
-                    )}
-                  </dd>
-                </div>
-              </dl>
-
-              <div>
-                <p className="overline-label mb-1">Initial notes</p>
-                {obs.initialNotes ? (
-                  <p className="text-[13px] leading-relaxed text-ink-soft">
-                    {obs.initialNotes}
-                  </p>
+                    </>
+                  ) : (
+                    " · quick capture — credibility and bias not yet assessed"
+                  )}
+                </span>
+                {obs.sourceUrl ? (
+                  <a
+                    href={obs.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-0.5 block break-all text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-accent"
+                  >
+                    {obs.sourceUrl}
+                  </a>
+                ) : null}
+                {source ? (
+                  <ViewGate min="analyst">
+                    <span className="mt-1.5 block">
+                      <SourceBiasTags tags={source.biasTags} />
+                    </span>
+                  </ViewGate>
+                ) : null}
+              </Fact>
+              <Fact label="Date observed">{fmtDate(obs.dateObserved)}</Fact>
+              <Fact label="Event date">
+                {obs.eventDate ? (
+                  fmtDate(obs.eventDate)
                 ) : (
-                  <p className="text-[11.5px] text-ink-faint">No notes at capture.</p>
+                  <span className="text-ink-faint">Not recorded</span>
                 )}
-              </div>
-              <div>
-                <p className="overline-label mb-1">Potential future relevance</p>
-                {obs.potentialFutureRelevance ? (
-                  <p className="text-[13px] leading-relaxed text-ink-soft">
-                    {obs.potentialFutureRelevance}
-                  </p>
+              </Fact>
+              <Fact label="Region">{obs.region}</Fact>
+              <Fact label="Country / city">
+                {obs.country}
+                {obs.city ? ` · ${obs.city}` : ""}
+              </Fact>
+              <Fact label="Sectors" wide>
+                {obs.sectors.length > 0 ? (
+                  <SectorTags sectors={obs.sectors} />
                 ) : (
-                  <p className="text-[11.5px] text-ink-faint">
-                    Not stated. If no future relevance can be articulated during
-                    triage, consider archiving as noise.
-                  </p>
+                  <span className="text-ink-faint">No sectors assigned yet.</span>
                 )}
-              </div>
-              <DepthHint>Source bias tags and credibility detail</DepthHint>
-            </div>
+              </Fact>
+              <Fact label="Subsector">
+                {obs.subsector ?? <span className="text-ink-faint">Not recorded</span>}
+              </Fact>
+              <Fact label="Actor involved">
+                {obs.actorInvolved ?? (
+                  <span className="text-ink-faint">Not recorded</span>
+                )}
+              </Fact>
+              <Fact label="Record id">
+                <IdChip id={obs.id} />
+              </Fact>
+            </dl>
           </section>
+
+          <section aria-label="Initial notes">
+            <h2 className="text-[13px] font-medium text-ink">Initial notes</h2>
+            {obs.initialNotes ? (
+              <p className="mt-1.5 max-w-prose text-[13px] leading-relaxed text-ink-soft">
+                {obs.initialNotes}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[11.5px] text-ink-faint">
+                No notes at capture.
+              </p>
+            )}
+          </section>
+
+          <section aria-label="Potential future relevance">
+            <h2 className="text-[13px] font-medium text-ink">
+              Potential future relevance
+            </h2>
+            {obs.potentialFutureRelevance ? (
+              <p className="mt-1.5 max-w-prose text-[13px] leading-relaxed text-ink-soft">
+                {obs.potentialFutureRelevance}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[11.5px] text-ink-faint">
+                Not stated. If no future relevance can be articulated during
+                triage, consider archiving as noise.
+              </p>
+            )}
+          </section>
+
+          <DepthHint>Source bias tags and credibility detail</DepthHint>
         </div>
 
-        {/* Right column — triage and relationship trail */}
-        <div className="mt-4 space-y-4 lg:mt-0">
+        {/* Right column — triage (the page's task) and relationship trail */}
+        <div className="mt-10 space-y-10 lg:mt-0">
           <TriagePanel obs={obs} />
           <RelatedObjectsPanel
             groups={[

@@ -10,22 +10,18 @@
  * directions — and both sides must stay evidence-linked to signals.
  */
 
-import { Pill } from "@/components/badges";
 import type {
   Contradiction,
   ContradictionScores,
-  ContradictionType,
   Score,
 } from "@/lib/types";
-import {
-  CONTRADICTION_SCORE_LABELS,
-  CONTRADICTION_TYPE_LABELS,
-} from "@/lib/types";
 
+/** Calm primary button — the one filled action on a page. */
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink";
+/** Secondary actions are quiet text links, not bordered buttons. */
+export const textLink =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -33,80 +29,6 @@ export function fmtDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-// ---------------------------------------------------------------------------
-// Counts in words (simple view never leads with bare numbers)
-// ---------------------------------------------------------------------------
-
-const NUMBER_WORDS = [
-  "no",
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
-  "ten",
-  "eleven",
-  "twelve",
-];
-
-export function countInWords(n: number, singular: string, plural?: string): string {
-  const word = n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n);
-  return `${word} ${n === 1 ? singular : (plural ?? `${singular}s`)}`;
-}
-
-/** Linked-object counts for the simple list card, in words. */
-export function contradictionEvidenceCounts(c: Contradiction): string {
-  const a = c.sideASignalIds.length;
-  const b = c.sideBSignalIds.length;
-  if (a === 0 && b === 0) {
-    return "No signals are linked to either side yet — both sides need evidence before this tension carries weight.";
-  }
-  return `Evidence-linked to ${countInWords(a, "signal")} on Side A and ${countInWords(b, "signal")} on Side B.`;
-}
-
-/** Contradiction type shown as a pill in the reserved tension tone. */
-export function ContradictionTypePill({ type }: { type: ContradictionType }) {
-  return <Pill tone="tension">{CONTRADICTION_TYPE_LABELS[type]}</Pill>;
-}
-
-/** Short mono labels for the five contradiction scoring dimensions. */
-export const SCORE_CHIP_LABELS: Record<keyof ContradictionScores, string> = {
-  tensionStrength: "Tension",
-  strategicRichness: "Richness",
-  evidenceBalance: "Balance",
-  futureImpact: "Impact",
-  emotionalCharge: "Charge",
-};
-
-const SCORE_CHIP_KEYS = Object.keys(SCORE_CHIP_LABELS) as Array<
-  keyof ContradictionScores
->;
-
-/** Compact mono score chips, e.g. “Tension 4 · Richness 5 · Balance 3”. */
-export function ContradictionScoreChips({
-  scores,
-}: {
-  scores: ContradictionScores;
-}) {
-  return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      {SCORE_CHIP_KEYS.map((k) => (
-        <span
-          key={k}
-          title={`${CONTRADICTION_SCORE_LABELS[k]} — ${scores[k]}/5`}
-          className="border border-line bg-surface px-1.5 py-px font-mono text-[10.5px] tracking-wide text-ink-soft rounded-[2px]"
-        >
-          {SCORE_CHIP_LABELS[k]} {scores[k]}
-        </span>
-      ))}
-    </span>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -174,13 +96,6 @@ export const DEFAULT_CONTRADICTION_SCORES: ContradictionScores = {
   futureImpact: 2,
   emotionalCharge: 2,
 };
-
-/** Cast helper: ContradictionScores → indexable record for the generic ScoreGrid. */
-export function contradictionScoresRecord(
-  scores: ContradictionScores,
-): Record<keyof ContradictionScores, Score> {
-  return scores as Record<keyof ContradictionScores, Score>;
-}
 
 // ---------------------------------------------------------------------------
 // Score readings — a score is never shown as a bare number. The wording is
