@@ -8,22 +8,19 @@
  * contradictions, strengthening territories, the noise filter, and the
  * management center (system health). All data is derived client-side from the
  * persisted store, so the page is hydration-gated.
+ *
+ * Calm idiom: plain sections separated by whitespace and type hierarchy —
+ * no stat cards, no boxed dashboards. "What needs attention today" is the
+ * landing point after the numbers.
  */
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import {
-  ConfidenceBadge,
-  IdChip,
-  Pill,
-  SignalStrengthBadge,
-  TerritoryStatusBadge,
-} from "@/components/badges";
+import { TerritoryStatusBadge } from "@/components/badges";
 import { ContradictionPanel } from "@/components/ContradictionPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { IntelligencePipeline } from "@/components/IntelligencePipeline";
 import { PageHeader } from "@/components/PageHeader";
-import { ScoreBar } from "@/components/ScorePanel";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { RECOMMENDED_WORKFLOW } from "@/lib/copy";
@@ -40,7 +37,7 @@ import {
 } from "@/lib/derived";
 import { scoreHeadline } from "@/lib/explain";
 import { useHydrated, useIntelligenceStore, type IntelligenceData } from "@/lib/store";
-import { OBSERVATION_STATUS_LABELS, SCORE_RUBRICS } from "@/lib/types";
+import { CONFIDENCE_LABELS, OBSERVATION_STATUS_LABELS } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Local presentational helpers
@@ -54,81 +51,85 @@ function formatDate(x: string): string {
   });
 }
 
-function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+/** Plain figure: mono number over a small faint label. A quiet link, no box. */
+function StatFigure({ label, value, href }: { label: string; value: number; href: string }) {
   return (
-    <Link href={href} className="card block px-3 py-2.5 hover:border-line-strong">
-      <span className="block font-mono text-[19px] leading-none text-ink">{value}</span>
-      <span className="overline-label mt-1.5 block leading-snug">{label}</span>
+    <Link href={href} className="group block">
+      <span className="block font-mono text-[20px] leading-none text-ink group-hover:text-accent-ink">
+        {value}
+      </span>
+      <span className="mt-1.5 block text-[11px] leading-snug text-ink-faint group-hover:text-ink-soft">
+        {label}
+      </span>
     </Link>
   );
 }
 
-function SectionHeading({
+/** Section = heading + optional one-line faint caption + content. No card. */
+function Section({
   title,
   caption,
   href,
   linkLabel,
+  small = false,
+  children,
 }: {
   title: string;
   caption?: string;
   href?: string;
   linkLabel?: string;
+  small?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <div>
-        <h2 className="overline-label">{title}</h2>
-        {caption ? <p className="mt-0.5 text-[11.5px] text-ink-faint">{caption}</p> : null}
+    <section className="mb-12">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <div className="max-w-2xl">
+          <h2 className={`${small ? "text-[13px]" : "text-[15px]"} font-medium text-ink`}>
+            {title}
+          </h2>
+          {caption ? <p className="mt-0.5 text-[12px] text-ink-faint">{caption}</p> : null}
+        </div>
+        {href ? (
+          <Link
+            href={href}
+            className="shrink-0 text-[12px] text-ink-faint underline-offset-2 hover:text-accent-ink hover:underline"
+          >
+            {linkLabel ?? "View all"}
+          </Link>
+        ) : null}
       </div>
-      {href ? (
-        <Link
-          href={href}
-          className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-        >
-          {linkLabel ?? "View all"}
-        </Link>
-      ) : null}
-    </div>
+      {children}
+    </section>
   );
 }
 
-function ManagementCard({ item }: { item: ManagementItem }) {
-  const clear = item.count === 0;
+/** Quiet management group: heading + count inline, then up to 3 plain links. */
+function ManagementGroup({ item }: { item: ManagementItem }) {
+  if (item.count === 0) {
+    return (
+      <p className="text-[12px] text-ink-faint" title={item.detail}>
+        {item.title} · 0
+      </p>
+    );
+  }
   return (
-    <div className={`card flex flex-col ${clear ? "opacity-70" : ""}`}>
-      <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-2.5">
-        <h3 className="text-[12.5px] font-medium leading-snug text-ink">{item.title}</h3>
-        <span
-          className={`font-mono text-[17px] leading-none ${clear ? "text-ink-faint" : "text-ink"}`}
-        >
-          {item.count}
-        </span>
-      </header>
-      <div className="flex-1 px-4 py-2.5">
-        <p className="text-[11.5px] leading-relaxed text-ink-faint">{item.detail}</p>
-        {clear ? (
-          <p className="mt-2 text-[11.5px] text-ink-faint">Clear — nothing pending here.</p>
-        ) : (
-          <ul className="mt-2 space-y-1">
-            {item.items.map((it) => (
-              <li key={it.id} className="truncate text-[12px] leading-snug">
-                <Link href={it.href} className="text-ink-soft hover:text-accent-ink hover:underline">
-                  <span className="font-mono text-[10.5px] text-ink-faint">{it.id}</span>{" "}
-                  {it.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <footer className="border-t border-line px-4 py-1.5">
-        <Link
-          href={item.href}
-          className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-        >
-          View
+    <div title={item.detail}>
+      <p className="text-[13px] text-ink">
+        <Link href={item.href} className="font-medium hover:text-accent-ink">
+          {item.title}
         </Link>
-      </footer>
+        <span className="text-ink-faint"> · {item.count}</span>
+      </p>
+      <ul className="mt-1.5 space-y-1">
+        {item.items.slice(0, 3).map((it) => (
+          <li key={it.id} className="truncate text-[12.5px] leading-snug">
+            <Link href={it.href} className="text-ink-soft hover:text-accent-ink hover:underline">
+              {it.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -188,7 +189,7 @@ export default function OverviewPage() {
       pipeline: pipelineCounts(data),
       tasks: guidanceTasks(data),
       attention: signalsWorthAttention(data).slice(0, 6),
-      emerging: contradictionsEmerging(data).slice(0, 3),
+      emerging: contradictionsEmerging(data).slice(0, 2),
       strengthening: strengtheningTerritories(data),
       noise: noiseArchive(data),
       management: managementCenter(data),
@@ -208,7 +209,6 @@ export default function OverviewPage() {
     return (
       <>
         <PageHeader
-          overline="Command"
           title="Intelligence Overview"
           description="The health of the whole intelligence system: what is moving, what needs review, and where evidence is weak."
         />
@@ -243,122 +243,68 @@ export default function OverviewPage() {
   return (
     <>
       <PageHeader
-        overline="Command"
         title="Intelligence Overview"
         description="The health of the whole intelligence system: what is moving, what needs review, and where evidence is weak."
       />
       <WalkthroughPanel pageId="overview" />
 
-      {/* Stat strip ------------------------------------------------------- */}
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      {/* Stat strip: plain figures, no boxes ------------------------------- */}
+      <div className="mb-12 flex flex-wrap gap-x-10 gap-y-6">
         {stats.map((s) => (
-          <StatCard key={s.label} label={s.label} value={s.value} href={s.href} />
+          <StatFigure key={s.label} label={s.label} value={s.value} href={s.href} />
         ))}
       </div>
 
-      {/* Pipeline --------------------------------------------------------- */}
-      <section className="mb-6">
-        <SectionHeading
-          title="Intelligence pipeline"
-          caption="Evidence moves upward one layer at a time. Each layer reduces noise while increasing meaning."
-        />
+      {/* Pipeline ----------------------------------------------------------- */}
+      <Section title="Intelligence pipeline" small>
         <IntelligencePipeline counts={derived.pipeline} />
-      </section>
+      </Section>
 
-      {/* What needs attention today --------------------------------------- */}
-      <section className="mb-6">
-        <SectionHeading
-          title="What needs attention today"
-          caption="Task-based guidance derived from the current state of the base."
-        />
-        <div className="card">
-          {derived.tasks.length > 0 ? (
-            <ul className="divide-y divide-line">
-              {derived.tasks.map((t) => (
-                <li key={t.href + t.text}>
-                  <Link
-                    href={t.href}
-                    className="flex items-baseline justify-between gap-4 px-4 py-2.5 hover:bg-surface-muted"
-                  >
-                    <span className="text-[13px] text-ink-soft">{t.text}</span>
-                    <span className="shrink-0 text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2">
-                      Go
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="px-4 py-3 text-[13px] text-ink-soft">
-              The system is current: no unreviewed observations, no items awaiting review, and no
-              overdue indicators. Keep to the re-scanning cadence — weekly for the Scan Inbox and
-              weak signals, monthly for clusters and patterns, quarterly for drivers and
-              territories.
-            </p>
-          )}
-        </div>
-      </section>
+      {/* What needs attention today ----------------------------------------- */}
+      <Section
+        title="What needs attention today"
+        caption="Task-based guidance derived from the current state of the base."
+      >
+        {derived.tasks.length > 0 ? (
+          <div>
+            {derived.tasks.map((t) => (
+              <Link key={t.href + t.text} href={t.href} className="list-row group">
+                <p className="text-[13.5px] font-medium leading-snug text-ink group-hover:text-accent-ink">
+                  {t.text}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+            The system is current: no unreviewed observations, no items awaiting review, and no
+            overdue indicators. Keep to the re-scanning cadence — weekly for the Scan Inbox and
+            weak signals, monthly for clusters and patterns, quarterly for drivers and
+            territories.
+          </p>
+        )}
+      </Section>
 
-      {/* Signals worth attention ------------------------------------------ */}
-      <section className="mb-6">
-        <SectionHeading
-          title="Signals Worth Attention"
-          caption="High novelty, low confidence, high strategic relevance — early material that could matter."
-          href="/signals"
-          linkLabel="Open the Signal Library"
-        />
+      {/* Signals worth attention -------------------------------------------- */}
+      <Section
+        title="Signals Worth Attention"
+        caption="High novelty, low confidence, high strategic relevance — early material that could matter."
+        href="/signals"
+        linkLabel="Open the Signal Library"
+      >
         {derived.attention.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div>
             {derived.attention.map((s) => (
-              <article key={s.id} className="card flex flex-col">
-                <header className="border-b border-line px-4 py-2.5">
-                  <p className="overline-label mb-0.5">
-                    Signal <IdChip id={s.id} />
-                  </p>
-                  <h3 className="text-[14px] font-medium leading-snug text-ink">
-                    <Link href={`/signals/${s.id}`} className="hover:underline">
-                      {s.title}
-                    </Link>
-                  </h3>
-                </header>
-                <div className="flex-1 px-4 py-2.5">
-                  <p className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
-                    {s.description}
-                  </p>
-                  <div className="mt-2.5 space-y-1.5">
-                    <ViewGate
-                      min="analyst"
-                      fallback={
-                        <p className="text-[12px] text-ink-soft">
-                          {scoreHeadline("novelty", s.scores.novelty)} ·{" "}
-                          {scoreHeadline("strategicRelevance", s.scores.strategicRelevance)}.
-                        </p>
-                      }
-                    >
-                      <ScoreBar
-                        value={s.scores.novelty}
-                        label="Novelty"
-                        rubric={SCORE_RUBRICS.novelty[s.scores.novelty]}
-                      />
-                      <ScoreBar
-                        value={s.scores.strategicRelevance}
-                        label="Strategic relevance"
-                        rubric={SCORE_RUBRICS.strategicRelevance[s.scores.strategicRelevance]}
-                      />
-                    </ViewGate>
-                  </div>
-                </div>
-                <footer className="flex flex-wrap items-center gap-1.5 border-t border-line px-4 py-2">
-                  <ConfidenceBadge level={s.confidence} />
-                  <SignalStrengthBadge strength={s.signalStrength} />
-                  <Link
-                    href={`/signals/${s.id}`}
-                    className="ml-auto text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-                  >
-                    Open signal
-                  </Link>
-                </footer>
-              </article>
+              <Link key={s.id} href={`/signals/${s.id}`} className="list-row group">
+                <p className="truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+                  {s.title}
+                </p>
+                <p className="mt-1 text-[12px] text-ink-faint">
+                  {scoreHeadline("novelty", s.scores.novelty)} ·{" "}
+                  {scoreHeadline("strategicRelevance", s.scores.strategicRelevance)} ·{" "}
+                  {CONFIDENCE_LABELS[s.confidence]}
+                </p>
+              </Link>
             ))}
           </div>
         ) : (
@@ -368,18 +314,17 @@ export default function OverviewPage() {
             actionHref="/signals"
           />
         )}
-      </section>
+      </Section>
 
-      {/* Contradictions emerging ------------------------------------------ */}
-      <section className="mb-6">
-        <SectionHeading
-          title="Contradictions Emerging"
-          caption="Ranked by tension strength × future impact. Contradictions are strategic material, not errors."
-          href="/contradictions"
-          linkLabel="View all contradictions"
-        />
+      {/* Contradictions emerging -------------------------------------------- */}
+      <Section
+        title="Contradictions Emerging"
+        caption="Ranked by tension strength × future impact. Contradictions are strategic material, not errors."
+        href="/contradictions"
+        linkLabel="View all contradictions"
+      >
         {derived.emerging.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-8">
             {derived.emerging.map((c) => (
               <ContradictionPanel key={c.id} contradiction={c} linked />
             ))}
@@ -391,42 +336,35 @@ export default function OverviewPage() {
             actionHref="/contradictions"
           />
         )}
-      </section>
+      </Section>
 
-      {/* Strengthening territories ---------------------------------------- */}
-      <section className="mb-6">
-        <SectionHeading
-          title="Recently Strengthening Territories"
-          caption="Territories whose leading indicators are trending upward."
-          href="/territories"
-          linkLabel="View all territories"
-        />
+      {/* Strengthening territories ------------------------------------------ */}
+      <Section
+        title="Recently Strengthening Territories"
+        caption="Territories whose leading indicators are trending upward."
+        href="/territories"
+        linkLabel="View all territories"
+      >
         {derived.strengthening.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div>
             {derived.strengthening.map(({ territory, indicators: linked, strengthening }) => (
-              <article key={territory.id} className="card px-4 py-3">
-                <p className="overline-label mb-0.5">
-                  Future territory <IdChip id={territory.id} />
-                </p>
-                <h3 className="text-[14px] font-medium leading-snug text-ink">
-                  <Link href={`/territories/${territory.id}`} className="hover:underline">
+              <Link
+                key={territory.id}
+                href={`/territories/${territory.id}`}
+                className="list-row group"
+              >
+                <div className="flex items-baseline justify-between gap-6">
+                  <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
                     {territory.name}
-                  </Link>
-                </h3>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <TerritoryStatusBadge status={territory.monitoringStatus} />
-                  <span className="text-[11.5px] text-ink-faint">
-                    <span className="font-mono">{strengthening.length}</span> of{" "}
-                    <span className="font-mono">{linked.length}</span> indicators strengthening
+                  </p>
+                  <span className="shrink-0">
+                    <TerritoryStatusBadge status={territory.monitoringStatus} />
                   </span>
                 </div>
-                <Link
-                  href={`/territories/${territory.id}`}
-                  className="mt-2 inline-block text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-                >
-                  Open territory
-                </Link>
-              </article>
+                <p className="mt-1 text-[12px] text-ink-faint">
+                  {strengthening.length} of {linked.length} indicators strengthening
+                </p>
+              </Link>
             ))}
           </div>
         ) : (
@@ -436,121 +374,88 @@ export default function OverviewPage() {
             actionHref="/monitoring"
           />
         )}
-      </section>
+      </Section>
 
       {viewMode === "simple" ? (
-        <div className="mb-6">
+        <div className="mb-12">
           <DepthHint>System health, the noise archive and management queries</DepthHint>
         </div>
       ) : null}
 
       <ViewGate min="analyst">
-      {/* Noise filter ------------------------------------------------------ */}
-      <section className="mb-6">
-        <SectionHeading
+        {/* Noise filter ------------------------------------------------------ */}
+        <Section
           title="Noise Filter"
           caption="Noise filtering is auditable, not silent — every archived or duplicate observation keeps its triage rationale."
           href="/inbox?status=archived_noise"
           linkLabel="View in Scan Inbox"
-        />
-        {derived.noise.length > 0 ? (
-          <div className="card overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Id</th>
-                  <th>Observation</th>
-                  <th>Status</th>
-                  <th>Why this was not promoted</th>
-                  <th>Observed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {derived.noise.map((o) => (
-                  <tr key={o.id}>
-                    <td>
-                      <IdChip id={o.id} />
-                    </td>
-                    <td>
-                      <Link
-                        href={`/inbox/${o.id}`}
-                        className="text-ink hover:text-accent-ink hover:underline"
-                      >
-                        {o.title}
-                      </Link>
-                    </td>
-                    <td>
-                      <Pill tone="neutral">{OBSERVATION_STATUS_LABELS[o.status]}</Pill>
-                    </td>
-                    <td className="text-[12.5px] text-ink-soft">
-                      {o.triageRationale ?? (
-                        <span className="text-ink-faint">
-                          No rationale recorded — add one so the archive stays auditable.
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap text-[12px] text-ink-faint">
-                      {formatDate(o.dateObserved)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState
-            message="Nothing has been archived as noise yet. When you archive an observation or mark it as a duplicate in the Scan Inbox, it is kept here with its triage rationale so the filtering decision can be audited later."
-            actionLabel="Open the Scan Inbox"
-            actionHref="/inbox"
-          />
-        )}
-      </section>
+          small
+        >
+          {derived.noise.length > 0 ? (
+            <div>
+              {derived.noise.map((o) => (
+                <Link key={o.id} href={`/inbox/${o.id}`} className="list-row group">
+                  <div className="flex items-baseline justify-between gap-6">
+                    <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+                      {o.title}
+                    </p>
+                    <span className="shrink-0 text-[11.5px] text-ink-faint">
+                      {OBSERVATION_STATUS_LABELS[o.status]}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+                    {o.triageRationale ??
+                      "No rationale recorded — add one so the archive stays auditable."}{" "}
+                    · {formatDate(o.dateObserved)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              message="Nothing has been archived as noise yet. When you archive an observation or mark it as a duplicate in the Scan Inbox, it is kept here with its triage rationale so the filtering decision can be audited later."
+              actionLabel="Open the Scan Inbox"
+              actionHref="/inbox"
+            />
+          )}
+        </Section>
 
-      {/* Management center -------------------------------------------------- */}
-      <section className="mb-6">
-        <SectionHeading
+        {/* Management center -------------------------------------------------- */}
+        <Section
           title="Management Center — system health"
           caption="Where the base is weak, unreviewed, or below threshold. Work these queues to keep conclusions defensible."
-        />
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {derived.management.map((item) => (
-            <ManagementCard key={item.title} item={item} />
-          ))}
-        </div>
-      </section>
+          small
+        >
+          <div className="grid items-start gap-x-10 gap-y-7 md:grid-cols-2">
+            {derived.management.map((item) => (
+              <ManagementGroup key={item.title} item={item} />
+            ))}
+          </div>
+        </Section>
       </ViewGate>
 
-      {/* Recommended workflow ----------------------------------------------- */}
-      <section className="mb-6">
-        <div className="card">
-          <header className="flex items-center justify-between px-4 py-2.5">
-            <button
-              onClick={() => setWorkflowOpen((o) => !o)}
-              className="overline-label hover:text-accent-ink"
-              aria-expanded={workflowOpen}
-            >
-              {workflowOpen ? "▾" : "▸"} Recommended workflow — {RECOMMENDED_WORKFLOW.length} steps
-            </button>
-            <span className="text-[11px] text-ink-faint">
-              From raw observation to monitored foresight
-            </span>
-          </header>
-          {workflowOpen ? (
-            <ol className="divide-y divide-line border-t border-line">
-              {RECOMMENDED_WORKFLOW.map((w) => (
-                <li key={w.step} className="flex items-baseline gap-3 px-4 py-2">
-                  <span className="w-6 shrink-0 text-right font-mono text-[11.5px] text-ink-faint">
-                    {w.step}
-                  </span>
-                  <div>
-                    <p className="text-[12.5px] font-medium text-ink">{w.title}</p>
-                    <p className="text-[11.5px] text-ink-faint">{w.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : null}
-        </div>
+      {/* Recommended workflow ------------------------------------------------ */}
+      <section className="mb-10">
+        <button
+          onClick={() => setWorkflowOpen((o) => !o)}
+          aria-expanded={workflowOpen}
+          className="text-[13px] font-medium text-ink hover:text-accent-ink"
+        >
+          {workflowOpen ? "▾" : "▸"} Recommended workflow · {RECOMMENDED_WORKFLOW.length} steps
+        </button>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          From raw observation to monitored foresight.
+        </p>
+        {workflowOpen ? (
+          <ol className="mt-4 max-w-2xl list-decimal space-y-2.5 pl-6 marker:text-[11.5px] marker:text-ink-faint">
+            {RECOMMENDED_WORKFLOW.map((w) => (
+              <li key={w.step} className="text-[12.5px] leading-relaxed">
+                <span className="font-medium text-ink">{w.title}</span>
+                <span className="text-ink-faint"> — {w.detail}</span>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </section>
     </>
   );

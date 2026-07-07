@@ -23,9 +23,9 @@ import type {
 import type { ValidationResult } from "@/lib/validation";
 
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink";
+export const textLink =
+  "text-[12.5px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -65,7 +65,7 @@ export function countInWords(n: number): string {
 }
 
 /**
- * Short one-sentence status for list cards, derived from the live
+ * Short one-sentence status for list rows, derived from the live
  * ValidationResult — never from the stored status alone.
  */
 export function shortClusterStatus(result: ValidationResult): string {
@@ -75,16 +75,17 @@ export function shortClusterStatus(result: ValidationResult): string {
 }
 
 /**
- * Validity pill computed from a live ValidationResult — never from the
- * stored cluster status alone.
+ * Validity readout computed from a live ValidationResult — never from the
+ * stored cluster status alone. Accent is reserved for earned validity;
+ * a candidate is the default state and stays quiet plain text.
  */
 export function ClusterValidityPill({ result }: { result: ValidationResult }) {
   return (
     <Pill
-      tone={result.valid ? "accent" : "caution"}
+      tone={result.valid ? "accent" : "neutral"}
       title={`${result.passedCount} of ${result.totalCount} validation checks passed`}
     >
-      {result.valid ? "Valid cluster" : "Candidate cluster — not yet valid"}
+      {result.valid ? "Valid cluster" : "Candidate — not yet valid"}
     </Pill>
   );
 }
@@ -164,14 +165,3 @@ export function topicNameWarning(name: string): string | null {
   }
   return null;
 }
-
-/** Bad cluster names from the methodology — topics, not clusters. */
-export const BAD_CLUSTER_NAMES: string[] = ["Fashion", "AI", "Tourism", "Real Estate"];
-
-/** Good cluster names from the methodology — shared logic stated as a sentence. */
-export const GOOD_CLUSTER_NAMES: string[] = [
-  "Regional identity is being expressed through contemporary design languages.",
-  "Synthetic abundance is increasing the value of human trust, verification, and craft.",
-  "Destinations are becoming lifestyle ecosystems rather than visit-based attractions.",
-  "Long-term residency is shifting the Gulf from temporary work destination to permanent life platform.",
-];

@@ -75,7 +75,9 @@ export const REGION_OPTIONS: Region[] = [
   "Global with regional significance",
 ];
 
+/** The one primary action per page — calm, borderless, accent. */
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
+  "bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink";
+/** Secondary actions are quiet text links, not bordered buttons. */
 export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
