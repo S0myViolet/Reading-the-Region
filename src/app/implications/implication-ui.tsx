@@ -1,24 +1,17 @@
 "use client";
 
 /**
- * Page-local UI for /implications: the expandable implication card and the
+ * Page-local UI for /implications: the editorial implication entry and the
  * creation form. Nothing here is imported outside src/app/implications/.
  *
  * The discipline of this layer: an implication is what should be done
- * differently now because a future may be forming. Every card states its
- * evidence links honestly and carries a bordered "Recommended action" block —
- * the deliverable of the whole pipeline.
+ * differently now because a future may be forming. Each entry reads as a
+ * short editorial block — statement, stake, action, quiet metadata — with
+ * analyst detail behind an indented disclosure, not a box.
  */
 
-import Link from "next/link";
 import { useState } from "react";
-import {
-  ConfidenceBadge,
-  IdChip,
-  Pill,
-  ReviewStatusBadge,
-} from "@/components/badges";
-import { SectorTags } from "@/components/tags";
+import { IdChip, ReviewStatusBadge } from "@/components/badges";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { EntityLink } from "@/components/EntityLink";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
@@ -47,7 +40,6 @@ import {
   REVIEW_STATUS_LABELS,
   SECTOR_LABELS,
   TIME_HORIZON_LABELS,
-  TIME_HORIZON_SHORT,
 } from "@/lib/types";
 
 export function fmtDate(iso: string): string {
@@ -57,6 +49,11 @@ export function fmtDate(iso: string): string {
     year: "numeric",
   });
 }
+
+export const btnPrimary =
+  "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink";
+export const btnText =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 const REVIEW_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
 const SECTOR_OPTIONS = Object.keys(SECTOR_LABELS) as Sector[];
@@ -68,35 +65,15 @@ const CONFIDENCE_OPTIONS = Object.keys(CONFIDENCE_LABELS) as ConfidenceLevel[];
 const HORIZON_OPTIONS = Object.keys(TIME_HORIZON_LABELS) as TimeHorizon[];
 
 // ---------------------------------------------------------------------------
-// Expandable implication card
+// Editorial implication entry
 // ---------------------------------------------------------------------------
 
-function CompactLink({
-  href,
-  overline,
-  id,
-  title,
-}: {
-  href: string;
-  overline: string;
-  id: string;
-  title: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex max-w-full items-baseline gap-1.5 text-[11.5px] text-ink-soft hover:text-accent-ink"
-    >
-      <span className="overline-label shrink-0">{overline}</span>
-      <span className="font-mono text-[10.5px] text-ink-faint">{id}</span>
-      <span className="truncate underline decoration-line-strong underline-offset-2">
-        {title}
-      </span>
-    </Link>
-  );
+/** Tiny faint label used inside the analyst disclosure. */
+function DetailLabel({ children }: { children: React.ReactNode }) {
+  return <p className="mb-1 text-[11px] text-ink-faint">{children}</p>;
 }
 
-export function ImplicationCard({
+export function ImplicationEntry({
   implication: imp,
   territory,
   scenario,
@@ -114,157 +91,79 @@ export function ImplicationCard({
   const mode = useViewMode();
   const analyst = modeAtLeast(mode, "analyst");
 
-  const evidenceCount =
-    imp.evidenceSignalIds.length + imp.evidenceDriverIds.length;
   const unresolvedSignals = imp.evidenceSignalIds.length - evidenceSignals.length;
   const unresolvedDrivers = imp.evidenceDriverIds.length - evidenceDrivers.length;
   const grounding = validateImplication(imp);
 
-  const header = (
-    <>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <span className="flex flex-wrap items-center gap-1.5">
-          {analyst ? (
-            <Pill tone="info">{IMPLICATION_TYPE_LABELS[imp.implicationType]}</Pill>
-          ) : null}
-          {imp.audiences.map((a) => (
-            <Pill key={a}>{IMPLICATION_AUDIENCE_LABELS[a]}</Pill>
-          ))}
-        </span>
-        <span className="flex shrink-0 flex-wrap items-center gap-1.5">
-          {analyst ? (
-            <>
-              <ConfidenceBadge level={imp.confidence} />
-              <Pill title={TIME_HORIZON_LABELS[imp.timeHorizon]}>
-                {TIME_HORIZON_SHORT[imp.timeHorizon]}
-              </Pill>
-            </>
-          ) : (
-            <Pill>{TIME_HORIZON_LABELS[imp.timeHorizon]}</Pill>
-          )}
-        </span>
-      </div>
-      {analyst ? (
-        <p className="mt-2">
-          <IdChip id={imp.id} />
-        </p>
-      ) : null}
-      <p
-        className={`${analyst ? "mt-0.5" : "mt-2"} font-display text-[16px] leading-snug text-ink`}
-      >
+  const metadata = [
+    imp.audiences.length > 0
+      ? imp.audiences.map((a) => IMPLICATION_AUDIENCE_LABELS[a]).join(", ")
+      : null,
+    imp.sectors.length > 0
+      ? imp.sectors.map((s) => SECTOR_LABELS[s]).join(", ")
+      : null,
+    TIME_HORIZON_LABELS[imp.timeHorizon],
+    explainConfidenceGeneric(imp.confidence, explainImplicationEvidence(imp)),
+  ].filter((part): part is string => part !== null);
+
+  return (
+    <article className="list-row py-7">
+      <p className="max-w-3xl text-[14px] font-medium leading-snug text-ink">
         {imp.implication.trim() ? (
           imp.implication
         ) : (
-          <span className="text-[12.5px] text-ink-faint">
+          <span className="text-[12.5px] font-normal text-ink-faint">
             No implication statement recorded — state what should be done
             differently now.
           </span>
         )}
       </p>
-    </>
-  );
 
-  return (
-    <article className="card">
-      {analyst ? (
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((e) => !e)}
-          className="block w-full px-4 pt-3 text-left"
-          title={expanded ? "Collapse details" : "Expand details"}
-        >
-          {header}
-        </button>
-      ) : (
-        <div className="px-4 pt-3">{header}</div>
-      )}
+      <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+        {imp.whyItMatters.trim() ? (
+          imp.whyItMatters
+        ) : (
+          <span className="text-[12px] text-ink-faint">
+            Why it matters is not recorded — an implication without a stated
+            stake cannot be weighed against others.
+          </span>
+        )}
+      </p>
 
-      <div className="space-y-3 px-4 pt-3">
-        <div>
-          <p className="overline-label mb-1">Why it matters</p>
-          <p className="text-[13px] leading-relaxed text-ink-soft">
-            {imp.whyItMatters.trim() ? (
-              imp.whyItMatters
-            ) : (
-              <span className="text-[12px] text-ink-faint">
-                Not recorded — an implication without a stated stake cannot
-                be weighed against others.
-              </span>
-            )}
-          </p>
-        </div>
+      <p className="mt-2.5 max-w-2xl text-[13px] font-medium leading-relaxed text-ink">
+        {imp.recommendedAction.trim() ? (
+          <>Do now — {imp.recommendedAction}</>
+        ) : (
+          <span className="text-[12px] font-normal text-ink-faint">
+            No action recorded yet — the implication is not usable until it
+            names a concrete present-day step.
+          </span>
+        )}
+      </p>
 
-        <div className="border border-line-strong border-l-2 border-l-accent bg-surface-muted px-3.5 py-3 rounded-[2px]">
-          <p className="overline-label mb-1">Recommended action</p>
-          <p className="text-[13.5px] font-medium leading-relaxed text-ink">
-            {imp.recommendedAction.trim() ? (
-              imp.recommendedAction
-            ) : (
-              <span className="text-[12px] font-normal text-ink-faint">
-                No action recorded yet — the implication is not usable until
-                it names a concrete present-day step.
-              </span>
-            )}
-          </p>
-        </div>
-
-        <p className="text-[12px] leading-relaxed text-ink-soft">
-          {explainConfidenceGeneric(imp.confidence, explainImplicationEvidence(imp))}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-3 pt-2">
-        {imp.sectors.length > 0 ? (
-          <SectorTags sectors={imp.sectors} linked={false} />
-        ) : null}
-        {analyst ? (
-          evidenceCount > 0 ? (
-            <span className="font-mono text-[11px] text-ink-soft">
-              {evidenceCount} evidence link{evidenceCount === 1 ? "" : "s"}
-            </span>
-          ) : (
-            <Pill
-              tone="caution"
-              title="Recommendations must connect back to signals or drivers."
-            >
-              <span className="font-mono">no evidence links</span>
-            </Pill>
-          )
-        ) : null}
-        {territory ? (
-          <CompactLink
-            href={`/territories/${territory.id}`}
-            overline="Territory"
-            id={territory.id}
-            title={territory.name}
-          />
-        ) : null}
-        {scenario ? (
-          <CompactLink
-            href={`/scenarios/${scenario.id}`}
-            overline="Scenario"
-            id={scenario.id}
-            title={scenario.title}
-          />
-        ) : null}
+      <p className="mt-3 max-w-3xl text-[12px] leading-relaxed text-ink-faint">
+        {metadata.join(" · ")}
         {analyst ? (
           <button
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((e) => !e)}
-            className="ml-auto text-[11.5px] text-ink-faint hover:text-accent-ink"
+            className="ml-2.5 underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
           >
-            {expanded ? "▾ Hide details" : "▸ Details"}
+            {expanded ? "Hide details" : "Details"}
           </button>
         ) : null}
-      </div>
+      </p>
 
       {analyst && expanded ? (
-        <div className="space-y-4 border-t border-line px-4 py-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="border border-line bg-surface px-3 py-2.5 rounded-[2px]">
-              <p className="overline-label mb-1 text-accent-ink">Opportunity</p>
+        <div className="mt-5 space-y-5 border-l border-line pl-5">
+          <p className="text-[12px] text-ink-faint">
+            {IMPLICATION_TYPE_LABELS[imp.implicationType]} · <IdChip id={imp.id} />
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <DetailLabel>Opportunity</DetailLabel>
               <p className="text-[12.5px] leading-relaxed text-ink-soft">
                 {imp.opportunity.trim() ? (
                   imp.opportunity
@@ -273,8 +172,8 @@ export function ImplicationCard({
                 )}
               </p>
             </div>
-            <div className="border border-line bg-surface px-3 py-2.5 rounded-[2px]">
-              <p className="overline-label mb-1 text-caution">Risk</p>
+            <div>
+              <DetailLabel>Risk</DetailLabel>
               <p className="text-[12.5px] leading-relaxed text-ink-soft">
                 {imp.risk.trim() ? (
                   imp.risk
@@ -294,7 +193,7 @@ export function ImplicationCard({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="overline-label mb-1.5">Future territory</p>
+              <DetailLabel>Future territory</DetailLabel>
               {territory ? (
                 <EntityLink
                   kind="territory"
@@ -303,9 +202,8 @@ export function ImplicationCard({
                 />
               ) : imp.territoryId ? (
                 <p className="text-[11.5px] text-ink-faint">
-                  Territory{" "}
-                  <span className="font-mono">{imp.territoryId}</span> no longer
-                  resolves in the intelligence base.
+                  Territory <span className="font-mono">{imp.territoryId}</span>{" "}
+                  no longer resolves in the intelligence base.
                 </p>
               ) : (
                 <p className="text-[11.5px] text-ink-faint">
@@ -314,7 +212,7 @@ export function ImplicationCard({
               )}
             </div>
             <div>
-              <p className="overline-label mb-1.5">Scenario</p>
+              <DetailLabel>Scenario</DetailLabel>
               {scenario ? (
                 <EntityLink
                   kind="scenario"
@@ -335,7 +233,7 @@ export function ImplicationCard({
           </div>
 
           <div>
-            <p className="overline-label mb-1.5">Evidence signals</p>
+            <DetailLabel>Evidence signals</DetailLabel>
             {evidenceSignals.length > 0 ? (
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {evidenceSignals.map((s) => (
@@ -358,7 +256,7 @@ export function ImplicationCard({
           </div>
 
           <div>
-            <p className="overline-label mb-1.5">Evidence drivers</p>
+            <DetailLabel>Evidence drivers</DetailLabel>
             {evidenceDrivers.length > 0 ? (
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {evidenceDrivers.map((d) => (
@@ -379,28 +277,26 @@ export function ImplicationCard({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <ReviewStatusBadge status={imp.reviewStatus} />
-              <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
-                Set review status
-                <select
-                  value={imp.reviewStatus}
-                  onChange={(e) =>
-                    updateImplication(imp.id, {
-                      reviewStatus: e.target.value as ReviewStatus,
-                    })
-                  }
-                  className="border border-line bg-surface px-2 py-1 text-[12px] text-ink rounded-[2px] focus:border-accent focus:outline-none"
-                >
-                  {REVIEW_OPTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {REVIEW_STATUS_LABELS[r]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <ReviewStatusBadge status={imp.reviewStatus} />
+            <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+              Set review status
+              <select
+                value={imp.reviewStatus}
+                onChange={(e) =>
+                  updateImplication(imp.id, {
+                    reviewStatus: e.target.value as ReviewStatus,
+                  })
+                }
+                className="cursor-pointer rounded-[4px] bg-surface-muted px-2 py-1 text-[12px] text-ink-soft focus:outline-none"
+              >
+                {REVIEW_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {REVIEW_STATUS_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <ViewGate min="methodology">
               <p className="text-[11px] text-ink-faint">
                 Created {fmtDate(imp.createdAt)} · Updated {fmtDate(imp.updatedAt)}
@@ -433,11 +329,11 @@ function GroupField({
 }) {
   return (
     <div>
-      <span className="overline-label block">{label}</span>
+      <span className="block text-[12.5px] font-medium text-ink-soft">{label}</span>
       {hint ? (
-        <span className="mt-0.5 block text-[11px] text-ink-faint">{hint}</span>
+        <span className="mt-0.5 block text-[11.5px] text-ink-faint">{hint}</span>
       ) : null}
-      <div className="mt-1">{children}</div>
+      <div className="mt-1.5">{children}</div>
     </div>
   );
 }
@@ -445,6 +341,25 @@ function GroupField({
 function InlineError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-[11.5px] text-tension">{message}</p>;
+}
+
+/** Quiet in-form section heading — text, not a box. */
+function FormSection({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h3 className="text-[13px] font-medium text-ink">{title}</h3>
+      {hint ? <p className="mt-0.5 text-[12px] text-ink-faint">{hint}</p> : null}
+      <div className="mt-3">{children}</div>
+    </div>
+  );
 }
 
 interface ImplicationDraft {
@@ -561,25 +476,32 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <section className="card mb-5">
-      <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">New strategic implication</h2>
+    <section className="mb-10 border-b border-line pb-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-[15px] font-medium text-ink">
+          New strategic implication
+        </h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-[11px] text-ink-faint hover:text-ink"
+          className="text-[12px] text-ink-faint hover:text-ink"
         >
           Close
         </button>
-      </header>
+      </div>
+      <p className="mt-1 max-w-2xl text-[12px] text-ink-faint">
+        An implication answers: what should we do differently because this
+        future may be forming? It is anchored to a territory or scenario and
+        traces back to evidence.
+      </p>
 
-      <div className="space-y-4 px-4 py-4">
-        <div>
+      <div className="mt-6 max-w-3xl space-y-7">
+        <FormSection
+          title="Anchor"
+          hint="The future this implication responds to."
+        >
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              label="Future territory"
-              hint="The future direction this implication responds to."
-            >
+            <Field label="Future territory">
               <Select
                 value={draft.territoryId}
                 onChange={(e) => handleTerritoryChange(e.target.value)}
@@ -614,137 +536,96 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
             </Field>
           </div>
           <InlineError message={errors.anchor} />
-        </div>
+        </FormSection>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <GroupField label="Sectors" hint="Where the implication lands.">
-            <CheckboxList
-              options={SECTOR_OPTIONS.map((s) => ({
-                value: s,
-                label: SECTOR_LABELS[s],
-              }))}
-              selected={draft.sectors}
-              onChange={(sectors) => patch({ sectors })}
-            />
-          </GroupField>
-          <GroupField label="Audiences" hint="Who should act on it.">
-            <CheckboxList
-              options={AUDIENCE_OPTIONS.map((a) => ({
-                value: a,
-                label: IMPLICATION_AUDIENCE_LABELS[a],
-              }))}
-              selected={draft.audiences}
-              onChange={(audiences) => patch({ audiences })}
-            />
-          </GroupField>
-        </div>
+        <FormSection
+          title="Statement"
+          hint="The deliverable of the whole pipeline: what, why, and the present-day step."
+        >
+          <div className="space-y-4">
+            <div>
+              <Field
+                label="Implication"
+                required
+                hint="One clear statement of what this future means for the audiences named below."
+              >
+                <TextArea
+                  value={draft.implication}
+                  onChange={(e) => patch({ implication: e.target.value })}
+                  placeholder="Because this future may be forming, …"
+                />
+              </Field>
+              <InlineError message={errors.implication} />
+            </div>
+            <div>
+              <Field
+                label="Why it matters"
+                required
+                hint="The stake: what is gained or lost if this future forms."
+              >
+                <TextArea
+                  value={draft.whyItMatters}
+                  onChange={(e) => patch({ whyItMatters: e.target.value })}
+                />
+              </Field>
+              <InlineError message={errors.whyItMatters} />
+            </div>
+            <div>
+              <Field
+                label="Recommended action"
+                required
+                hint="Concrete and present-day. Avoid vague recommendations."
+              >
+                <TextArea
+                  value={draft.recommendedAction}
+                  onChange={(e) => patch({ recommendedAction: e.target.value })}
+                />
+              </Field>
+              <InlineError message={errors.recommendedAction} />
+            </div>
+          </div>
+        </FormSection>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <ViewGate min="analyst">
-            <Field label="Implication type" required>
+        <FormSection title="Scope">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <GroupField label="Audiences" hint="Who should act on it.">
+              <CheckboxList
+                options={AUDIENCE_OPTIONS.map((a) => ({
+                  value: a,
+                  label: IMPLICATION_AUDIENCE_LABELS[a],
+                }))}
+                selected={draft.audiences}
+                onChange={(audiences) => patch({ audiences })}
+              />
+            </GroupField>
+            <GroupField label="Sectors" hint="Where the implication lands.">
+              <CheckboxList
+                options={SECTOR_OPTIONS.map((s) => ({
+                  value: s,
+                  label: SECTOR_LABELS[s],
+                }))}
+                selected={draft.sectors}
+                onChange={(sectors) => patch({ sectors })}
+              />
+            </GroupField>
+          </div>
+          <div className="mt-4 max-w-xs">
+            <Field label="Time horizon">
               <Select
-                value={draft.implicationType}
+                value={draft.timeHorizon}
                 onChange={(e) =>
-                  patch({ implicationType: e.target.value as ImplicationType })
+                  patch({ timeHorizon: e.target.value as TimeHorizon })
                 }
               >
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {IMPLICATION_TYPE_LABELS[t]}
+                {HORIZON_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {TIME_HORIZON_LABELS[h]}
                   </option>
                 ))}
               </Select>
-            </Field>
-            <Field label="Confidence">
-              <Select
-                value={draft.confidence}
-                onChange={(e) =>
-                  patch({ confidence: e.target.value as ConfidenceLevel })
-                }
-              >
-                {CONFIDENCE_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
-                    {CONFIDENCE_LABELS[c]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </ViewGate>
-          <Field label="Time horizon">
-            <Select
-              value={draft.timeHorizon}
-              onChange={(e) =>
-                patch({ timeHorizon: e.target.value as TimeHorizon })
-              }
-            >
-              {HORIZON_OPTIONS.map((h) => (
-                <option key={h} value={h}>
-                  {TIME_HORIZON_LABELS[h]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-
-        <div>
-          <Field
-            label="Implication"
-            required
-            hint="One clear statement of what this future means for the audiences named above."
-          >
-            <TextArea
-              value={draft.implication}
-              onChange={(e) => patch({ implication: e.target.value })}
-              placeholder="Because this future may be forming, …"
-            />
-          </Field>
-          <InlineError message={errors.implication} />
-        </div>
-
-        <div>
-          <Field
-            label="Why it matters"
-            required
-            hint="The stake: what is gained or lost if this future forms."
-          >
-            <TextArea
-              value={draft.whyItMatters}
-              onChange={(e) => patch({ whyItMatters: e.target.value })}
-            />
-          </Field>
-          <InlineError message={errors.whyItMatters} />
-        </div>
-
-        <ViewGate min="analyst">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Opportunity" hint="What acting early makes possible.">
-              <TextArea
-                value={draft.opportunity}
-                onChange={(e) => patch({ opportunity: e.target.value })}
-              />
-            </Field>
-            <Field label="Risk" hint="What ignoring this future would cost.">
-              <TextArea
-                value={draft.risk}
-                onChange={(e) => patch({ risk: e.target.value })}
-              />
             </Field>
           </div>
-        </ViewGate>
-
-        <div>
-          <Field
-            label="Recommended action"
-            required
-            hint="Concrete and present-day. Avoid vague recommendations."
-          >
-            <TextArea
-              value={draft.recommendedAction}
-              onChange={(e) => patch({ recommendedAction: e.target.value })}
-            />
-          </Field>
-          <InlineError message={errors.recommendedAction} />
-        </div>
+        </FormSection>
 
         <ViewGate
           min="analyst"
@@ -756,73 +637,118 @@ export function ImplicationForm({ onClose }: { onClose: () => void }) {
             </p>
           }
         >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <GroupField
-            label="Evidence signals"
-            hint="Signals this recommendation traces back to."
+          <FormSection
+            title="Classification and evidence"
+            hint="Analyst detail — completes the grounding the checklist tests for."
           >
-            {signals.length > 0 ? (
-              <div className="max-h-44 overflow-y-auto border border-line bg-surface px-2.5 py-2 rounded-[2px]">
-                <CheckboxList
-                  columns={1}
-                  options={signals.map((s) => ({
-                    value: s.id,
-                    label: `${s.id} · ${s.title}`,
-                  }))}
-                  selected={draft.evidenceSignalIds}
-                  onChange={(evidenceSignalIds) => patch({ evidenceSignalIds })}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Implication type" required>
+                <Select
+                  value={draft.implicationType}
+                  onChange={(e) =>
+                    patch({ implicationType: e.target.value as ImplicationType })
+                  }
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {IMPLICATION_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Confidence">
+                <Select
+                  value={draft.confidence}
+                  onChange={(e) =>
+                    patch({ confidence: e.target.value as ConfidenceLevel })
+                  }
+                >
+                  {CONFIDENCE_OPTIONS.map((c) => (
+                    <option key={c} value={c}>
+                      {CONFIDENCE_LABELS[c]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Field label="Opportunity" hint="What acting early makes possible.">
+                <TextArea
+                  value={draft.opportunity}
+                  onChange={(e) => patch({ opportunity: e.target.value })}
                 />
-              </div>
-            ) : (
-              <p className="text-[11.5px] text-ink-faint">
-                No signals in the intelligence base yet.
-              </p>
-            )}
-          </GroupField>
-          <GroupField
-            label="Evidence drivers"
-            hint="Drivers that explain why this future is forming."
-          >
-            {drivers.length > 0 ? (
-              <div className="max-h-44 overflow-y-auto border border-line bg-surface px-2.5 py-2 rounded-[2px]">
-                <CheckboxList
-                  columns={1}
-                  options={drivers.map((d) => ({
-                    value: d.id,
-                    label: `${d.id} · ${d.name}`,
-                  }))}
-                  selected={draft.evidenceDriverIds}
-                  onChange={(evidenceDriverIds) => patch({ evidenceDriverIds })}
+              </Field>
+              <Field label="Risk" hint="What ignoring this future would cost.">
+                <TextArea
+                  value={draft.risk}
+                  onChange={(e) => patch({ risk: e.target.value })}
                 />
-              </div>
-            ) : (
-              <p className="text-[11.5px] text-ink-faint">
-                No drivers in the intelligence base yet.
-              </p>
-            )}
-          </GroupField>
-        </div>
+              </Field>
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <GroupField
+                label="Evidence signals"
+                hint="Signals this recommendation traces back to."
+              >
+                {signals.length > 0 ? (
+                  <div className="max-h-44 overflow-y-auto border-l border-line pl-3">
+                    <CheckboxList
+                      columns={1}
+                      options={signals.map((s) => ({
+                        value: s.id,
+                        label: `${s.id} · ${s.title}`,
+                      }))}
+                      selected={draft.evidenceSignalIds}
+                      onChange={(evidenceSignalIds) =>
+                        patch({ evidenceSignalIds })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <p className="text-[11.5px] text-ink-faint">
+                    No signals in the intelligence base yet.
+                  </p>
+                )}
+              </GroupField>
+              <GroupField
+                label="Evidence drivers"
+                hint="Drivers that explain why this future is forming."
+              >
+                {drivers.length > 0 ? (
+                  <div className="max-h-44 overflow-y-auto border-l border-line pl-3">
+                    <CheckboxList
+                      columns={1}
+                      options={drivers.map((d) => ({
+                        value: d.id,
+                        label: `${d.id} · ${d.name}`,
+                      }))}
+                      selected={draft.evidenceDriverIds}
+                      onChange={(evidenceDriverIds) =>
+                        patch({ evidenceDriverIds })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <p className="text-[11.5px] text-ink-faint">
+                    No drivers in the intelligence base yet.
+                  </p>
+                )}
+              </GroupField>
+            </div>
+          </FormSection>
         </ViewGate>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          <p className="mr-auto text-[11px] text-ink-faint">
-            Saves as a draft. Raise the review status once evidence links have
-            been checked.
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
-          >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+          <button type="button" onClick={handleSave} className={btnPrimary}>
             Save implication
           </button>
+          <button type="button" onClick={onClose} className={btnText}>
+            Cancel
+          </button>
+          <p className="text-[11px] text-ink-faint">
+            Saves as a draft — raise the review status once evidence links have
+            been checked.
+          </p>
         </div>
       </div>
     </section>

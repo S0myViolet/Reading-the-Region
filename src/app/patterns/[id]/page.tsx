@@ -7,13 +7,13 @@
  * controls. Validation status is always computed from the evidence; the
  * stored validationStatus is never presented on its own.
  *
- * Visibility layers: the simple view reads as prose — statement, validation
- * status in plain language (which tests passed or failed), strategic
- * meaning, what could contradict it, next step — with the relationship trail
- * alongside. Analyst view opens the full tabs (four tests in detail, strong
- * threshold, key-signal table, cluster statuses, review controls);
- * Methodology view adds the threshold table, the persistence arithmetic and
- * the audit trail.
+ * Visibility layers: the simple view reads as one article — statement,
+ * validation status in plain language, strategic meaning, what could
+ * contradict it, next step — separated by whitespace, not boxes. Analyst
+ * view opens the full tabs (four tests in detail, strong threshold,
+ * key-signal table, cluster statuses, review controls); Methodology view
+ * adds the threshold table, the persistence arithmetic and the audit trail
+ * as plain definition lines.
  */
 
 import Link from "next/link";
@@ -30,10 +30,8 @@ import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import {
   ConfidenceBadge,
-  IdChip,
   Pill,
   ProvenanceBadge,
-  ReviewStatusBadge,
   SignalStrengthBadge,
 } from "@/components/badges";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
@@ -82,8 +80,51 @@ interface LinkedClusterStatus {
   totalCount: number;
 }
 
+/** Article-style section: small heading, prose underneath, no box. */
+function Section({
+  heading,
+  meta,
+  children,
+}: {
+  heading: string;
+  meta?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="max-w-2xl">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <h2 className="text-[13px] font-medium text-ink">{heading}</h2>
+        {meta}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Prose({ children }: { children: React.ReactNode }) {
+  return <p className="text-[13px] leading-relaxed text-ink-soft">{children}</p>;
+}
+
+function MissingNote({ children }: { children: React.ReactNode }) {
+  return <p className="text-[12px] text-ink-faint">{children}</p>;
+}
+
+function PatternStatement({ pattern }: { pattern: Pattern }) {
+  return pattern.patternStatement.trim() ? (
+    <p className="font-display text-[17px] italic leading-relaxed text-ink">
+      {pattern.patternStatement}
+    </p>
+  ) : (
+    <MissingNote>
+      No pattern statement recorded yet. A pattern must be explainable as one
+      clear movement in a single statement — without it, the coherence test
+      cannot pass.
+    </MissingNote>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Simple view — the pattern as readable prose, depth on demand
+// Simple view — the pattern as one readable article, depth on demand
 // ---------------------------------------------------------------------------
 
 function SimpleView({
@@ -98,54 +139,36 @@ function SimpleView({
   recomputed: boolean;
 }) {
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-4">
-        <p className="overline-label mb-2">Pattern statement</p>
-        {pattern.patternStatement.trim() ? (
-          <blockquote className="border-l-2 border-l-accent pl-4 font-display text-[17px] italic leading-relaxed text-ink">
-            {pattern.patternStatement}
-          </blockquote>
-        ) : (
-          <p className="text-[12px] text-ink-faint">
-            No pattern statement recorded yet. A pattern must be explainable as
-            one clear movement in a single statement — without it, the coherence
-            test cannot pass.
-          </p>
-        )}
-      </section>
+    <div className="space-y-8">
+      <Section heading="Pattern statement">
+        <PatternStatement pattern={pattern} />
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">Validation status</p>
-        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+      <Section heading="Validation status">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <PatternValidationPill result={result} />
           {recomputed ? <RecomputedNote /> : null}
         </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {explainPatternStatus(pattern, result)}
-        </p>
-      </section>
+        <Prose>{explainPatternStatus(pattern, result)}</Prose>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <p className="overline-label">Strategic meaning</p>
-          <ProvenanceBadge label="human_interpretation" />
-        </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {pattern.strategicMeaning.trim() ? (
-            pattern.strategicMeaning
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No strategic meaning recorded yet. State what this movement means
-              for decisions — interpretation, clearly labelled as such.
-            </span>
-          )}
-        </p>
-      </section>
+      <Section
+        heading="Strategic meaning"
+        meta={<ProvenanceBadge label="human_interpretation" />}
+      >
+        {pattern.strategicMeaning.trim() ? (
+          <Prose>{pattern.strategicMeaning}</Prose>
+        ) : (
+          <MissingNote>
+            No strategic meaning recorded yet. State what this movement means
+            for decisions — interpretation, clearly labelled as such.
+          </MissingNote>
+        )}
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">What could contradict this</p>
+      <Section heading="What could contradict this">
         {linkedContradictions.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {linkedContradictions.map((c) => (
               <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
                 {explainContradiction(c)}{" "}
@@ -161,14 +184,11 @@ function SimpleView({
         ) : (
           <NoContradictionNote />
         )}
-      </section>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Next step</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {nextStepForPattern(result)}
-        </p>
-      </section>
+      <Section heading="Next step">
+        <Prose>{nextStepForPattern(result)}</Prose>
+      </Section>
 
       <DepthHint>
         The four tests in detail, the strong-pattern threshold, key-signal and
@@ -191,60 +211,45 @@ function OverviewTab({
 }) {
   const facts = derivePatternFacts(patternSignals);
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-4">
-        <p className="overline-label mb-2">Pattern statement</p>
-        {pattern.patternStatement.trim() ? (
-          <blockquote className="border-l-2 border-l-accent pl-4 font-display text-[17px] italic leading-relaxed text-ink">
-            {pattern.patternStatement}
-          </blockquote>
+    <div className="space-y-8">
+      <Section heading="Pattern statement">
+        <PatternStatement pattern={pattern} />
+      </Section>
+
+      <Section
+        heading="Strategic meaning"
+        meta={<ProvenanceBadge label="human_interpretation" />}
+      >
+        {pattern.strategicMeaning.trim() ? (
+          <Prose>{pattern.strategicMeaning}</Prose>
         ) : (
-          <p className="text-[12px] text-ink-faint">
-            No pattern statement recorded yet. A pattern must be explainable as
-            one clear movement in a single statement — without it, the coherence
-            test cannot pass.
-          </p>
+          <MissingNote>
+            No strategic meaning recorded yet. State what this movement means
+            for decisions — interpretation, clearly labelled as such.
+          </MissingNote>
         )}
-      </section>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <p className="overline-label">Strategic meaning</p>
-          <ProvenanceBadge label="human_interpretation" />
-        </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {pattern.strategicMeaning.trim() ? (
-            pattern.strategicMeaning
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No strategic meaning recorded yet. State what this movement means
-              for decisions — interpretation, clearly labelled as such.
-            </span>
-          )}
+      <Section heading="Evidence summary">
+        {pattern.evidenceSummary.trim() ? (
+          <Prose>{pattern.evidenceSummary}</Prose>
+        ) : (
+          <MissingNote>
+            No evidence summary recorded yet. Summarise what the key signals
+            and clusters show — and where they disagree.
+          </MissingNote>
+        )}
+      </Section>
+
+      <section className="max-w-2xl">
+        <h2 className="text-[13px] font-medium text-ink">Derived from key signals</h2>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          Sectors, geographies, actor types and systems come from the evidence —
+          they are never asserted.
         </p>
-      </section>
-
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Evidence summary</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {pattern.evidenceSummary.trim() ? (
-            pattern.evidenceSummary
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              No evidence summary recorded yet. Summarise what the key signals
-              and clusters show — and where they disagree.
-            </span>
-          )}
-        </p>
-      </section>
-
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Derived from key signals — not asserted</h3>
-        </header>
-        <dl className="space-y-3 px-4 py-3">
+        <dl className="mt-3 space-y-3.5">
           <div>
-            <dt className="overline-label mb-1">Sectors involved</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Sectors involved</dt>
             <dd>
               {facts.sectors.length > 0 ? (
                 <SectorTags sectors={facts.sectors} />
@@ -256,7 +261,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Geographies</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Geographies</dt>
             <dd>
               {facts.countries.length > 0 ? (
                 <PlainTags tags={facts.countries} />
@@ -268,7 +273,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Actor types</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Actor types</dt>
             <dd>
               {facts.actorTypes.length > 0 ? (
                 <PlainTags tags={facts.actorTypes.map((a) => ACTOR_TYPE_LABELS[a])} />
@@ -280,7 +285,7 @@ function OverviewTab({
             </dd>
           </div>
           <div>
-            <dt className="overline-label mb-1">Systems affected</dt>
+            <dt className="mb-1 text-[11px] text-ink-faint">Systems affected</dt>
             <dd>
               {facts.systems.length > 0 ? (
                 <SystemTags systems={facts.systems} />
@@ -293,6 +298,8 @@ function OverviewTab({
           </div>
         </dl>
       </section>
+
+      <BiasCheckPanel />
     </div>
   );
 }
@@ -313,15 +320,15 @@ function ValidationTab({
   const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
   const minMonths = PATTERN_THRESHOLDS.minMonthsPersistence;
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl space-y-8">
       <ValidationChecklist
         result={result}
         title="Pattern validation tests"
         passedLabel="Validated"
         failedLabel="Not yet validated"
       />
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Evidence window</p>
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">Evidence window</h3>
         <p className="text-[13px] text-ink">
           {fmtDate(pattern.firstEvidenceDate)}{" "}
           <span aria-hidden className="text-ink-faint">
@@ -341,17 +348,19 @@ function ValidationTab({
           least {minMonths} months of evidence, not a short burst of coverage.
         </p>
       </section>
-      <ValidationChecklist
-        result={strongResult}
-        title="Optional stronger threshold"
-        passedLabel="Strong pattern"
-        failedLabel="Below strong threshold"
-      />
-      <p className="text-[11.5px] text-ink-faint">
-        The stronger threshold is optional — failing it does not invalidate the
-        pattern, but passing it marks a movement broad and deep enough to carry
-        significant weight in driver hypotheses.
-      </p>
+      <section>
+        <ValidationChecklist
+          result={strongResult}
+          title="Optional stronger threshold"
+          passedLabel="Strong pattern"
+          failedLabel="Below strong threshold"
+        />
+        <p className="mt-3 text-[11.5px] text-ink-faint">
+          The stronger threshold is optional — failing it does not invalidate the
+          pattern, but passing it marks a movement broad and deep enough to carry
+          significant weight in driver hypotheses.
+        </p>
+      </section>
     </div>
   );
 }
@@ -371,9 +380,9 @@ function EvidenceTab({
 }) {
   const minSources = PATTERN_THRESHOLDS.minIndependentSources;
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Independent sources</p>
+    <div className="space-y-8">
+      <section className="max-w-2xl">
+        <h3 className="mb-2 text-[13px] font-medium text-ink">Independent sources</h3>
         <p className="text-[13px] text-ink">
           Supported by{" "}
           <span className="font-mono">{pattern.independentSourceCount}</span>{" "}
@@ -391,9 +400,9 @@ function EvidenceTab({
       </section>
 
       <section>
-        <p className="overline-label mb-2">
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
           Key signals ({patternSignals.length})
-        </p>
+        </h3>
         {patternSignals.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -431,25 +440,27 @@ function EvidenceTab({
         )}
       </section>
 
-      <section>
-        <p className="overline-label mb-2">
+      <section className="max-w-2xl">
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
           Clusters involved ({patternClusters.length})
-        </p>
+        </h3>
         {patternClusters.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-3">
             {patternClusters.map((c) => (
-              <div key={c.id}>
+              <div key={c.id} className="flex flex-wrap items-baseline gap-x-3">
                 <EntityLink kind="cluster" id={c.id} title={c.name} />
-                <div className="mt-1 pl-0.5">
+                {c.valid ? (
                   <Pill
-                    tone={c.valid ? "accent" : "caution"}
+                    tone="accent"
                     title={`${c.passedCount} of ${c.totalCount} cluster validation checks passed`}
                   >
-                    {c.valid
-                      ? "Valid cluster"
-                      : `Candidate — ${c.passedCount}/${c.totalCount} checks`}
+                    Valid cluster
                   </Pill>
-                </div>
+                ) : (
+                  <span className="text-[11px] text-ink-faint">
+                    Candidate — {c.passedCount}/{c.totalCount} checks
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -467,6 +478,15 @@ function EvidenceTab({
 // ---------------------------------------------------------------------------
 // Methodology tab — thresholds spelled out, persistence arithmetic, audit trail
 // ---------------------------------------------------------------------------
+
+function AuditLine({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt className="w-52 shrink-0 text-[11.5px] text-ink-faint">{label}</dt>
+      <dd className="text-[12.5px] text-ink-soft">{value}</dd>
+    </div>
+  );
+}
 
 function MethodologyTab({
   pattern,
@@ -488,12 +508,12 @@ function MethodologyTab({
     ["Strong pattern — minimum actor types", String(t.strongMinActorTypes)],
   ];
   return (
-    <div className="space-y-4">
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Pattern validation thresholds</h3>
-        </header>
-        <div className="overflow-x-auto px-4 py-3">
+    <div className="max-w-2xl space-y-8">
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
+          Pattern validation thresholds
+        </h3>
+        <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
@@ -510,17 +530,19 @@ function MethodologyTab({
               ))}
             </tbody>
           </table>
-          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
-            A pattern is validated only when breadth, depth, persistence and
-            coherence all pass. The strong-pattern rows are optional — they mark
-            extra weight, they do not gate validation. This pattern currently
-            passes {result.passedCount} of {result.totalCount} tests.
-          </p>
         </div>
+        <p className="mt-3 text-[11.5px] text-ink-faint">
+          A pattern is validated only when breadth, depth, persistence and
+          coherence all pass. The strong-pattern rows are optional — they mark
+          extra weight, they do not gate validation. This pattern currently
+          passes {result.passedCount} of {result.totalCount} tests.
+        </p>
       </section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Persistence arithmetic</p>
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Persistence arithmetic
+        </h3>
         <p className="text-[13px] text-ink">
           First evidence {fmtDate(pattern.firstEvidenceDate)}{" "}
           <span aria-hidden className="text-ink-faint">
@@ -536,46 +558,38 @@ function MethodologyTab({
         </p>
       </section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Audit trail</h3>
-        </header>
-        <dl className="space-y-2.5 px-4 py-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Record id</dt>
-            <dd>
-              <IdChip id={pattern.id} />
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Created</dt>
-            <dd className="text-[12.5px] text-ink">{fmtDate(pattern.createdAt)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Last updated</dt>
-            <dd className="text-[12.5px] text-ink">{fmtDate(pattern.updatedAt)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Review status</dt>
-            <dd>
-              <ReviewStatusBadge status={pattern.reviewStatus} />
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Stored validation status</dt>
-            <dd className="font-mono text-[11.5px] text-ink-soft">
-              {pattern.validationStatus}
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="overline-label">Computed from evidence</dt>
-            <dd className="font-mono text-[11.5px] text-ink-soft">
-              {result.valid ? "validated" : "not validated"} · {result.passedCount}/
-              {result.totalCount} tests
-            </dd>
-          </div>
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">Audit trail</h3>
+        <dl className="space-y-2">
+          <AuditLine
+            label="Record id"
+            value={<span className="font-mono text-[11.5px]">{pattern.id}</span>}
+          />
+          <AuditLine label="Created" value={fmtDate(pattern.createdAt)} />
+          <AuditLine label="Last updated" value={fmtDate(pattern.updatedAt)} />
+          <AuditLine
+            label="Review status"
+            value={REVIEW_STATUS_LABELS[pattern.reviewStatus]}
+          />
+          <AuditLine
+            label="Stored validation status"
+            value={
+              <span className="font-mono text-[11.5px]">
+                {pattern.validationStatus}
+              </span>
+            }
+          />
+          <AuditLine
+            label="Computed from evidence"
+            value={
+              <span className="font-mono text-[11.5px]">
+                {result.valid ? "validated" : "not validated"} · {result.passedCount}/
+                {result.totalCount} tests
+              </span>
+            }
+          />
         </dl>
-        <p className="border-t border-line px-4 py-2.5 text-[11.5px] text-ink-faint">
+        <p className="mt-3 text-[11.5px] text-ink-faint">
           Review status is a human decision recorded in the Review tab. When the
           stored validation status disagrees with the computed result, the
           computed result wins and the disagreement is stated.
@@ -598,82 +612,82 @@ function ReviewTab({ pattern }: { pattern: Pattern }) {
   const [saved, setSaved] = useState(false);
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Human review</h3>
-        </header>
-        <div className="space-y-4 px-4 py-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Review status"
-              hint="A review decision about the record — separate from the computed validation status."
-            >
-              <Select
-                value={pattern.reviewStatus}
-                onChange={(e) =>
-                  updatePattern(pattern.id, {
-                    reviewStatus: e.target.value as ReviewStatus,
-                  })
-                }
-              >
-                {REVIEW_STATUS_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {REVIEW_STATUS_LABELS[r]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              label="Confidence"
-              hint="How much weight the pattern interpretation should carry."
-            >
-              <Select
-                value={pattern.confidence}
-                onChange={(e) =>
-                  updatePattern(pattern.id, {
-                    confidence: e.target.value as ConfidenceLevel,
-                  })
-                }
-              >
-                {CONFIDENCE_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
-                    {CONFIDENCE_LABELS[c]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <Field
-            label="Human notes"
-            hint="Interpretation, doubts, and next evidence to look for."
+    <div className="max-w-2xl space-y-5">
+      <div>
+        <h3 className="text-[13px] font-medium text-ink">Human review</h3>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          Review decisions are stored separately from the computed validation
+          status and never override it.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Review status"
+          hint="A review decision about the record — separate from the computed validation status."
+        >
+          <Select
+            value={pattern.reviewStatus}
+            onChange={(e) =>
+              updatePattern(pattern.id, {
+                reviewStatus: e.target.value as ReviewStatus,
+              })
+            }
           >
-            <TextArea
-              rows={5}
-              value={notes}
-              onChange={(e) => {
-                setNotes(e.target.value);
-                setSaved(false);
-              }}
-            />
-          </Field>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={btnPrimary}
-              onClick={() => {
-                updatePattern(pattern.id, { humanNotes: notes });
-                setSaved(true);
-              }}
-            >
-              Save notes
-            </button>
-            {saved ? (
-              <span className="text-[11.5px] text-accent-ink">Notes saved.</span>
-            ) : null}
-          </div>
-        </div>
-      </section>
+            {REVIEW_STATUS_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {REVIEW_STATUS_LABELS[r]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          label="Confidence"
+          hint="How much weight the pattern interpretation should carry."
+        >
+          <Select
+            value={pattern.confidence}
+            onChange={(e) =>
+              updatePattern(pattern.id, {
+                confidence: e.target.value as ConfidenceLevel,
+              })
+            }
+          >
+            {CONFIDENCE_OPTIONS.map((c) => (
+              <option key={c} value={c}>
+                {CONFIDENCE_LABELS[c]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Field
+        label="Human notes"
+        hint="Interpretation, doubts, and next evidence to look for."
+      >
+        <TextArea
+          rows={5}
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            setSaved(false);
+          }}
+        />
+      </Field>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className={btnPrimary}
+          onClick={() => {
+            updatePattern(pattern.id, { humanNotes: notes });
+            setSaved(true);
+          }}
+        >
+          Save notes
+        </button>
+        {saved ? (
+          <span className="text-[11.5px] text-accent-ink">Notes saved.</span>
+        ) : null}
+      </div>
       <p className="text-[11.5px] text-ink-faint">
         Created {fmtDate(pattern.createdAt)} · Last updated {fmtDate(pattern.updatedAt)}
       </p>
@@ -682,10 +696,10 @@ function ReviewTab({ pattern }: { pattern: Pattern }) {
 }
 
 // ---------------------------------------------------------------------------
-// Right column — persistence guidance
+// Right rail — persistence guidance as a quiet aside, not a box
 // ---------------------------------------------------------------------------
 
-function PersistenceGuidanceCard({
+function PersistenceGuidance({
   pattern,
   result,
 }: {
@@ -695,24 +709,22 @@ function PersistenceGuidanceCard({
   const breadthPassed = findCheck(result, "Breadth test")?.passed ?? false;
   const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
   return (
-    <section className="card border-l-2 border-l-caution">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">Persistence not yet demonstrated</h3>
-      </header>
-      <div className="px-4 py-3">
-        <p className="text-[12.5px] text-ink-soft">
-          {breadthPassed
-            ? "This pattern has breadth but not enough time-based evidence."
-            : "This pattern does not yet have enough time-based evidence."}
-        </p>
-        <p className="mt-1.5 text-[11.5px] text-ink-faint">
-          The evidence window spans {months} month{months === 1 ? "" : "s"};
-          the persistence test needs at least{" "}
-          {PATTERN_THRESHOLDS.minMonthsPersistence}. Keep scanning and extend
-          the window before treating this movement as validated.
-        </p>
-      </div>
-    </section>
+    <aside className="border-l-2 border-caution/40 pl-4">
+      <h3 className="text-[13px] font-medium text-ink">
+        Persistence not yet demonstrated
+      </h3>
+      <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
+        {breadthPassed
+          ? "This pattern has breadth but not enough time-based evidence."
+          : "This pattern does not yet have enough time-based evidence."}
+      </p>
+      <p className="mt-1.5 text-[11.5px] text-ink-faint">
+        The evidence window spans {months} month{months === 1 ? "" : "s"};
+        the persistence test needs at least{" "}
+        {PATTERN_THRESHOLDS.minMonthsPersistence}. Keep scanning and extend
+        the window before treating this movement as validated.
+      </p>
+    </aside>
   );
 }
 
@@ -735,7 +747,7 @@ export default function PatternDetailPage() {
     return (
       <>
         <Breadcrumbs items={[{ label: "Patterns", href: "/patterns" }]} />
-        <PageHeader overline="Connect & Synthesize" title="Pattern" />
+        <PageHeader title="Pattern" />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
@@ -750,7 +762,7 @@ export default function PatternDetailPage() {
         <Breadcrumbs
           items={[{ label: "Patterns", href: "/patterns" }, { label: "Not found" }]}
         />
-        <PageHeader overline="Connect & Synthesize" title="Pattern not found" />
+        <PageHeader title="Pattern not found" />
         <EmptyState
           message={`No pattern carries the id “${id}”. It may have been created in a different browser (the intelligence base is stored locally) or the id may be mistyped. Browse the pattern list to find the record you need.`}
           actionLabel="Back to Patterns"
@@ -858,7 +870,7 @@ export default function PatternDetailPage() {
       label: `Contradictions (${linkedContradictions.length})`,
       content:
         linkedContradictions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {linkedContradictions.map((c) => (
               <ContradictionPanel key={c.id} contradiction={c} />
             ))}
@@ -885,18 +897,13 @@ export default function PatternDetailPage() {
     <>
       <Breadcrumbs items={crumbs} />
       <PageHeader
-        overline={`Connect & Synthesize · ${pattern.id}`}
         title={pattern.name}
+        description={PATTERN_TYPE_LABELS[pattern.patternType]}
         actions={
-          simple ? (
-            <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
-          ) : (
+          simple ? undefined : (
             <div className="flex flex-col items-end gap-1">
               <PatternValidationPill result={result} />
               {recomputed ? <RecomputedNote /> : null}
-              <span className="font-mono text-[11px] text-ink-faint">
-                {result.passedCount}/{result.totalCount} tests passed
-              </span>
             </div>
           )
         }
@@ -916,21 +923,12 @@ export default function PatternDetailPage() {
           )}
         </div>
 
-        <aside className="mt-6 space-y-4 lg:mt-0">
-          <ViewGate min="analyst">
-            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-              <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
-              <ReviewStatusBadge status={pattern.reviewStatus} />
-              <ConfidenceBadge level={pattern.confidence} />
-              <IdChip id={pattern.id} />
-            </div>
-          </ViewGate>
+        <aside className="mt-10 space-y-8 lg:mt-0">
           <RelatedObjectsPanel groups={relatedGroups} />
           <ViewGate min="analyst">
             {persistenceFailed ? (
-              <PersistenceGuidanceCard pattern={pattern} result={result} />
+              <PersistenceGuidance pattern={pattern} result={result} />
             ) : null}
-            <BiasCheckPanel />
           </ViewGate>
         </aside>
       </div>

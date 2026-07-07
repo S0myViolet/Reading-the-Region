@@ -12,6 +12,9 @@
  * monitoring and review controls. Methodology view adds the convergence rule
  * spelled out and the audit trail. Territories always require human review —
  * the layer sits too close to strategy to be trusted unreviewed.
+ *
+ * Calm layout: the left column reads as an article — small headings, prose,
+ * whitespace instead of stacked cards. Cards survive only around tables.
  */
 
 import Link from "next/link";
@@ -34,11 +37,8 @@ import {
 } from "@/components/EntityLink";
 import { ScoreBar } from "@/components/ScorePanel";
 import {
-  ConfidenceBadge,
   IdChip,
-  Pill,
   ProvenanceBadge,
-  ReviewStatusBadge,
   TerritoryStatusBadge,
   TrendBadge,
 } from "@/components/badges";
@@ -69,82 +69,92 @@ import {
   countInWords,
   EVIDENCE_STRENGTH_WORDS,
   MONITORING_STATUS_EXPLANATIONS,
-  ScenarioReadinessPill,
   territoryNextStep,
   fmtDate,
 } from "../territory-ui";
 
 // ---------------------------------------------------------------------------
-// Simple reading — the default view, and the Overview tab in deeper views
+// Small building blocks — article sections, boxless
 // ---------------------------------------------------------------------------
 
-function ListSection({
+function Section({
   title,
-  items,
-  emptyNote,
-  tone,
+  aside,
+  children,
 }: {
   title: string;
-  items: string[];
-  emptyNote: string;
-  tone?: "tension" | "accent";
+  aside?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <section
-      className={`card ${
-        tone === "tension"
-          ? "border-l-2 border-l-tension"
-          : tone === "accent"
-            ? "border-l-2 border-l-accent"
-            : ""
-      }`}
-    >
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">{title}</h3>
-      </header>
+    <section>
+      <div className="mb-1.5 flex flex-wrap items-baseline gap-2">
+        <h2 className="text-[13px] font-medium text-ink">{title}</h2>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Prose({ children }: { children: React.ReactNode }) {
+  return <p className="text-[13px] leading-relaxed text-ink-soft">{children}</p>;
+}
+
+function FaintNote({ children }: { children: React.ReactNode }) {
+  return <p className="text-[12px] leading-relaxed text-ink-faint">{children}</p>;
+}
+
+/** A plain list under a faint label — the calm replacement for boxed lists. */
+function PlainList({
+  label,
+  items,
+  emptyNote,
+}: {
+  label: string;
+  items: string[];
+  emptyNote: string;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[11.5px] text-ink-faint">{label}</p>
       {items.length > 0 ? (
-        <ul className="divide-y divide-line">
+        <ul className="space-y-1.5">
           {items.map((item) => (
-            <li key={item} className="px-4 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+            <li key={item} className="text-[13px] leading-relaxed text-ink-soft">
               {item}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="px-4 py-3 text-[12px] text-ink-faint">{emptyNote}</p>
+        <p className="text-[12px] leading-relaxed text-ink-faint">{emptyNote}</p>
       )}
-    </section>
+    </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Simple reading — the default view, and the Overview tab in deeper views
+// ---------------------------------------------------------------------------
+
 /** Linked contradictions as readable sentences; the absence is explicit. */
 function ContradictionSentences({ items }: { items: Contradiction[] }) {
+  if (items.length === 0) return <NoContradictionNote />;
   return (
-    <section className="card border-l-2 border-l-tension">
-      <header className="border-b border-line px-4 py-2.5">
-        <h3 className="overline-label">What could contradict it</h3>
-      </header>
-      {items.length > 0 ? (
-        <ul className="divide-y divide-line">
-          {items.map((c) => (
-            <li key={c.id} className="px-4 py-2.5 text-[13px] leading-relaxed text-ink-soft">
-              <Link
-                href={`/contradictions/${c.id}`}
-                className="font-medium text-ink hover:text-accent-ink hover:underline"
-              >
-                {c.name}
-              </Link>
-              {" — "}
-              {explainContradiction(c)}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="px-4 py-3">
-          <NoContradictionNote />
-        </div>
-      )}
-    </section>
+    <ul className="space-y-2.5">
+      {items.map((c) => (
+        <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
+          <Link
+            href={`/contradictions/${c.id}`}
+            className="font-medium text-ink hover:text-accent-ink hover:underline"
+          >
+            {c.name}
+          </Link>
+          {" — "}
+          {explainContradiction(c)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -156,102 +166,90 @@ function SimpleReading({
   linkedContradictions: Contradiction[];
 }) {
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-4">
-        <p className="overline-label mb-2">One-line definition</p>
+    <div className="max-w-2xl space-y-8">
+      <Section title="One-line definition">
         {territory.oneLineDefinition.trim() ? (
-          <blockquote className="border-l-2 border-l-accent pl-4 font-display text-[18px] italic leading-relaxed text-ink">
+          <p className="font-display text-[17px] italic leading-relaxed text-ink">
             {territory.oneLineDefinition}
-          </blockquote>
+          </p>
         ) : (
-          <p className="text-[12px] text-ink-faint">
+          <FaintNote>
             No one-line definition recorded yet. A territory that cannot be
             stated in a single sentence is not yet a territory — it is a pile
             of adjacent observations.
-          </p>
+          </FaintNote>
         )}
-      </section>
+      </Section>
 
-      <section className="card px-4 py-3">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <p className="overline-label">Why it is emerging</p>
+      <Section
+        title="Why it is emerging"
+        aside={
           <ViewGate min="methodology">
             <ProvenanceBadge label="sourced_interpretation" />
           </ViewGate>
-        </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {territory.whyEmerging.trim() ? (
-            territory.whyEmerging
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              Not recorded yet. State which drivers converge here and why their
-              convergence produces this direction rather than another.
-            </span>
-          )}
-        </p>
-      </section>
-
-      <section className="card px-4 py-3">
-        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <p className="overline-label">Where it stands</p>
-          <TerritoryStatusBadge status={territory.monitoringStatus} />
-        </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {explainTerritoryStatus(territory)}
-        </p>
-      </section>
-
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">What it changes</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {territory.whatItChanges.trim() ? (
-            territory.whatItChanges
-          ) : (
-            <span className="text-[12px] text-ink-faint">
-              Not recorded yet. Name the systems, behaviours, and markets this
-              direction of change restructures.
-            </span>
-          )}
-        </p>
-      </section>
-
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1.5">Who it affects</p>
-        {territory.whoItAffects.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {territory.whoItAffects.map((who) => (
-              <Pill key={who}>{who}</Pill>
-            ))}
-          </div>
+        }
+      >
+        {territory.whyEmerging.trim() ? (
+          <Prose>{territory.whyEmerging}</Prose>
         ) : (
-          <span className="text-[11.5px] text-ink-faint">
+          <FaintNote>
+            Not recorded yet. State which drivers converge here and why their
+            convergence produces this direction rather than another.
+          </FaintNote>
+        )}
+      </Section>
+
+      <Section title="Where it stands">
+        <Prose>
+          <TerritoryStatusBadge status={territory.monitoringStatus} />{" "}
+          {explainTerritoryStatus(territory)}
+        </Prose>
+      </Section>
+
+      <Section title="What it changes">
+        {territory.whatItChanges.trim() ? (
+          <Prose>{territory.whatItChanges}</Prose>
+        ) : (
+          <FaintNote>
+            Not recorded yet. Name the systems, behaviours, and markets this
+            direction of change restructures.
+          </FaintNote>
+        )}
+      </Section>
+
+      <Section title="Who it affects">
+        {territory.whoItAffects.length > 0 ? (
+          <Prose>{territory.whoItAffects.join(" · ")}</Prose>
+        ) : (
+          <FaintNote>
             No affected groups recorded yet. A territory that affects no one in
             particular is a buzzword, not a direction of change.
-          </span>
+          </FaintNote>
         )}
-      </section>
+      </Section>
 
-      <ListSection
-        title="Opportunities — if this territory strengthens"
-        items={territory.opportunities}
-        emptyNote="No opportunities recorded yet. Trace what becomes possible or valuable if this direction continues."
-        tone="accent"
-      />
-      <ListSection
-        title="Risks — if this territory strengthens"
-        items={territory.risks}
-        emptyNote="No risks recorded yet. Every meaningful direction of change puts something at risk — if nothing comes to mind, the territory is under-examined."
-        tone="tension"
-      />
+      <Section title="If this territory strengthens">
+        <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          <PlainList
+            label="Opportunities"
+            items={territory.opportunities}
+            emptyNote="No opportunities recorded yet. Trace what becomes possible or valuable if this direction continues."
+          />
+          <PlainList
+            label="Risks"
+            items={territory.risks}
+            emptyNote="No risks recorded yet. Every meaningful direction of change puts something at risk — if nothing comes to mind, the territory is under-examined."
+          />
+        </div>
+      </Section>
 
-      <ContradictionSentences items={linkedContradictions} />
+      <Section title="What could contradict it">
+        <ContradictionSentences items={linkedContradictions} />
+      </Section>
 
-      <section className="card px-4 py-3">
-        <p className="overline-label mb-1">Next step</p>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          {territoryNextStep(territory)}
-        </p>
-      </section>
+      <Section title="Next step">
+        <Prose>{territoryNextStep(territory)}</Prose>
+      </Section>
 
       <DepthHint>
         Linkage checks, evidence strength, sector implications and review controls
@@ -277,9 +275,9 @@ function LinkGrid({
 }) {
   return (
     <section>
-      <p className="overline-label mb-2">
+      <h3 className="mb-2 text-[13px] font-medium text-ink">
         {heading} ({items.length})
-      </p>
+      </h3>
       {items.length > 0 ? (
         <div className="grid gap-2 sm:grid-cols-2">
           {items.map((item) => (
@@ -302,7 +300,9 @@ const PATTERN_STATUS_WORDS: Record<PatternValidationStatus, string> = {
 function DriverLinkTable({ drivers }: { drivers: Driver[] }) {
   return (
     <section>
-      <p className="overline-label mb-2">Drivers behind it ({drivers.length})</p>
+      <h3 className="mb-2 text-[13px] font-medium text-ink">
+        Drivers behind it ({drivers.length})
+      </h3>
       {drivers.length > 0 ? (
         <div className="card overflow-x-auto">
           <table className="data-table">
@@ -349,7 +349,9 @@ function DriverLinkTable({ drivers }: { drivers: Driver[] }) {
 function PatternLinkTable({ patterns }: { patterns: Pattern[] }) {
   return (
     <section>
-      <p className="overline-label mb-2">Patterns behind it ({patterns.length})</p>
+      <h3 className="mb-2 text-[13px] font-medium text-ink">
+        Patterns behind it ({patterns.length})
+      </h3>
       {patterns.length > 0 ? (
         <div className="card overflow-x-auto">
           <table className="data-table">
@@ -409,19 +411,17 @@ function EvidenceTab({
   representativeSignals: Array<{ id: string; title: string }>;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       <ValidationChecklist
         result={result}
         title="Territory linkage requirements"
         passedLabel="Grounded"
         failedLabel="Insufficiently grounded"
       />
-      <section className="card px-4 py-3">
-        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
-          <p className="overline-label">Evidence strength</p>
-          <ScoreBar value={territory.evidenceStrength} label="Evidence strength" />
-        </div>
-        <p className="text-[13px] leading-relaxed text-ink-soft">
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">Evidence strength</h3>
+        <ScoreBar value={territory.evidenceStrength} label="Evidence strength" />
+        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
           {EVIDENCE_STRENGTH_WORDS[territory.evidenceStrength]}.
         </p>
       </section>
@@ -500,7 +500,7 @@ function ScenariosTab({
   linkedScenarios: Scenario[];
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <p className="text-[11.5px] text-ink-faint">
         Scenarios explore how this territory evolves under different conditions.
         They are structured possibilities anchored to this territory&rsquo;s evidence
@@ -513,32 +513,36 @@ function ScenariosTab({
           ))}
         </div>
       ) : result.valid ? (
-        <div className="card px-4 py-4">
-          <p className="overline-label mb-1 text-accent-ink">Ready for scenarios</p>
+        <section>
+          <h3 className="mb-1.5 text-[13px] font-medium text-accent-ink">
+            Ready for scenarios
+          </h3>
           <p className="text-[13px] leading-relaxed text-ink-soft">
             No scenarios explore this territory yet, but its linkage
             requirements are met — it is grounded enough to imagine forward.
-            Build a set of differentiated scenarios from the Scenarios page,
-            anchored to this territory.
+            Build a set of differentiated scenarios from the{" "}
+            <Link
+              href="/scenarios"
+              className="text-ink underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+            >
+              Scenarios page
+            </Link>
+            , anchored to this territory.
           </p>
-          <Link
-            href="/scenarios"
-            className="mt-3 inline-block border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
-          >
-            Open Scenarios
-          </Link>
-        </div>
+        </section>
       ) : (
-        <div className="card border-l-2 border-l-caution px-4 py-4">
-          <p className="overline-label mb-1 text-caution">Not ready for scenarios</p>
+        <section>
+          <h3 className="mb-1.5 text-[13px] font-medium text-caution">
+            Not ready for scenarios
+          </h3>
           <p className="text-[13px] leading-relaxed text-ink-soft">
             This territory meets {result.passedCount} of {result.totalCount}{" "}
             linkage requirements. Scenarios built on an insufficiently grounded
             territory inherit its weakness — strengthen the driver, pattern,
-            signal, contradiction, and indicator links on the Evidence &
+            signal, contradiction, and indicator links on the Evidence &amp;
             linkage tab first.
           </p>
-        </div>
+        </section>
       )}
     </div>
   );
@@ -556,13 +560,11 @@ function MonitoringTab({
   linkedIndicators: MonitoringIndicator[];
 }) {
   return (
-    <div className="space-y-4">
-      <section className="card px-4 py-3">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <p className="overline-label">Monitoring status</p>
-          <TerritoryStatusBadge status={territory.monitoringStatus} />
-        </div>
+    <div className="space-y-5">
+      <section>
+        <h3 className="mb-1.5 text-[13px] font-medium text-ink">Monitoring status</h3>
         <p className="text-[13px] leading-relaxed text-ink-soft">
+          <TerritoryStatusBadge status={territory.monitoringStatus} />{" "}
           {TERRITORY_MONITORING_LABELS[territory.monitoringStatus]} —{" "}
           {MONITORING_STATUS_EXPLANATIONS[territory.monitoringStatus]}
         </p>
@@ -610,8 +612,9 @@ function MonitoringTab({
           </table>
         </div>
       ) : (
-        <p className="border border-dashed border-line-strong px-3 py-2 text-[12px] text-ink-faint rounded-[2px]">
-          Add leading indicators before treating this territory as active.
+        <p className="text-[12px] text-ink-faint">
+          No indicators attached yet. Add leading indicators before treating
+          this territory as active.
         </p>
       )}
 
@@ -637,18 +640,16 @@ function ReviewTab({ territory }: { territory: FutureTerritory }) {
   const updateTerritory = useIntelligenceStore((s) => s.updateTerritory);
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <p className="border border-dashed border-line-strong px-3 py-2 text-[12px] text-ink-soft rounded-[2px]">
+    <div className="max-w-2xl space-y-5">
+      <p className="text-[12px] leading-relaxed text-ink-faint">
         Territories always require human review. This layer sits directly
         beneath scenarios and strategy — no territory should anchor decisions
         on stored status alone, and none should be treated as settled without
         a named reviewer&rsquo;s judgement.
       </p>
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Human review</h3>
-        </header>
-        <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+      <section>
+        <h3 className="mb-3 text-[13px] font-medium text-ink">Human review</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label="Review status"
             hint="The human decision about this record — separate from the computed linkage checks."
@@ -733,20 +734,18 @@ function MethodologyTab({ territory }: { territory: FutureTerritory }) {
   ];
 
   return (
-    <div className="space-y-4">
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">The convergence rule</h3>
-        </header>
-        <p className="px-4 pt-3 text-[13px] leading-relaxed text-ink-soft">
+    <div className="max-w-2xl space-y-7">
+      <section>
+        <h3 className="mb-1.5 text-[13px] font-medium text-ink">The convergence rule</h3>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
           A future territory is only treated as grounded when every one of
           these requirements holds. The requirements are thresholds, not
           judgements — the Evidence &amp; linkage checklist computes them from
           the record&rsquo;s actual links.
         </p>
-        <ul className="mt-2 divide-y divide-line">
+        <ul className="mt-3 space-y-2.5 border-l border-line pl-4">
           {rules.map((r) => (
-            <li key={r.rule} className="px-4 py-2.5">
+            <li key={r.rule}>
               <p className="text-[12.5px] font-medium text-ink">
                 {r.rule}
                 <span className="ml-2 font-normal text-ink-faint">— currently {r.now}.</span>
@@ -757,32 +756,30 @@ function MethodologyTab({ territory }: { territory: FutureTerritory }) {
         </ul>
       </section>
 
-      <section className="card">
-        <header className="border-b border-line px-4 py-2.5">
-          <h3 className="overline-label">Audit trail</h3>
-        </header>
-        <dl className="divide-y divide-line">
-          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">Audit trail</h3>
+        <dl className="max-w-sm space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3">
             <dt className="text-[12px] text-ink-faint">Record id</dt>
             <dd>
               <IdChip id={territory.id} />
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+          <div className="flex items-baseline justify-between gap-3">
             <dt className="text-[12px] text-ink-faint">Created</dt>
             <dd className="text-[12px] text-ink-soft">{fmtDate(territory.createdAt)}</dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+          <div className="flex items-baseline justify-between gap-3">
             <dt className="text-[12px] text-ink-faint">Last updated</dt>
             <dd className="text-[12px] text-ink-soft">{fmtDate(territory.updatedAt)}</dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+          <div className="flex items-baseline justify-between gap-3">
             <dt className="text-[12px] text-ink-faint">Review status</dt>
             <dd className="text-[12px] text-ink-soft">
               {REVIEW_STATUS_LABELS[territory.reviewStatus]}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 px-4 py-2">
+          <div className="flex items-baseline justify-between gap-3">
             <dt className="text-[12px] text-ink-faint">Confidence</dt>
             <dd className="text-[12px] text-ink-soft">
               {CONFIDENCE_LABELS[territory.confidence]}
@@ -816,7 +813,7 @@ export default function TerritoryDetailPage() {
     return (
       <>
         <Breadcrumbs items={[{ label: "Future Territories", href: "/territories" }]} />
-        <PageHeader overline="Interpret & Imagine" title="Future territory" />
+        <PageHeader title="Future territory" />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
@@ -834,7 +831,7 @@ export default function TerritoryDetailPage() {
             { label: "Not found" },
           ]}
         />
-        <PageHeader overline="Interpret & Imagine" title="Territory not found" />
+        <PageHeader title="Territory not found" />
         <EmptyState
           message={`No future territory carries the id “${id}”. It may have been created in a different browser (the intelligence base is stored locally) or the id may be mistyped. Browse the territory list to find the record you need.`}
           actionLabel="Back to Future Territories"
@@ -965,7 +962,7 @@ export default function TerritoryDetailPage() {
       id: "contradictions",
       label: `Contradictions (${linkedContradictions.length})`,
       content: (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {linkedContradictions.length > 0 ? (
             linkedContradictions.map((c) => (
               <ContradictionPanel key={c.id} contradiction={c} />
@@ -1018,33 +1015,12 @@ export default function TerritoryDetailPage() {
           { label: territory.name },
         ]}
       />
-      <PageHeader
-        overline={`Interpret & Imagine · ${territory.id}`}
-        title={territory.name}
-        actions={
-          <ViewGate min="analyst">
-            <div className="flex flex-col items-end gap-1">
-              <TerritoryStatusBadge status={territory.monitoringStatus} />
-              <ReviewStatusBadge status={territory.reviewStatus} />
-              <ScenarioReadinessPill readiness={territory.scenarioReadiness} />
-            </div>
-          </ViewGate>
-        }
-      />
+      <PageHeader title={territory.name} />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>{mode === "simple" ? simpleReading : <Tabs tabs={tabs} />}</div>
 
-        <aside className="mt-6 space-y-4 lg:mt-0">
-          <ViewGate min="analyst">
-            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-              <TerritoryStatusBadge status={territory.monitoringStatus} />
-              <ScenarioReadinessPill readiness={territory.scenarioReadiness} />
-              <ConfidenceBadge level={territory.confidence} />
-              <ReviewStatusBadge status={territory.reviewStatus} />
-              <IdChip id={territory.id} />
-            </div>
-          </ViewGate>
+        <aside className="mt-10 space-y-8 lg:mt-0">
           <RelatedObjectsPanel groups={relatedGroups} />
           <ViewGate min="analyst">
             <BiasCheckPanel

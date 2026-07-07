@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Settings — workspace preferences, guidance controls, review-status
- * reference, and data administration. All state lives in the client store,
- * so the page is hydration-gated like every other store-reading page.
+ * Settings — workspace preferences, guidance controls, and data
+ * administration, read as one quiet article: View depth, Guided mode &
+ * onboarding, Data, then the review-status reference behind a disclosure.
+ * All state lives in the client store, so the page is hydration-gated.
  */
 
 import Link from "next/link";
@@ -27,7 +28,7 @@ import {
 /** The three view depths, in ascending order, for the definition list. */
 const VIEW_MODES: ViewMode[] = ["simple", "analyst", "methodology"];
 
-/** One-line meaning for each review status, shown in the reference card. */
+/** One-line meaning for each review status, shown in the reference list. */
 const REVIEW_STATUS_MEANINGS: Record<ReviewStatus, string> = {
   draft: "Still being written — not yet part of the usable evidence base.",
   needs_evidence:
@@ -62,42 +63,56 @@ const ALWAYS_HUMAN_REVIEW: string[] = [
   "Strategic recommendations.",
 ];
 
-/** What Guided Mode adds to every main section page. */
-const GUIDED_MODE_SHOWS: Array<{ label: string; detail: string }> = [
-  { label: "Page purpose", detail: "what the layer is for" },
-  { label: "Recommended action", detail: "what to do on the page" },
-  { label: "Common mistake", detail: "the error the method guards against" },
-  { label: "Next step", detail: "where the evidence should move next" },
-];
-
 // ---------------------------------------------------------------------------
-// Local presentational helpers
+// Local presentational helpers — one visual weight for every control
 // ---------------------------------------------------------------------------
 
-function SettingsCard({
+/** Quiet chip button: the single weight used by every settings action. */
+const chipBtn =
+  "shrink-0 rounded-[4px] bg-surface-muted px-3 py-1.5 text-[12.5px] text-ink-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-50";
+
+function SettingsSection({
   title,
-  caption,
+  description,
   children,
 }: {
   title: string;
-  caption?: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="card mb-6">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">{title}</h2>
-        {caption ? (
-          <p className="mt-0.5 text-[11.5px] text-ink-faint">{caption}</p>
-        ) : null}
-      </header>
-      {children}
+    <section>
+      <h2 className="text-[13px] font-medium text-ink">{title}</h2>
+      {description ? (
+        <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
 
-const SECONDARY_BUTTON =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50";
+/** A setting row: name + faint explanation on the left, one control on the right. */
+function SettingRow({
+  name,
+  detail,
+  control,
+}: {
+  name: string;
+  detail: React.ReactNode;
+  control: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+      <div className="max-w-xl">
+        <p className="text-[13px] text-ink">{name}</p>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-ink-faint">{detail}</p>
+      </div>
+      {control}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -126,6 +141,7 @@ export default function SettingsPage() {
   const indicators = useIntelligenceStore((s) => s.indicators);
 
   const [dataNote, setDataNote] = useState<string | null>(null);
+  const [showStatusReference, setShowStatusReference] = useState(false);
 
   const hiddenGuidanceCount = dismissedWalkthroughs.filter(
     (id) => id in WALKTHROUGHS,
@@ -177,7 +193,6 @@ export default function SettingsPage() {
     return (
       <>
         <PageHeader
-          overline="System"
           title="Settings"
           description="Workspace preferences, guidance, and data administration."
         />
@@ -203,28 +218,26 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader
-        overline="System"
         title="Settings"
         description="Workspace preferences, guidance, and data administration."
       />
 
+      <div className="space-y-10">
       {/* View depth -------------------------------------------------------- */}
-      <SettingsCard
+      <SettingsSection
         title="View depth"
-        caption="How much of the analytical engine each page shows. The same control appears in the sidebar; changing it never touches the evidence base."
+        description="How much of the analytical engine each page shows. The same control appears in the sidebar; changing it never touches the evidence base."
       >
-        <div className="border-b border-line px-4 py-3">
-          <div className="max-w-sm">
-            <ViewModeSwitch />
-          </div>
+        <div className="max-w-xs">
+          <ViewModeSwitch compact />
         </div>
-        <dl className="space-y-2.5 px-4 py-3">
+        <dl className="mt-5 max-w-2xl space-y-3">
           {VIEW_MODES.map((m) => (
-            <div key={m} className="max-w-2xl">
-              <dt className="text-[12.5px] font-medium text-ink">
+            <div key={m}>
+              <dt className="text-[12px] font-medium text-ink-faint">
                 {VIEW_MODE_LABELS[m]}
                 {m === "simple" ? (
-                  <span className="font-normal text-ink-faint"> — default</span>
+                  <span className="font-normal"> — default</span>
                 ) : null}
               </dt>
               <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
@@ -233,217 +246,195 @@ export default function SettingsPage() {
             </div>
           ))}
         </dl>
-      </SettingsCard>
+      </SettingsSection>
 
-      {/* Guidance --------------------------------------------------------- */}
-      <SettingsCard
-        title="Guidance"
-        caption="Controls for the in-app method guidance. The same Guided Mode switch appears in the sidebar."
+      {/* Guided mode & onboarding ------------------------------------------ */}
+      <SettingsSection
+        title="Guided mode & onboarding"
+        description="Controls for the in-app method guidance. The same Guided Mode switch appears in the sidebar."
       >
-        <div className="border-b border-line px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="max-w-2xl">
-              <p className="text-[13px] font-medium text-ink">Guided Mode</p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
-                When Guided Mode is on, every main section page opens with a short
-                guidance panel covering four things:
-              </p>
-              <ul className="mt-1.5 space-y-0.5">
-                {GUIDED_MODE_SHOWS.map((g) => (
-                  <li key={g.label} className="text-[12.5px] leading-relaxed text-ink-soft">
-                    <span className="font-medium text-ink">{g.label}</span>
-                    <span className="text-ink-faint"> — {g.detail}.</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[11.5px] text-ink-soft">
-              {guidedMode ? "On" : "Off"}
-              <button
-                role="switch"
-                aria-checked={guidedMode}
-                aria-label="Guided Mode"
-                onClick={() => setGuidedMode(!guidedMode)}
-                className={`relative h-[16px] w-[28px] rounded-full border transition-colors ${
-                  guidedMode
-                    ? "border-accent bg-accent"
-                    : "border-line-strong bg-surface-muted"
-                }`}
-              >
-                <span
-                  className={`absolute top-[2px] h-[10px] w-[10px] rounded-full bg-white transition-all ${
-                    guidedMode ? "left-[14px]" : "left-[2px]"
+        <div className="max-w-2xl space-y-5">
+          <SettingRow
+            name="Guided Mode"
+            detail="Opens every main section page with a short guide: the page's purpose, the recommended action, the common mistake to avoid, and the next step."
+            control={
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[11.5px] text-ink-soft">
+                {guidedMode ? "On" : "Off"}
+                <button
+                  role="switch"
+                  aria-checked={guidedMode}
+                  aria-label="Guided Mode"
+                  onClick={() => setGuidedMode(!guidedMode)}
+                  className={`relative h-[16px] w-[28px] rounded-full border transition-colors ${
+                    guidedMode
+                      ? "border-accent bg-accent"
+                      : "border-line-strong bg-surface-muted"
                   }`}
-                />
+                >
+                  <span
+                    className={`absolute top-[2px] h-[10px] w-[10px] rounded-full bg-white transition-all ${
+                      guidedMode ? "left-[14px]" : "left-[2px]"
+                    }`}
+                  />
+                </button>
+              </label>
+            }
+          />
+          <SettingRow
+            name="First-run introduction"
+            detail="Five short screens covering the intelligence pipeline, where to start, and how evidence moves upward."
+            control={
+              <button onClick={() => resetOnboarding()} className={chipBtn}>
+                Replay introduction
               </button>
-            </label>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-            Replay the first-run introduction — five short screens covering the
-            intelligence pipeline, where to start, and how evidence moves upward.
-          </p>
-          <button onClick={() => resetOnboarding()} className={SECONDARY_BUTTON}>
-            Replay first-run introduction
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-            Guidance panels dismissed on individual pages stay hidden until restored.{" "}
-            <span className="text-ink-faint">
-              {hiddenGuidanceCount === 0
-                ? "No page guidance is currently hidden."
-                : `${hiddenGuidanceCount} page guidance panel${hiddenGuidanceCount === 1 ? " is" : "s are"} currently hidden.`}
-            </span>
-          </p>
-          <button
-            onClick={handleRestoreAllGuidance}
-            disabled={hiddenGuidanceCount === 0}
-            className={SECONDARY_BUTTON}
-          >
-            Restore all hidden page guidance
-          </button>
-        </div>
-      </SettingsCard>
-
-      {/* Review statuses reference ---------------------------------------- */}
-      <SettingsCard
-        title="Review statuses reference"
-        caption="Every analytical object carries a review status. The status records how far a claim may be trusted."
-      >
-        <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Meaning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {statuses.map((status) => (
-                <tr key={status}>
-                  <td className="whitespace-nowrap">
-                    <ReviewStatusBadge status={status} />
-                  </td>
-                  <td className="text-[12.5px] text-ink-soft">
-                    {REVIEW_STATUS_MEANINGS[status]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-line px-4 py-3">
-          <p className="overline-label">Always requires human review</p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
-            Regardless of score or status, the following material must pass a human
-            decision before it informs any conclusion:
-          </p>
-          <ul className="mt-1.5 grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
-            {ALWAYS_HUMAN_REVIEW.map((rule) => (
-              <li
-                key={rule}
-                className="border-l-2 border-l-caution pl-2 text-[12.5px] leading-relaxed text-ink-soft"
+            }
+          />
+          <SettingRow
+            name="Hidden page guidance"
+            detail={
+              hiddenGuidanceCount === 0
+                ? "Guidance dismissed on individual pages stays hidden until restored. No page guidance is currently hidden."
+                : `Guidance dismissed on individual pages stays hidden until restored. ${hiddenGuidanceCount} page guidance panel${hiddenGuidanceCount === 1 ? " is" : "s are"} currently hidden.`
+            }
+            control={
+              <button
+                onClick={handleRestoreAllGuidance}
+                disabled={hiddenGuidanceCount === 0}
+                className={chipBtn}
               >
-                {rule}
-              </li>
-            ))}
-          </ul>
+                Restore all
+              </button>
+            }
+          />
         </div>
-      </SettingsCard>
+      </SettingsSection>
 
       {/* Data --------------------------------------------------------------- */}
-      <SettingsCard
+      <SettingsSection
         title="Data"
-        caption="Where the workspace lives and how to export or reset it."
+        description="This workspace stores everything locally in this browser — nothing is sent to a server."
       >
-        <div className="border-b border-line px-4 py-3">
-          <p className="max-w-3xl text-[12.5px] leading-relaxed text-ink-soft">
-            This workspace stores all data locally in this browser. Nothing is sent
-            to a server: observations, signals, and conclusions persist in local
-            storage and survive reloads on this machine only. The seed dataset is
-            demonstration material — sample objects labelled as demo data, never to
-            be cited as real evidence.
+        <div className="max-w-2xl space-y-5">
+          <p className="text-[12.5px] leading-relaxed text-ink-soft">
+            Observations, signals, and conclusions persist in local storage and
+            survive reloads on this machine only. The seed dataset is demonstration
+            material — sample objects labelled as demo data, never to be cited as
+            real evidence.{" "}
+            <span className="text-ink-faint">
+              Current base: <span className="font-mono">{totalObjects}</span>{" "}
+              objects across the eleven entity collections.
+            </span>
           </p>
-          <p className="mt-1.5 text-[11.5px] text-ink-faint">
-            Current base: <span className="font-mono">{totalObjects}</span> objects
-            across the eleven entity collections.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-            Export the eleven entity collections — observations, sources, signals,
-            clusters, patterns, contradictions, drivers, territories, scenarios,
-            implications, and indicators — as a single JSON file.
-          </p>
-          <button
-            onClick={handleExport}
-            className="border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
-          >
-            Export workspace as JSON
-          </button>
-        </div>
-
-        <div className="px-4 py-3">
-          <div className="border border-tension/30 bg-tension-soft px-3 py-2.5 rounded-[2px]">
-            <p className="text-[12.5px] font-medium text-tension">
-              Destructive action — cannot be undone
-            </p>
-            <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-              Resetting discards every edit and addition stored in this browser and
-              restores the demonstration dataset. Export the workspace first if any
-              of your own material should be kept.
-            </p>
+          <SettingRow
+            name="Export workspace"
+            detail="Downloads the eleven entity collections — observations through indicators — as a single JSON file."
+            control={
+              <button onClick={handleExport} className={chipBtn}>
+                Export as JSON
+              </button>
+            }
+          />
+          <div>
             <button
               onClick={handleReset}
-              className="mt-2 border border-tension/40 bg-surface px-3 py-1.5 text-[12.5px] font-medium text-tension rounded-[2px] hover:border-tension"
+              className="text-[12.5px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-caution hover:decoration-caution"
             >
-              Reset to demonstration dataset
+              Reset to demonstration dataset…
             </button>
+            <p className="mt-1 max-w-xl text-[11.5px] leading-relaxed text-ink-faint">
+              Discards every edit and addition stored in this browser and restores
+              the seed data. Cannot be undone — export the workspace first if any of
+              your own material should be kept.
+            </p>
           </div>
           {dataNote ? (
-            <p className="mt-2 text-[11.5px] text-ink-faint">{dataNote}</p>
+            <p className="text-[11.5px] text-accent-ink">{dataNote}</p>
           ) : null}
         </div>
-      </SettingsCard>
+      </SettingsSection>
 
-      {/* About this system --------------------------------------------------- */}
-      <SettingsCard title="About this system">
-        <div className="px-4 py-3">
-          <p className="font-display text-[18px] leading-tight text-ink">
-            Reading the Region
-          </p>
-          <p className="mt-0.5 text-[12.5px] text-ink-faint">
-            A Strategic Foresight Intelligence System for Detecting, Interpreting,
-            and Translating Regional Change
-          </p>
-          <p className="mt-2.5 max-w-3xl text-[12.5px] leading-relaxed text-ink-soft">
-            The system scans for early evidence of change across MENA, with
-            particular depth on the Gulf, the United Arab Emirates, and Saudi
-            Arabia, alongside Egypt, the Levant, North Africa, and global
-            developments with regional significance. Evidence moves through a
-            disciplined pipeline — observation, signal, cluster, pattern,
-            contradiction, driver, future territory, scenario, strategic
-            implication, monitoring — so that every conclusion can be traced back
-            down to its sources.
-          </p>
-          <p className="mt-2.5 text-[12.5px] text-ink-soft">
-            The full method, thresholds, and scanning philosophy are documented on
-            the{" "}
-            <Link
-              href="/methodology"
-              className="text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
-            >
-              Methodology
-            </Link>{" "}
-            page.
-          </p>
-        </div>
-      </SettingsCard>
+      {/* Review status reference — behind a quiet disclosure ----------------- */}
+      <section>
+        <button
+          onClick={() => setShowStatusReference((s) => !s)}
+          aria-expanded={showStatusReference}
+          className="text-[12px] text-ink-faint hover:text-ink-soft"
+        >
+          <span className="mr-1 inline-block w-2 text-[9px]">
+            {showStatusReference ? "▾" : "▸"}
+          </span>
+          Review status reference — what each status means
+        </button>
+        {showStatusReference ? (
+          <div className="ml-[3px] mt-3 max-w-2xl border-l border-line pl-4">
+            <p className="text-[12px] leading-relaxed text-ink-faint">
+              Every analytical object carries a review status recording how far its
+              claim may be trusted.
+            </p>
+            <dl className="mt-3 space-y-2.5">
+              {statuses.map((status) => (
+                <div
+                  key={status}
+                  className="grid gap-x-6 gap-y-0.5 sm:grid-cols-[170px_1fr]"
+                >
+                  <dt>
+                    <ReviewStatusBadge status={status} />
+                  </dt>
+                  <dd className="text-[12.5px] leading-relaxed text-ink-soft">
+                    {REVIEW_STATUS_MEANINGS[status]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-5 text-[12px] font-medium text-ink">
+              Always requires human review
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+              Regardless of score or status, the following material must pass a
+              human decision before it informs any conclusion:
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {ALWAYS_HUMAN_REVIEW.map((rule) => (
+                <li key={rule} className="text-[12.5px] leading-relaxed text-ink-soft">
+                  {rule}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
+
+      {/* About --------------------------------------------------------------- */}
+      <section>
+        <h2 className="text-[13px] font-medium text-ink">About</h2>
+        <p className="mt-2 font-display text-[17px] leading-tight text-ink">
+          Reading the Region
+        </p>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          A Strategic Foresight Intelligence System for Detecting, Interpreting,
+          and Translating Regional Change
+        </p>
+        <p className="mt-3 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+          The system scans for early evidence of change across MENA, with particular
+          depth on the Gulf, the United Arab Emirates, and Saudi Arabia, alongside
+          Egypt, the Levant, North Africa, and global developments with regional
+          significance. Evidence moves through a disciplined pipeline — observation,
+          signal, cluster, pattern, contradiction, driver, future territory,
+          scenario, strategic implication, monitoring — so that every conclusion can
+          be traced back down to its sources.
+        </p>
+        <p className="mt-2 text-[12.5px] text-ink-soft">
+          The full method, thresholds, and scanning philosophy are documented on the{" "}
+          <Link
+            href="/methodology"
+            className="text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
+          >
+            Methodology
+          </Link>{" "}
+          page.
+        </p>
+      </section>
+      </div>
     </>
   );
 }

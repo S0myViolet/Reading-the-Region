@@ -22,9 +22,7 @@ import type {
 import type { ValidationResult } from "@/lib/validation";
 
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -32,6 +30,45 @@ export function fmtDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+const SMALL_NUMBER_WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+  "twenty",
+];
+
+/** Small counts written out in words for the simple reading view. */
+export function countInWords(n: number): string {
+  return n >= 0 && n < SMALL_NUMBER_WORDS.length ? SMALL_NUMBER_WORDS[n] : String(n);
+}
+
+/**
+ * Short one-sentence status for list rows, derived from the live
+ * ValidationResult — never from the stored validationStatus alone.
+ */
+export function shortPatternStatus(result: ValidationResult): string {
+  return result.valid
+    ? `Validated — passes all ${countInWords(result.totalCount)} tests.`
+    : `Hypothesis — passes ${countInWords(result.passedCount)} of ${countInWords(result.totalCount)} tests.`;
 }
 
 /** Signals actually resolvable from the pattern's key signal ids. */
@@ -56,59 +93,19 @@ export function derivePatternFacts(patternSignals: Signal[]): DerivedPatternFact
   };
 }
 
-/**
- * The four pattern tests in display order, mapped from the check labels
- * produced by validatePattern.
- */
-const TEST_CHIP_ORDER: Array<{ checkLabel: string; short: string }> = [
-  { checkLabel: "Breadth test", short: "Breadth" },
-  { checkLabel: "Depth test", short: "Depth" },
-  { checkLabel: "Persistence test", short: "Persistence" },
-  { checkLabel: "Coherence test", short: "Coherence" },
-];
-
 export function findCheck(result: ValidationResult, label: string) {
   return result.checks.find((c) => c.label === label);
 }
 
-/** Compact pass/fail chips for the four pattern tests. */
-export function PatternTestChips({ result }: { result: ValidationResult }) {
-  return (
-    <span className="inline-flex flex-wrap gap-1">
-      {TEST_CHIP_ORDER.map(({ checkLabel, short }) => {
-        const check = findCheck(result, checkLabel);
-        const passed = check?.passed ?? false;
-        return (
-          <span
-            key={short}
-            title={check ? `${check.label}: ${check.detail}` : short}
-            className={`inline-flex items-center gap-1 border px-1.5 py-px text-[10.5px] font-medium rounded-[2px] ${
-              passed
-                ? "border-accent/30 bg-accent-soft text-accent-ink"
-                : "border-caution/30 bg-caution-soft text-caution"
-            }`}
-          >
-            <span aria-hidden className="font-bold">
-              {passed ? "✓" : "✕"}
-            </span>
-            {short}
-            <span className="sr-only">{passed ? " — passed" : " — failed"}</span>
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 /**
- * Validation status pill computed from the live ValidationResult — never
- * from the stored validationStatus alone. "Validated" appears only when all
- * four tests pass.
+ * Validation status readout computed from the live ValidationResult — never
+ * from the stored validationStatus alone. Accent is reserved for earned
+ * validation; a hypothesis is the default state and stays quiet plain text.
  */
 export function PatternValidationPill({ result }: { result: ValidationResult }) {
   return (
     <Pill
-      tone={result.valid ? "accent" : "caution"}
+      tone={result.valid ? "accent" : "neutral"}
       title={`${result.passedCount} of ${result.totalCount} pattern tests passed`}
     >
       {result.valid

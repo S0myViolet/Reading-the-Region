@@ -6,9 +6,10 @@
  * supporting signals; the record is saved as a draft and each selected signal
  * is linked back to the contradiction bidirectionally.
  *
- * Visibility layers: the simple view shows the essential capture fields; the
- * five-dimension scoring completes in Analyst view. A record saved from the
- * simple view is flagged as needing human review until it is scored.
+ * The form reads as one quiet flow: section headings and whitespace, no
+ * boxes, one primary button at the end. The five-dimension scoring completes
+ * in Analyst view — a record saved from the simple view is flagged as
+ * needing human review until it is scored.
  */
 
 import Link from "next/link";
@@ -41,7 +42,7 @@ import {
   DEFAULT_CONTRADICTION_SCORES,
   GENERIC_SCORE_RUBRIC,
   btnPrimary,
-  btnSecondary,
+  textLink,
 } from "../contradiction-ui";
 
 const SCORE_KEYS = Object.keys(CONTRADICTION_SCORE_LABELS) as Array<
@@ -52,10 +53,30 @@ const TYPE_OPTIONS = Object.keys(CONTRADICTION_TYPE_LABELS) as ContradictionType
 function NewContradictionHeader() {
   return (
     <PageHeader
-      overline="Connect & Synthesize"
       title="Record contradiction"
       description="Capture a tension between two valid but opposing forces. Both sides must be stated fairly and evidence-linked — a contradiction is a site of strategic intelligence, not an error to resolve away."
     />
+  );
+}
+
+/** Quiet section heading with an optional one-line description. */
+function FormSection({
+  heading,
+  description,
+  children,
+}: {
+  heading: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h2 className="text-[15px] font-medium text-ink">{heading}</h2>
+      {description ? (
+        <p className="mt-0.5 text-[12px] text-ink-faint">{description}</p>
+      ) : null}
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
   );
 }
 
@@ -86,56 +107,51 @@ function SideSection({
   signals: Signal[];
 }) {
   return (
-    <section className="card">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">Side {side}</h2>
-      </header>
-      <div className="space-y-4 px-4 py-4">
-        <Field
-          label={`Side ${side} statement`}
-          required
-          hint="One valid force, stated plainly — not a strawman of the other side."
-        >
-          <TextInput
-            value={statement}
-            onChange={(e) => onStatement(e.target.value)}
-            placeholder={`What is pulling in direction ${side}?`}
+    <FormSection heading={`Side ${side}`}>
+      <Field
+        label={`Side ${side} statement`}
+        required
+        hint="One valid force, stated plainly — not a strawman of the other side."
+      >
+        <TextInput
+          value={statement}
+          onChange={(e) => onStatement(e.target.value)}
+          placeholder={`What is pulling in direction ${side}?`}
+        />
+      </Field>
+      <Field
+        label={`Evidence for Side ${side}`}
+        hint="What the evidence for this side currently shows, in a sentence or two."
+      >
+        <TextArea
+          rows={3}
+          value={evidence}
+          onChange={(e) => onEvidence(e.target.value)}
+        />
+      </Field>
+      <Field
+        label={`Supporting signals — Side ${side}`}
+        hint="Signals whose evidence supports this side of the tension."
+      >
+        {signals.length > 0 ? (
+          <CheckboxList<string>
+            columns={1}
+            options={signalOptions(signals)}
+            selected={signalIds}
+            onChange={onSignalIds}
           />
-        </Field>
-        <Field
-          label={`Evidence for Side ${side}`}
-          hint="What the evidence for this side currently shows, in a sentence or two."
-        >
-          <TextArea
-            rows={3}
-            value={evidence}
-            onChange={(e) => onEvidence(e.target.value)}
-          />
-        </Field>
-        <Field
-          label={`Supporting signals — Side ${side}`}
-          hint="Signals whose evidence supports this side of the tension."
-        >
-          {signals.length > 0 ? (
-            <CheckboxList<string>
-              columns={1}
-              options={signalOptions(signals)}
-              selected={signalIds}
-              onChange={onSignalIds}
-            />
-          ) : (
-            <p className="text-[12px] text-ink-faint">
-              No signals exist yet. A contradiction stays defensible only while
-              both sides are evidence-linked —{" "}
-              <Link href="/signals" className="text-accent-ink underline">
-                build the Signal Library
-              </Link>{" "}
-              first, then return here.
-            </p>
-          )}
-        </Field>
-      </div>
-    </section>
+        ) : (
+          <p className="text-[12px] text-ink-faint">
+            No signals exist yet. A contradiction stays defensible only while
+            both sides are evidence-linked —{" "}
+            <Link href="/signals" className="text-accent-ink underline">
+              build the Signal Library
+            </Link>{" "}
+            first, then return here.
+          </p>
+        )}
+      </Field>
+    </FormSection>
   );
 }
 
@@ -253,54 +269,49 @@ export default function NewContradictionPage() {
       />
       <NewContradictionHeader />
 
-      <div className="max-w-3xl space-y-5">
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">The tension</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field
-              label="Name"
-              required
-              hint="Name the tension itself — e.g. “Hyper-modern skylines vs heritage revival investment.”"
+      <div className="max-w-2xl space-y-10">
+        <FormSection heading="The tension">
+          <Field
+            label="Name"
+            required
+            hint="Name the tension itself — e.g. “Hyper-modern skylines vs heritage revival investment.”"
+          >
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="What two forces are pulling against each other?"
+            />
+          </Field>
+          <Field
+            label="Contradiction type"
+            hint="The recurring tension family this belongs to."
+          >
+            <Select
+              value={contradictionType}
+              onChange={(e) =>
+                setContradictionType(e.target.value as ContradictionType)
+              }
             >
-              <TextInput
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="What two forces are pulling against each other?"
-              />
-            </Field>
-            <Field
-              label="Contradiction type"
-              hint="The recurring tension family this belongs to."
-            >
-              <Select
-                value={contradictionType}
-                onChange={(e) =>
-                  setContradictionType(e.target.value as ContradictionType)
-                }
-              >
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {CONTRADICTION_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              label="Underlying tension"
-              required
-              hint="The deeper question both forces are answering differently."
-            >
-              <TextArea
-                rows={2}
-                value={underlyingTension}
-                onChange={(e) => setUnderlyingTension(e.target.value)}
-                placeholder="e.g. Can efficiency and cultural trust grow at the same speed?"
-              />
-            </Field>
-          </div>
-        </section>
+              {TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {CONTRADICTION_TYPE_LABELS[t]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            label="Underlying tension"
+            required
+            hint="The deeper question both forces are answering differently."
+          >
+            <TextArea
+              rows={2}
+              value={underlyingTension}
+              onChange={(e) => setUnderlyingTension(e.target.value)}
+              placeholder="e.g. Can efficiency and cultural trust grow at the same speed?"
+            />
+          </Field>
+        </FormSection>
 
         <SideSection
           side="A"
@@ -323,11 +334,8 @@ export default function NewContradictionPage() {
           signals={signals}
         />
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Stakes</h2>
-          </header>
-          <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+        <FormSection heading="Stakes">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Who benefits" hint="Who gains if this tension persists.">
               <TextArea
                 rows={3}
@@ -343,18 +351,16 @@ export default function NewContradictionPage() {
               />
             </Field>
           </div>
-        </section>
+        </FormSection>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">
-              Possible trajectories — speculative by definition
-            </h2>
-          </header>
-          <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+        <FormSection
+          heading="Possible trajectories"
+          description="Speculative by definition — both paths are labelled as possibilities, not predictions."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Possible resolution"
-              hint="How the two forces could reconcile. Labelled a speculative possibility."
+              hint="How the two forces could reconcile."
             >
               <TextArea
                 rows={3}
@@ -364,7 +370,7 @@ export default function NewContradictionPage() {
             </Field>
             <Field
               label="Possible escalation"
-              hint="How the tension could sharpen instead. Labelled a speculative possibility."
+              hint="How the tension could sharpen instead."
             >
               <TextArea
                 rows={3}
@@ -373,42 +379,37 @@ export default function NewContradictionPage() {
               />
             </Field>
           </div>
-        </section>
+        </FormSection>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Strategic reading</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <Field
-              label="Strategic implication"
-              hint="What should be watched or decided differently because this tension exists. Labelled human interpretation."
-            >
-              <TextArea
-                rows={3}
-                value={strategicImplication}
-                onChange={(e) => setStrategicImplication(e.target.value)}
-              />
-            </Field>
-            <Field
-              label="Scenario relevance"
-              hint="How this tension could become an axis along which scenarios diverge."
-            >
-              <TextArea
-                rows={3}
-                value={scenarioRelevance}
-                onChange={(e) => setScenarioRelevance(e.target.value)}
-              />
-            </Field>
-          </div>
-        </section>
+        <FormSection heading="Strategic reading">
+          <Field
+            label="Strategic implication"
+            hint="What should be watched or decided differently because this tension exists. Labelled human interpretation."
+          >
+            <TextArea
+              rows={3}
+              value={strategicImplication}
+              onChange={(e) => setStrategicImplication(e.target.value)}
+            />
+          </Field>
+          <Field
+            label="Scenario relevance"
+            hint="How this tension could become an axis along which scenarios diverge."
+          >
+            <TextArea
+              rows={3}
+              value={scenarioRelevance}
+              onChange={(e) => setScenarioRelevance(e.target.value)}
+            />
+          </Field>
+        </FormSection>
 
         <ViewGate
           min="analyst"
           fallback={
-            <section className="card px-4 py-3">
-              <p className="overline-label mb-1">Scoring</p>
-              <p className="text-[12px] leading-relaxed text-ink-soft">
+            <section>
+              <h2 className="text-[15px] font-medium text-ink">Scoring</h2>
+              <p className="mt-1.5 max-w-xl text-[12px] leading-relaxed text-ink-soft">
                 The five contradiction scores — tension strength, strategic
                 richness, evidence balance, future impact and emotional charge
                 — are judged in Analyst view. Saved from this view, the record
@@ -420,35 +421,28 @@ export default function NewContradictionPage() {
             </section>
           }
         >
-          <section className="card">
-            <header className="border-b border-line px-4 py-2.5">
-              <h2 className="overline-label">Contradiction scores — five dimensions</h2>
-            </header>
-            <div className="space-y-4 px-4 py-4">
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {SCORE_KEYS.map((k) => (
-                  <ScorePicker
-                    key={k}
-                    label={CONTRADICTION_SCORE_LABELS[k]}
-                    value={scores[k]}
-                    rubric={GENERIC_SCORE_RUBRIC}
-                    onChange={(v: Score) => setScores((prev) => ({ ...prev, [k]: v }))}
-                  />
-                ))}
-              </div>
-              <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
-                Score honestly. Low evidence balance means one side is under-scanned
-                — strengthen the weaker side before drawing conclusions from this
-                tension.
-              </p>
+          <FormSection
+            heading="Contradiction scores"
+            description="Five dimensions, judged 1–5 against the rubric. Score honestly — low evidence balance means one side is under-scanned."
+          >
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {SCORE_KEYS.map((k) => (
+                <ScorePicker
+                  key={k}
+                  label={CONTRADICTION_SCORE_LABELS[k]}
+                  value={scores[k]}
+                  rubric={GENERIC_SCORE_RUBRIC}
+                  onChange={(v: Score) => setScores((prev) => ({ ...prev, [k]: v }))}
+                />
+              ))}
             </div>
-          </section>
+          </FormSection>
         </ViewGate>
 
         {errors.length > 0 ? (
-          <div className="card border-l-2 border-l-tension px-4 py-3">
-            <p className="overline-label mb-1 text-tension">Cannot save yet</p>
-            <ul className="list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
+          <div>
+            <p className="text-[12.5px] font-medium text-tension">Cannot save yet</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
               {errors.map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -456,14 +450,14 @@ export default function NewContradictionPage() {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2 pb-4">
+        <div className="flex items-center gap-4 border-t border-line pt-5 pb-4">
           <button type="button" onClick={handleSave} className={btnPrimary}>
             Save contradiction
           </button>
-          <Link href="/contradictions" className={btnSecondary}>
+          <Link href="/contradictions" className={textLink}>
             Cancel
           </Link>
-          <p className="ml-2 text-[11.5px] text-ink-faint">
+          <p className="ml-auto text-right text-[11.5px] text-ink-faint">
             {mode === "simple"
               ? "Saved as needing human review until scored. Selected signals are linked back to this record."
               : "Saved as a draft. Selected signals are linked back to this record."}

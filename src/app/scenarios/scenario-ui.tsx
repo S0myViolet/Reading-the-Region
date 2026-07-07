@@ -12,13 +12,7 @@
  */
 
 import Link from "next/link";
-import { useViewMode, ViewGate } from "@/components/ViewMode";
-import {
-  ConfidenceBadge,
-  IdChip,
-  Pill,
-  ReviewStatusBadge,
-} from "@/components/badges";
+import { ViewGate } from "@/components/ViewMode";
 import { explainScenarioEvidence } from "@/lib/explain";
 import { scenarioAssumptionHeavy, type ValidationResult } from "@/lib/validation";
 import type { Scenario, ScenarioQualityChecks } from "@/lib/types";
@@ -46,7 +40,7 @@ export const QUALITY_KEYS = Object.keys(
 
 export const QUALITY_TEST_TOTAL = QUALITY_KEYS.length;
 
-/** Below this many passing tests, the list card flags the scenario for quality review. */
+/** Below this many passing tests, the list row flags the scenario for quality review. */
 export const QUALITY_REVIEW_THRESHOLD = 7;
 
 export function qualityPassCount(checks: ScenarioQualityChecks): number {
@@ -99,7 +93,7 @@ export function qualityChecklistResult(checks: ScenarioQualityChecks): Validatio
 }
 
 // ---------------------------------------------------------------------------
-// Evidence honesty, first sentence — for list cards
+// Evidence honesty, first sentence — for list rows
 // ---------------------------------------------------------------------------
 
 /** The link-count sentence of explainScenarioEvidence, for the one-line list reading. */
@@ -110,79 +104,51 @@ export function evidenceFirstSentence(scenario: Scenario): string {
 }
 
 // ---------------------------------------------------------------------------
-// List card
+// List row — the calm .list-row idiom
 // ---------------------------------------------------------------------------
 
-export function ScenarioCard({ scenario }: { scenario: Scenario }) {
-  const mode = useViewMode();
-  const qualityPassed = qualityPassCount(scenario.qualityChecks);
+/**
+ * One scenario as a quiet list row: title as the primary line, then type,
+ * horizon and the first evidence sentence as faint metadata. The right side
+ * carries nothing unless the scenario is assumption-heavy — that caution is
+ * the only thing worth interrupting a scan for. Analyst view folds the
+ * quality-test count into the metadata line as words.
+ */
+export function ScenarioRow({ scenario }: { scenario: Scenario }) {
   const assumptionHeavy = scenarioAssumptionHeavy(scenario);
-  const assumptionCount = scenario.assumptions.length;
+  const qualityPassed = qualityPassCount(scenario.qualityChecks);
 
   return (
-    <article className="card px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="max-w-2xl">
-          <p className="overline-label mb-0.5">
-            Scenario · <IdChip id={scenario.id} />
-          </p>
-          <h3 className="font-display text-[17px] leading-snug text-ink">
-            <Link
-              href={`/scenarios/${scenario.id}`}
-              className="hover:text-accent-ink hover:underline"
-            >
-              {scenario.title}
-            </Link>
-          </h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Pill tone="info">{SCENARIO_TYPE_LABELS[scenario.scenarioType]}</Pill>
-            <Pill>{SCENARIO_HORIZON_LABELS[scenario.horizon]}</Pill>
-          </div>
-          <p
-            className={`mt-2 text-[13px] leading-relaxed text-ink-soft ${
-              mode === "simple" ? "line-clamp-2" : "line-clamp-3"
-            }`}
+    <Link href={`/scenarios/${scenario.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+          {scenario.title.trim() ? scenario.title : "Untitled scenario"}
+        </p>
+        {assumptionHeavy ? (
+          <span
+            className="shrink-0 text-[11.5px] text-caution"
+            title="Assumptions currently outnumber evidence links — treat this scenario as exploratory until stronger evidence is attached."
           >
-            {scenario.corePremise.trim() ? (
-              scenario.corePremise
-            ) : (
-              <span className="text-[12px] text-ink-faint">
-                No core premise recorded yet — a scenario needs one clear
-                statement of the world it describes.
-              </span>
-            )}
-          </p>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
-            <span className="overline-label mr-2">Evidence</span>
-            {evidenceFirstSentence(scenario)}
-          </p>
-        </div>
-        <ViewGate min="analyst">
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <ConfidenceBadge level={scenario.confidence} />
-            <ReviewStatusBadge status={scenario.reviewStatus} />
-          </div>
-        </ViewGate>
+            assumption-heavy
+          </span>
+        ) : null}
       </div>
-
-      <ViewGate min="analyst">
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="font-mono text-[11.5px] text-ink-soft">
-              {qualityPassed}/{QUALITY_TEST_TOTAL} quality tests
-            </span>
-            {qualityPassed < QUALITY_REVIEW_THRESHOLD ? (
-              <Pill tone="caution">review quality</Pill>
-            ) : null}
+      <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+        {SCENARIO_TYPE_LABELS[scenario.scenarioType]} ·{" "}
+        {SCENARIO_HORIZON_LABELS[scenario.horizon]} ·{" "}
+        {evidenceFirstSentence(scenario)}
+        <ViewGate min="analyst">
+          {" "}
+          <span
+            className={
+              qualityPassed < QUALITY_REVIEW_THRESHOLD ? "text-caution" : undefined
+            }
+          >
+            {qualityPassed}/{QUALITY_TEST_TOTAL} quality tests
+            {qualityPassed < QUALITY_REVIEW_THRESHOLD ? " — review quality" : ""}.
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="font-mono text-[11.5px] text-ink-soft">
-              {assumptionCount} assumption{assumptionCount === 1 ? "" : "s"}
-            </span>
-            {assumptionHeavy ? <Pill tone="caution">assumption-heavy</Pill> : null}
-          </span>
-        </div>
-      </ViewGate>
-    </article>
+        </ViewGate>
+      </p>
+    </Link>
   );
 }

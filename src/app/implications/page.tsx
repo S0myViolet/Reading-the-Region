@@ -3,9 +3,10 @@
 /**
  * Strategic Implications — where foresight becomes useful. Each implication
  * answers: what should we do differently because this future may be forming?
- * A single page: filterable expandable cards plus a creation form; every
- * implication is anchored to a territory or scenario and evidence-linked back
- * down the pyramid.
+ *
+ * Calm layout: header, one control bar, editorial implication entries
+ * separated by hairlines. The creation form and analyst detail stay quiet
+ * and boxless; deep methodology sits at the foot of the page.
  */
 
 import { useMemo, useState } from "react";
@@ -13,7 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
-import { Field, Select } from "@/components/form";
+import { ControlBar, ControlSelect } from "@/components/ControlBar";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { modeAtLeast } from "@/lib/viewMode";
 import { DEFINITIONS } from "@/lib/copy";
@@ -33,7 +34,7 @@ import {
   SECTOR_LABELS,
   TIME_HORIZON_LABELS,
 } from "@/lib/types";
-import { ImplicationCard, ImplicationForm } from "./implication-ui";
+import { ImplicationEntry, ImplicationForm, btnPrimary } from "./implication-ui";
 
 const SECTOR_OPTIONS = Object.keys(SECTOR_LABELS) as Sector[];
 const AUDIENCE_OPTIONS = Object.keys(
@@ -72,7 +73,6 @@ function ImplicationsHeader({
 }) {
   return (
     <PageHeader
-      overline="Apply & Monitor"
       title="Strategic Implications"
       description={DEFINITIONS.implication}
       actions={
@@ -81,39 +81,14 @@ function ImplicationsHeader({
           onClick={onToggleForm}
           className={
             formOpen
-              ? "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong"
-              : "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
+              ? "rounded-[4px] bg-surface-muted px-3.5 py-1.5 text-[12.5px] text-ink-soft hover:text-ink"
+              : btnPrimary
           }
         >
           {formOpen ? "Close form" : "Add implication"}
         </button>
       }
     />
-  );
-}
-
-/**
- * Methodology view: the traceability rule that governs this layer, spelled
- * out where the implications are read.
- */
-function TraceabilityCard() {
-  return (
-    <section className="card mb-5">
-      <header className="border-b border-line px-4 py-2.5">
-        <h2 className="overline-label">Traceability rule</h2>
-      </header>
-      <div className="px-4 py-3">
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          Every implication must trace back down the pyramid: it is anchored to a
-          future territory or scenario, and it cites the evidence signals or
-          drivers that make that future plausible. An implication without an
-          anchor answers no question; an implication without evidence links is an
-          opinion. The grounding checklist on each card applies this rule — an
-          implication that fails it stays flagged as needing grounding and should
-          not drive decisions until evidence is linked.
-        </p>
-      </div>
-    </section>
   );
 }
 
@@ -186,14 +161,6 @@ export default function ImplicationsPage() {
         onToggleForm={() => setFormOpen((o) => !o)}
       />
       <WalkthroughPanel pageId="implications" />
-      <div className="mb-4">
-        <DepthHint>
-          Grounding checks, opportunity and risk detail, and review status
-        </DepthHint>
-      </div>
-      <ViewGate min="methodology">
-        <TraceabilityCard />
-      </ViewGate>
 
       {formOpen ? <ImplicationForm onClose={() => setFormOpen(false)} /> : null}
 
@@ -205,158 +172,141 @@ export default function ImplicationsPage() {
         />
       ) : (
         <>
-          <section className="card mb-4">
-            <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-              <h2 className="overline-label">Filter implications</h2>
-              {filtersActive ? (
-                <button
-                  type="button"
-                  onClick={() => setFilters(NO_FILTERS)}
-                  className="text-[11px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-                >
-                  Reset filters
-                </button>
-              ) : null}
-            </header>
-            <div
-              className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
-                analyst ? "lg:grid-cols-4" : "lg:grid-cols-3"
-              }`}
-            >
-              <Field label="Audience">
-                <Select
-                  value={filters.audience}
-                  onChange={(e) =>
-                    setFilter({
-                      audience: e.target.value as ImplicationAudience | "",
-                    })
-                  }
-                >
-                  <option value="">All audiences</option>
-                  {AUDIENCE_OPTIONS.map((a) => (
-                    <option key={a} value={a}>
-                      {IMPLICATION_AUDIENCE_LABELS[a]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Sector">
-                <Select
-                  value={filters.sector}
-                  onChange={(e) =>
-                    setFilter({ sector: e.target.value as Sector | "" })
-                  }
-                >
-                  <option value="">All sectors</option>
-                  {SECTOR_OPTIONS.map((s) => (
-                    <option key={s} value={s}>
-                      {SECTOR_LABELS[s]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Confidence">
-                <Select
-                  value={filters.confidence}
-                  onChange={(e) =>
-                    setFilter({
-                      confidence: e.target.value as ConfidenceLevel | "",
-                    })
-                  }
-                >
-                  <option value="">All confidence levels</option>
-                  {CONFIDENCE_OPTIONS.map((c) => (
-                    <option key={c} value={c}>
-                      {CONFIDENCE_LABELS[c]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              {analyst ? (
+          <ControlBar
+            right={
+              filtersActive ? (
                 <>
-                  <Field label="Implication type">
-                    <Select
-                      value={filters.type}
-                      onChange={(e) =>
-                        setFilter({ type: e.target.value as ImplicationType | "" })
-                      }
-                    >
-                      <option value="">All types</option>
-                      {TYPE_OPTIONS.map((t) => (
-                        <option key={t} value={t}>
-                          {IMPLICATION_TYPE_LABELS[t]}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Future territory">
-                    <Select
-                      value={filters.territoryId}
-                      onChange={(e) => setFilter({ territoryId: e.target.value })}
-                    >
-                      <option value="">All territories</option>
-                      {territories.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.id} · {t.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Scenario">
-                    <Select
-                      value={filters.scenarioId}
-                      onChange={(e) => setFilter({ scenarioId: e.target.value })}
-                    >
-                      <option value="">All scenarios</option>
-                      {scenarios.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.id} · {s.title}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Time horizon">
-                    <Select
-                      value={filters.horizon}
-                      onChange={(e) =>
-                        setFilter({ horizon: e.target.value as TimeHorizon | "" })
-                      }
-                    >
-                      <option value="">All horizons</option>
-                      {HORIZON_OPTIONS.map((h) => (
-                        <option key={h} value={h}>
-                          {TIME_HORIZON_LABELS[h]}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+                  <span className="text-[12px] text-ink-faint">
+                    {filtered.length} of {implications.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFilters(NO_FILTERS)}
+                    className="text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+                  >
+                    Reset
+                  </button>
                 </>
-              ) : null}
-            </div>
-          </section>
-
-          <p className="mb-3 text-[11.5px] text-ink-faint">
-            Showing {filtered.length} of {implications.length} implication
-            {implications.length === 1 ? "" : "s"}.
-          </p>
+              ) : null
+            }
+            more={
+              analyst ? (
+                <>
+                  <ControlSelect
+                    label="Type"
+                    value={filters.type}
+                    onChange={(v) =>
+                      setFilter({ type: v as ImplicationType | "" })
+                    }
+                    options={[
+                      { value: "", label: "All types" },
+                      ...TYPE_OPTIONS.map((t) => ({
+                        value: t,
+                        label: IMPLICATION_TYPE_LABELS[t],
+                      })),
+                    ]}
+                  />
+                  <ControlSelect
+                    label="Territory"
+                    value={filters.territoryId}
+                    onChange={(v) => setFilter({ territoryId: v })}
+                    options={[
+                      { value: "", label: "All territories" },
+                      ...territories.map((t) => ({
+                        value: t.id,
+                        label: `${t.id} · ${t.name}`,
+                      })),
+                    ]}
+                  />
+                  <ControlSelect
+                    label="Scenario"
+                    value={filters.scenarioId}
+                    onChange={(v) => setFilter({ scenarioId: v })}
+                    options={[
+                      { value: "", label: "All scenarios" },
+                      ...scenarios.map((s) => ({
+                        value: s.id,
+                        label: `${s.id} · ${s.title}`,
+                      })),
+                    ]}
+                  />
+                  <ControlSelect
+                    label="Horizon"
+                    value={filters.horizon}
+                    onChange={(v) =>
+                      setFilter({ horizon: v as TimeHorizon | "" })
+                    }
+                    options={[
+                      { value: "", label: "All horizons" },
+                      ...HORIZON_OPTIONS.map((h) => ({
+                        value: h,
+                        label: TIME_HORIZON_LABELS[h],
+                      })),
+                    ]}
+                  />
+                </>
+              ) : undefined
+            }
+          >
+            <ControlSelect
+              label="Audience"
+              value={filters.audience}
+              onChange={(v) =>
+                setFilter({ audience: v as ImplicationAudience | "" })
+              }
+              options={[
+                { value: "", label: "All audiences" },
+                ...AUDIENCE_OPTIONS.map((a) => ({
+                  value: a,
+                  label: IMPLICATION_AUDIENCE_LABELS[a],
+                })),
+              ]}
+            />
+            <ControlSelect
+              label="Sector"
+              value={filters.sector}
+              onChange={(v) => setFilter({ sector: v as Sector | "" })}
+              options={[
+                { value: "", label: "All sectors" },
+                ...SECTOR_OPTIONS.map((s) => ({
+                  value: s,
+                  label: SECTOR_LABELS[s],
+                })),
+              ]}
+            />
+            <ControlSelect
+              label="Confidence"
+              value={filters.confidence}
+              onChange={(v) =>
+                setFilter({ confidence: v as ConfidenceLevel | "" })
+              }
+              options={[
+                { value: "", label: "All confidence levels" },
+                ...CONFIDENCE_OPTIONS.map((c) => ({
+                  value: c,
+                  label: CONFIDENCE_LABELS[c],
+                })),
+              ]}
+            />
+          </ControlBar>
 
           {filtered.length === 0 ? (
-            <div className="card px-6 py-8 text-center">
+            <div className="px-6 py-16 text-center">
               <p className="text-[13px] text-ink-soft">
                 No implications match the current filters.
               </p>
               <button
                 type="button"
                 onClick={() => setFilters(NO_FILTERS)}
-                className="mt-3 border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong"
+                className="mt-4 text-[12.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-ink"
               >
                 Reset filters
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <section aria-label="Strategic implications">
               {filtered.map((imp) => (
-                <ImplicationCard
+                <ImplicationEntry
                   key={imp.id}
                   implication={imp}
                   territory={
@@ -377,8 +327,32 @@ export default function ImplicationsPage() {
                     .filter((d): d is Driver => Boolean(d))}
                 />
               ))}
-            </div>
+            </section>
           )}
+
+          <div className="mt-8">
+            <DepthHint>
+              Grounding checks, opportunity and risk detail, and review status
+            </DepthHint>
+          </div>
+
+          <ViewGate min="methodology">
+            <section className="mt-10 max-w-2xl">
+              <h2 className="text-[13px] font-medium text-ink">
+                Traceability rule
+              </h2>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
+                Every implication must trace back down the pyramid: it is
+                anchored to a future territory or scenario, and it cites the
+                evidence signals or drivers that make that future plausible. An
+                implication without an anchor answers no question; an
+                implication without evidence links is an opinion. The grounding
+                checklist behind each entry applies this rule — an implication
+                that fails it stays flagged as needing grounding and should not
+                drive decisions until evidence is linked.
+              </p>
+            </section>
+          </ViewGate>
         </>
       )}
     </>

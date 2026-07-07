@@ -13,13 +13,14 @@
 
 import { Pill } from "@/components/badges";
 import type { Driver, DriverScores, Score, Signal } from "@/lib/types";
-import { DRIVER_SCORE_LABELS } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 
+/** Calm primary button — the one filled action on a page. */
 export const btnPrimary =
-  "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
-export const btnSecondary =
-  "border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong";
+  "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink";
+/** Secondary actions are quiet text links, not bordered buttons. */
+export const textLink =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -34,29 +35,38 @@ export function signalsOfDriver(driver: Driver, signals: Signal[]): Signal[] {
   return signals.filter((s) => driver.signalIds.includes(s.id));
 }
 
-/** Cast helper: DriverScores → indexable record for the generic ScoreGrid. */
-export function driverScoresRecord(
-  scores: DriverScores,
-): Record<keyof DriverScores, Score> {
-  return scores as Record<keyof DriverScores, Score>;
+/**
+ * Status pill computed from the live ValidationResult — never from the
+ * stored status alone. Accent is reserved for the earned state: the pill
+ * renders only when all seven criteria pass. A hypothesis carries no badge;
+ * its standing is stated in the status sentence instead.
+ */
+export function ValidatedPill({ result }: { result: ValidationResult }) {
+  if (!result.valid) return null;
+  return (
+    <Pill
+      tone="accent"
+      title={`${result.passedCount} of ${result.totalCount} driver validation criteria met`}
+    >
+      Validated driver
+    </Pill>
+  );
 }
 
 /**
- * Status pill computed from the live ValidationResult — never from the
- * stored status alone. "Validated driver" appears only when all seven
- * criteria pass; otherwise the driver is shown as a hypothesis with its
- * criteria count stated.
+ * Computed standing for the detail header: the accent pill when validated,
+ * otherwise plain faint text — a hypothesis is a default state, not a
+ * warning, so it carries no colour.
  */
-export function DriverStatusPill({ result }: { result: ValidationResult }) {
+export function DriverStanding({ result }: { result: ValidationResult }) {
+  if (result.valid) return <ValidatedPill result={result} />;
   return (
-    <Pill
-      tone={result.valid ? "accent" : "caution"}
-      title={`${result.passedCount} of ${result.totalCount} driver validation criteria met`}
+    <span
+      className="text-[11.5px] text-ink-faint"
+      title="A driver is only validated when all seven criteria pass against live evidence"
     >
-      {result.valid
-        ? "Validated driver"
-        : `Driver hypothesis — ${result.passedCount}/${result.totalCount} criteria`}
-    </Pill>
+      Hypothesis — {result.passedCount}/{result.totalCount} criteria met
+    </span>
   );
 }
 
@@ -100,7 +110,7 @@ export function countInWords(n: number, singular: string, plural?: string): stri
   return `${word} ${n === 1 ? singular : (plural ?? `${singular}s`)}`;
 }
 
-/** Pattern/signal counts for the simple list card, in words. */
+/** Pattern/signal counts for the list row, in words. */
 export function driverLinkCountsInWords(driver: Driver): string {
   return `Explains ${countInWords(driver.patternIds.length, "pattern")} · rests on ${countInWords(driver.signalIds.length, "signal")}.`;
 }
@@ -206,46 +216,7 @@ export function driverScoreReading(dim: keyof DriverScores, score: Score): strin
 }
 
 // ---------------------------------------------------------------------------
-// Score chips (analyst list view)
-// ---------------------------------------------------------------------------
-
-/** Short mono labels for the ten driver scoring dimensions. */
-export const DRIVER_SCORE_CHIP_LABELS: Record<keyof DriverScores, string> = {
-  explanatoryPower: "Explains",
-  crossSectorStrength: "X-sector",
-  evidenceStrength: "Evidence",
-  persistence: "Persist",
-  reversibility: "Reverse",
-  behaviouralImpact: "Behaviour",
-  structuralImpact: "Structure",
-  contradictionRichness: "Tension",
-  scenarioUsefulness: "Scenario",
-  strategicRelevance: "Strategy",
-};
-
-const DRIVER_CHIP_KEYS = Object.keys(DRIVER_SCORE_CHIP_LABELS) as Array<
-  keyof DriverScores
->;
-
-/** Compact mono score chips, e.g. “Explains 4 · Evidence 3 · Persist 5”. */
-export function DriverScoreChips({ scores }: { scores: DriverScores }) {
-  return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      {DRIVER_CHIP_KEYS.map((k) => (
-        <span
-          key={k}
-          title={`${DRIVER_SCORE_LABELS[k]} — ${scores[k]}/5`}
-          className="border border-line bg-surface px-1.5 py-px font-mono text-[10.5px] tracking-wide text-ink-soft rounded-[2px]"
-        >
-          {DRIVER_SCORE_CHIP_LABELS[k]} {scores[k]}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sorting and filtering (analyst list view)
+// Sorting and filtering
 // ---------------------------------------------------------------------------
 
 export type DriverSort = "updated" | "explanatory" | "evidence" | "patterns";

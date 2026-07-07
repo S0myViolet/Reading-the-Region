@@ -41,7 +41,7 @@ import {
   DEFAULT_CLUSTER_SCORES,
   GENERIC_SCORE_RUBRIC,
   btnPrimary,
-  btnSecondary,
+  textLink,
   topicNameWarning,
 } from "../cluster-ui";
 
@@ -51,10 +51,37 @@ const CONFIDENCE_OPTIONS = Object.keys(CONFIDENCE_LABELS) as ConfidenceLevel[];
 function NewClusterHeader() {
   return (
     <PageHeader
-      overline="Connect & Synthesize"
       title="Create cluster candidate"
       description="Group signals by shared underlying logic, never by topic. Saving creates a candidate — validity is computed against the thresholds (8 signals, 3 independent sources, 2 sectors, 2 actor types, 1 contradiction), never asserted at creation."
     />
+  );
+}
+
+/** Quiet form section: small heading and optional meta, no box. */
+function FormSection({
+  heading,
+  description,
+  meta,
+  children,
+}: {
+  heading: string;
+  description?: string;
+  meta?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="mb-4 flex items-baseline justify-between gap-4">
+        <div>
+          <h2 className="text-[13px] font-medium text-ink">{heading}</h2>
+          {description ? (
+            <p className="mt-0.5 text-[12px] text-ink-faint">{description}</p>
+          ) : null}
+        </div>
+        {meta ? <div className="shrink-0">{meta}</div> : null}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -151,7 +178,7 @@ export default function NewClusterPage() {
   }
 
   const scoringFields = (
-    <div className="space-y-4 px-4 py-4">
+    <div className="space-y-4">
       <div className="grid gap-2.5 sm:grid-cols-2">
         {SCORE_KEYS.map((k) => (
           <ScorePicker
@@ -163,7 +190,7 @@ export default function NewClusterPage() {
           />
         ))}
       </div>
-      <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
+      <p className="text-[11.5px] text-ink-faint">
         Validation benchmarks: breadth ≥ {CLUSTER_THRESHOLDS.minBreadth}, depth
         ≥ {CLUSTER_THRESHOLDS.minDepth}, coherence ≥{" "}
         {CLUSTER_THRESHOLDS.minCoherence}, strategic relevance ≥{" "}
@@ -183,23 +210,18 @@ export default function NewClusterPage() {
       />
       <NewClusterHeader />
 
-      <div className="max-w-3xl space-y-5">
+      <div className="max-w-2xl space-y-10">
         {simple ? (
-          <div className="card border-l-2 border-l-info px-4 py-3">
-            <p className="text-[12.5px] leading-relaxed text-ink-soft">
-              Capture the shared logic and its evidence — that is all a candidate
-              needs. Candidacy is validated against the thresholds automatically,
-              and the nine-dimension scoring can be completed later in Analyst
-              view. A candidate saved without scoring is flagged for human review.
-            </p>
-          </div>
+          <p className="text-[12.5px] leading-relaxed text-ink-faint">
+            Capture the shared logic and its evidence — that is all a candidate
+            needs. Candidacy is validated against the thresholds automatically,
+            and the nine-dimension scoring can be completed later in Analyst
+            view. A candidate saved without scoring is flagged for human review.
+          </p>
         ) : null}
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Shared logic</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
+        <FormSection heading="Shared logic">
+          <div className="space-y-4">
             <Field
               label="Name"
               required
@@ -212,7 +234,7 @@ export default function NewClusterPage() {
               />
             </Field>
             {nameWarning ? (
-              <p className="border-l-2 border-caution bg-caution-soft px-2.5 py-1.5 text-[12px] text-caution rounded-[2px]">
+              <p className="border-l-2 border-caution/60 pl-3 text-[12px] text-caution">
                 {nameWarning}
               </p>
             ) : null}
@@ -249,11 +271,12 @@ export default function NewClusterPage() {
               />
             </Field>
           </div>
-        </section>
+        </FormSection>
 
-        <section className="card">
-          <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Linked signals</h2>
+        <FormSection
+          heading="Linked signals"
+          description="Selected signals are linked bidirectionally — each records this cluster on its own page."
+          meta={
             <span
               className={`font-mono text-[11.5px] ${
                 signalIds.length >= CLUSTER_THRESHOLDS.minSignals
@@ -263,44 +286,42 @@ export default function NewClusterPage() {
             >
               {signalIds.length}/{CLUSTER_THRESHOLDS.minSignals} minimum
             </span>
-          </header>
-          <div className="px-4 py-4">
-            {signals.length > 0 ? (
-              <>
-                <CheckboxList<string>
-                  columns={1}
-                  options={signals.map((s) => ({
-                    value: s.id,
-                    label: `${s.id} · ${s.title} — ${SIGNAL_STRENGTH_LABELS[s.signalStrength]}`,
-                  }))}
-                  selected={signalIds}
-                  onChange={setSignalIds}
-                />
-                <p className="mt-3 border-t border-line pt-3 text-[11.5px] text-ink-faint">
-                  Selected signals are linked bidirectionally — each records this
-                  cluster on its own page. Validation needs at least{" "}
-                  {CLUSTER_THRESHOLDS.minSignals} signals across{" "}
-                  {CLUSTER_THRESHOLDS.minSectors} sectors and{" "}
-                  {CLUSTER_THRESHOLDS.minActorTypes} actor types, from{" "}
-                  {CLUSTER_THRESHOLDS.minIndependentSources} independent sources.
-                </p>
-              </>
-            ) : (
-              <p className="text-[12px] text-ink-faint">
-                No signals exist yet. A cluster only exists through its evidence —
-                promote observations into signals first, then return here.{" "}
-                <Link href="/signals" className="text-accent-ink underline">
-                  Open the Signal Library
-                </Link>
-                .
+          }
+        >
+          {signals.length > 0 ? (
+            <>
+              <CheckboxList<string>
+                columns={1}
+                options={signals.map((s) => ({
+                  value: s.id,
+                  label: `${s.id} · ${s.title} — ${SIGNAL_STRENGTH_LABELS[s.signalStrength]}`,
+                }))}
+                selected={signalIds}
+                onChange={setSignalIds}
+              />
+              <p className="mt-3 text-[11.5px] text-ink-faint">
+                Validation needs at least {CLUSTER_THRESHOLDS.minSignals} signals
+                across {CLUSTER_THRESHOLDS.minSectors} sectors and{" "}
+                {CLUSTER_THRESHOLDS.minActorTypes} actor types, from{" "}
+                {CLUSTER_THRESHOLDS.minIndependentSources} independent sources.
               </p>
-            )}
-          </div>
-        </section>
+            </>
+          ) : (
+            <p className="text-[12px] text-ink-faint">
+              No signals exist yet. A cluster only exists through its evidence —
+              promote observations into signals first, then return here.{" "}
+              <Link href="/signals" className="text-accent-ink underline">
+                Open the Signal Library
+              </Link>
+              .
+            </p>
+          )}
+        </FormSection>
 
-        <section className="card">
-          <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Linked contradictions</h2>
+        <FormSection
+          heading="Linked contradictions"
+          description="A cluster without tension is usually under-scanned — validation requires at least one."
+          meta={
             <span
               className={`font-mono text-[11.5px] ${
                 contradictionIds.length >= CLUSTER_THRESHOLDS.minContradictions
@@ -310,86 +331,71 @@ export default function NewClusterPage() {
             >
               {contradictionIds.length}/{CLUSTER_THRESHOLDS.minContradictions} minimum
             </span>
-          </header>
-          <div className="px-4 py-4">
-            {contradictions.length > 0 ? (
-              <>
-                <CheckboxList<string>
-                  columns={1}
-                  options={contradictions.map((c) => ({
-                    value: c.id,
-                    label: `${c.id} · ${c.name} — ${CONTRADICTION_TYPE_LABELS[c.contradictionType]}`,
-                  }))}
-                  selected={contradictionIds}
-                  onChange={setContradictionIds}
-                />
-                <p className="mt-3 border-t border-line pt-3 text-[11.5px] text-ink-faint">
-                  A cluster without tension is usually under-scanned. Validation
-                  requires at least one linked contradiction.
-                </p>
-              </>
-            ) : (
-              <p className="text-[12px] text-ink-faint">
-                No contradictions recorded yet. A cluster cannot validate without at
-                least one identified tension —{" "}
-                <Link href="/contradictions" className="text-accent-ink underline">
-                  record contradictions
-                </Link>{" "}
-                as you find opposing evidence.
-              </p>
-            )}
-          </div>
-        </section>
+          }
+        >
+          {contradictions.length > 0 ? (
+            <CheckboxList<string>
+              columns={1}
+              options={contradictions.map((c) => ({
+                value: c.id,
+                label: `${c.id} · ${c.name} — ${CONTRADICTION_TYPE_LABELS[c.contradictionType]}`,
+              }))}
+              selected={contradictionIds}
+              onChange={setContradictionIds}
+            />
+          ) : (
+            <p className="text-[12px] text-ink-faint">
+              No contradictions recorded yet. A cluster cannot validate without at
+              least one identified tension —{" "}
+              <Link href="/contradictions" className="text-accent-ink underline">
+                record contradictions
+              </Link>{" "}
+              as you find opposing evidence.
+            </p>
+          )}
+        </FormSection>
 
         {simple ? (
-          <details className="card">
-            <summary className="cursor-pointer px-4 py-2.5 hover:bg-surface-muted">
-              <span className="overline-label">
+          <details>
+            <summary className="cursor-pointer list-none">
+              <span className="text-[13px] font-medium text-ink-soft hover:text-ink">
                 Scoring (optional now — analyst work)
               </span>
-              <span className="mt-0.5 block text-[11px] text-ink-faint">
+              <span className="mt-0.5 block text-[12px] text-ink-faint">
                 Nine 1–5 judgements that support validation. Leave them for
                 Analyst view if you prefer — the candidate saves either way.
               </span>
             </summary>
-            <div className="border-t border-line">{scoringFields}</div>
+            <div className="mt-4">{scoringFields}</div>
           </details>
         ) : (
-          <section className="card">
-            <header className="border-b border-line px-4 py-2.5">
-              <h2 className="overline-label">Cluster scores — nine dimensions</h2>
-            </header>
+          <FormSection heading="Cluster scores — nine dimensions">
             {scoringFields}
-          </section>
+          </FormSection>
         )}
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Confidence</h2>
-          </header>
-          <div className="px-4 py-4">
-            <Field
-              label="Confidence"
-              hint="How much weight this grouping should carry. New candidates usually start low."
+        <FormSection heading="Confidence">
+          <Field
+            label="Confidence"
+            hint="How much weight this grouping should carry. New candidates usually start low."
+          >
+            <Select
+              value={confidence}
+              onChange={(e) => setConfidence(e.target.value as ConfidenceLevel)}
             >
-              <Select
-                value={confidence}
-                onChange={(e) => setConfidence(e.target.value as ConfidenceLevel)}
-              >
-                {CONFIDENCE_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
-                    {CONFIDENCE_LABELS[c]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-        </section>
+              {CONFIDENCE_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {CONFIDENCE_LABELS[c]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </FormSection>
 
         {errors.length > 0 ? (
-          <div className="card border-l-2 border-l-tension px-4 py-3">
-            <p className="overline-label mb-1 text-tension">Cannot save yet</p>
-            <ul className="list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
+          <div className="border-l-2 border-tension/60 pl-3">
+            <p className="text-[12px] font-medium text-tension">Cannot save yet</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12.5px] text-ink-soft">
               {errors.map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -397,14 +403,14 @@ export default function NewClusterPage() {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2 pb-4">
+        <div className="flex items-center gap-4 pb-4">
           <button type="button" onClick={handleSave} className={btnPrimary}>
             Save cluster candidate
           </button>
-          <Link href="/clusters" className={btnSecondary}>
+          <Link href="/clusters" className={textLink}>
             Cancel
           </Link>
-          <p className="ml-2 text-[11.5px] text-ink-faint">
+          <p className="text-[11.5px] text-ink-faint">
             Saved as a candidate — validity is computed on the detail page.
             {scoresTouched
               ? ""

@@ -79,6 +79,7 @@ import {
   REGION_OPTIONS,
   btnPrimary,
   btnSecondary,
+  btnText,
   fmtDate,
   optionsFrom,
   parseTags,
@@ -194,7 +195,6 @@ const CONFIDENCE_ORDER: ConfidenceLevel[] = ["low", "medium", "high"];
 function NewSignalHeader({ simple = false }: { simple?: boolean }) {
   return (
     <PageHeader
-      overline="Scan & Classify"
       title="Add signal"
       description={
         simple
@@ -214,9 +214,9 @@ function NewSignalHeader({ simple = false }: { simple?: boolean }) {
 function SimpleCaptureExplainer({ fromObservation }: { fromObservation: string | null }) {
   const setMode = useViewModeStore((s) => s.setMode);
   return (
-    <section className="card max-w-2xl px-5 py-4">
-      <p className="overline-label mb-1.5">Before you add a signal</p>
-      <p className="text-[13px] leading-relaxed text-ink-soft">
+    <section className="max-w-2xl">
+      <h3 className="text-[13px] font-medium text-ink">Before you add a signal</h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
         Creating a signal is analyst work: each one is scored against the nine rubric
         dimensions and read through the mandatory four-level zooming method before it can
         carry weight in the evidence base. The usual starting point is simpler — capture what
@@ -224,17 +224,17 @@ function SimpleCaptureExplainer({ fromObservation }: { fromObservation: string |
         earns its place.
       </p>
       {fromObservation ? (
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink-soft">
           You arrived here promoting observation <IdChip id={fromObservation} />. Continuing
           in Analyst view resumes that promotion with the observation&apos;s details
           prefilled.
         </p>
       ) : null}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-4">
         <Link href="/inbox/new" className={btnPrimary}>
           Capture an observation instead
         </Link>
-        <button type="button" onClick={() => setMode("analyst")} className={btnSecondary}>
+        <button type="button" onClick={() => setMode("analyst")} className={btnText}>
           Continue in Analyst view
         </button>
       </div>
@@ -245,10 +245,15 @@ function SimpleCaptureExplainer({ fromObservation }: { fromObservation: string |
 function SummaryItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="overline-label">{label}</dt>
+      <dt className="text-[11px] text-ink-faint">{label}</dt>
       <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">{children}</dd>
     </div>
   );
+}
+
+/** Quiet heading used to group wizard fields. */
+function GroupHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-[13px] font-medium text-ink">{children}</h3>;
 }
 
 function listOrDash(items: string[]): string {
@@ -508,112 +513,120 @@ function NewSignalContent() {
 
   function renderStep1() {
     return (
-      <div className="space-y-4">
-        <Field
-          label="Link existing sources"
-          hint="Evidence must be traceable. Select every source that supports this signal."
-        >
-          {sources.length > 0 ? (
-            <div className="max-h-56 overflow-y-auto border border-line bg-surface px-3 py-2 rounded-[2px]">
-              <CheckboxList
-                options={sources.map((s) => ({
-                  value: s.id,
-                  label: `${s.name} — ${CREDIBILITY_LABELS[s.credibility]}`,
-                }))}
-                selected={form.sourceIds}
-                onChange={(next) => set("sourceIds", next)}
-                columns={1}
-              />
-            </div>
-          ) : (
-            <p className="text-[11.5px] text-ink-faint">
-              No sources registered yet — quick-create one below.
-            </p>
-          )}
-        </Field>
-
-        <div className="space-y-3 border border-line bg-surface-muted px-3 py-3 rounded-[2px]">
-          <p className="overline-label">Quick-create a source</p>
-          <Field label="Source name">
-            <TextInput
-              value={qcName}
-              onChange={(e) => setQcName(e.target.value)}
-              placeholder="e.g. Gulf urban policy briefing"
-            />
-          </Field>
-          <Field label="Source type">
-            <Select
-              value={qcType}
-              onChange={(e) => setQcType(e.target.value as SourceType)}
-            >
-              {optionsFrom(SOURCE_TYPE_LABELS).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <ScorePicker
-            label="Credibility"
-            value={qcCredibility}
-            rubric={CREDIBILITY_LABELS}
-            onChange={setQcCredibility}
-          />
+      <div className="space-y-8">
+        <section className="space-y-4">
+          <GroupHeading>Sources</GroupHeading>
           <Field
-            label="Roles"
-            hint="Credibility and role are separate — a strong discovery source can be a weak validation source."
+            label="Link existing sources"
+            hint="Evidence must be traceable. Select every source that supports this signal."
           >
-            <CheckboxList
-              options={optionsFrom(SOURCE_ROLE_LABELS)}
-              selected={qcRoles}
-              onChange={setQcRoles}
-            />
+            {sources.length > 0 ? (
+              <div className="max-h-56 overflow-y-auto border border-line bg-surface px-3 py-2 rounded-[2px]">
+                <CheckboxList
+                  options={sources.map((s) => ({
+                    value: s.id,
+                    label: `${s.name} — ${CREDIBILITY_LABELS[s.credibility]}`,
+                  }))}
+                  selected={form.sourceIds}
+                  onChange={(next) => set("sourceIds", next)}
+                  columns={1}
+                />
+              </div>
+            ) : (
+              <p className="text-[11.5px] text-ink-faint">
+                No sources registered yet — quick-create one below.
+              </p>
+            )}
           </Field>
-          {qcError ? <p className="text-[11.5px] text-tension">{qcError}</p> : null}
-          <button type="button" onClick={handleQuickCreate} className={btnSecondary}>
-            Add source and link it
-          </button>
-        </div>
 
-        <Field label="Title" required hint="Name the change, not the topic.">
-          <TextInput
-            value={form.title}
-            onChange={(e) => set("title", e.target.value)}
-            placeholder="e.g. Heritage districts begin licensing night-time creative studios"
-          />
-        </Field>
-        <Field label="Description" required hint="What was observed, factually.">
-          <TextArea
-            rows={4}
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Date observed" required>
+          <div className="space-y-3 border-l border-line pl-4">
+            <p className="text-[12px] font-medium text-ink-soft">Quick-create a source</p>
+            <Field label="Source name">
+              <TextInput
+                value={qcName}
+                onChange={(e) => setQcName(e.target.value)}
+                placeholder="e.g. Gulf urban policy briefing"
+              />
+            </Field>
+            <Field label="Source type">
+              <Select
+                value={qcType}
+                onChange={(e) => setQcType(e.target.value as SourceType)}
+              >
+                {optionsFrom(SOURCE_TYPE_LABELS).map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <ScorePicker
+              label="Credibility"
+              value={qcCredibility}
+              rubric={CREDIBILITY_LABELS}
+              onChange={setQcCredibility}
+            />
+            <Field
+              label="Roles"
+              hint="Credibility and role are separate — a strong discovery source can be a weak validation source."
+            >
+              <CheckboxList
+                options={optionsFrom(SOURCE_ROLE_LABELS)}
+                selected={qcRoles}
+                onChange={setQcRoles}
+              />
+            </Field>
+            {qcError ? <p className="text-[11.5px] text-tension">{qcError}</p> : null}
+            <button type="button" onClick={handleQuickCreate} className={btnSecondary}>
+              Add source and link it
+            </button>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <GroupHeading>Event details</GroupHeading>
+          <Field label="Title" required hint="Name the change, not the topic.">
             <TextInput
-              type="date"
-              value={form.dateObserved}
-              onChange={(e) => set("dateObserved", e.target.value)}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
+              placeholder="e.g. Heritage districts begin licensing night-time creative studios"
             />
           </Field>
-          <Field label="Event date" hint="When the event itself occurred, if different.">
-            <TextInput
-              type="date"
-              value={form.eventDate}
-              onChange={(e) => set("eventDate", e.target.value)}
+          <Field label="Description" required hint="What was observed, factually.">
+            <TextArea
+              rows={4}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
             />
           </Field>
-        </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Date observed" required>
+              <TextInput
+                type="date"
+                value={form.dateObserved}
+                onChange={(e) => set("dateObserved", e.target.value)}
+              />
+            </Field>
+            <Field label="Event date" hint="When the event itself occurred, if different.">
+              <TextInput
+                type="date"
+                value={form.eventDate}
+                onChange={(e) => set("eventDate", e.target.value)}
+              />
+            </Field>
+          </div>
+        </section>
       </div>
     );
   }
 
   function renderStep2() {
     return (
-      <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Region">
+      <div className="space-y-8">
+        <section className="space-y-4">
+          <GroupHeading>Geography</GroupHeading>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Region">
             <Select
               value={form.region}
               onChange={(e) => set("region", e.target.value as Region)}
@@ -632,15 +645,19 @@ function NewSignalContent() {
               placeholder="e.g. Saudi Arabia"
             />
           </Field>
-          <Field label="City">
-            <TextInput
-              value={form.city}
-              onChange={(e) => set("city", e.target.value)}
-              placeholder="e.g. Riyadh"
-            />
-          </Field>
-        </div>
-        <Field label="Sectors" required>
+            <Field label="City">
+              <TextInput
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+                placeholder="e.g. Riyadh"
+              />
+            </Field>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <GroupHeading>Classification</GroupHeading>
+          <Field label="Sectors" required>
           <CheckboxList
             options={optionsFrom(SECTOR_LABELS)}
             selected={form.sectors}
@@ -674,13 +691,14 @@ function NewSignalContent() {
             onChange={(next) => set("typeOfChange", next)}
           />
         </Field>
-        <Field label="Systems affected">
-          <CheckboxList
-            options={optionsFrom(SYSTEM_LABELS)}
-            selected={form.systemsAffected}
-            onChange={(next) => set("systemsAffected", next)}
-          />
-        </Field>
+          <Field label="Systems affected">
+            <CheckboxList
+              options={optionsFrom(SYSTEM_LABELS)}
+              selected={form.systemsAffected}
+              onChange={(next) => set("systemsAffected", next)}
+            />
+          </Field>
+        </section>
       </div>
     );
   }
@@ -777,22 +795,29 @@ function NewSignalContent() {
             ))}
           </Select>
         </Field>
-        <ul className="space-y-1.5">
-          {CONFIDENCE_ORDER.map((level) => (
-            <li
-              key={level}
-              className={`border px-3 py-2 rounded-[2px] ${
-                level === form.confidence
-                  ? "border-accent bg-accent-soft"
-                  : "border-line bg-surface"
-              }`}
-            >
-              <p className="text-[12px] font-medium text-ink">{CONFIDENCE_LABELS[level]}</p>
-              <p className="mt-0.5 text-[11.5px] text-ink-faint">
-                {CONFIDENCE_EXPLANATIONS[level]}
-              </p>
-            </li>
-          ))}
+        <ul className="space-y-3 border-l border-line pl-4">
+          {CONFIDENCE_ORDER.map((level) => {
+            const current = level === form.confidence;
+            return (
+              <li key={level}>
+                <p
+                  className={`text-[12px] ${
+                    current ? "font-medium text-ink" : "text-ink-faint"
+                  }`}
+                >
+                  {CONFIDENCE_LABELS[level]}
+                  {current ? (
+                    <span className="ml-1.5 text-[11px] font-normal text-accent-ink">
+                      selected
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-faint">
+                  {CONFIDENCE_EXPLANATIONS[level]}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );

@@ -7,118 +7,81 @@
  * pattern tests (breadth, depth, persistence, coherence); the stored status
  * is never trusted on its own.
  *
- * Visibility layers: the simple view keeps each card to the name, type,
- * a two-line statement and a plain-language validation sentence. Test-pass
- * chips, counts, confidence and the type filter open in Analyst view.
+ * Layout has exactly four layers: header, one control bar, the pattern
+ * list, and the collapsed page guide. Each row is one primary line (the
+ * pattern name) and one plain-language status line; accent appears only on
+ * patterns that have earned validation.
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
-import { ConfidenceBadge, IdChip, Pill } from "@/components/badges";
-import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { Pill } from "@/components/badges";
+import {
+  ControlBar,
+  ControlSearch,
+  ControlSelect,
+} from "@/components/ControlBar";
+import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
-import { validatePattern } from "@/lib/validation";
-import { explainPatternStatus } from "@/lib/explain";
+import { validatePattern, type ValidationResult } from "@/lib/validation";
 import { DEFINITIONS } from "@/lib/copy";
 import type { Pattern, PatternType, Signal } from "@/lib/types";
 import { PATTERN_TYPE_LABELS } from "@/lib/types";
 import {
-  PatternTestChips,
-  PatternValidationPill,
-  RecomputedNote,
+  countInWords,
+  shortPatternStatus,
   signalsOfPattern,
-  statusDisagrees,
 } from "./pattern-ui";
 
 type StatusFilter = "all" | "validated" | "hypothesis";
 
-const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
-  all: "All",
-  validated: "Validated",
-  hypothesis: "Not yet validated",
-};
+const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
+  { value: "all", label: "All statuses" },
+  { value: "validated", label: "Validated" },
+  { value: "hypothesis", label: "Not yet validated" },
+];
 
 function PatternsHeader() {
-  return (
-    <PageHeader
-      overline="Connect & Synthesize"
-      title="Patterns"
-      description={DEFINITIONS.pattern}
-    />
-  );
+  return <PageHeader title="Patterns" description={DEFINITIONS.pattern} />;
 }
 
-function PatternCard({ pattern, signals }: { pattern: Pattern; signals: Signal[] }) {
-  const mode = useViewMode();
-  const result = validatePattern(pattern, signals);
-  const linkedSignals = signalsOfPattern(pattern, signals);
-  const recomputed = statusDisagrees(pattern, result);
-  const simple = mode === "simple";
-
+function PatternRow({
+  pattern,
+  result,
+  linkedSignals,
+}: {
+  pattern: Pattern;
+  result: ValidationResult;
+  linkedSignals: Signal[];
+}) {
+  const clusterCount = pattern.clusterIds.length;
   return (
-    <article className="card px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="max-w-2xl">
-          <p className="overline-label mb-0.5">
-            Pattern · <IdChip id={pattern.id} />
-          </p>
-          <h3 className="font-display text-[17px] leading-snug text-ink">
-            <Link
-              href={`/patterns/${pattern.id}`}
-              className="hover:text-accent-ink hover:underline"
+    <Link href={`/patterns/${pattern.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+          {pattern.name}
+        </p>
+        {result.valid ? (
+          <span className="shrink-0">
+            <Pill
+              tone="accent"
+              title={`${result.passedCount} of ${result.totalCount} pattern tests passed`}
             >
-              {pattern.name}
-            </Link>
-          </h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
-            <ViewGate min="analyst">
-              <ConfidenceBadge level={pattern.confidence} />
-            </ViewGate>
-          </div>
-          <p
-            className={`mt-2 text-[13px] leading-relaxed text-ink-soft ${
-              simple ? "line-clamp-2" : "line-clamp-3"
-            }`}
-          >
-            {pattern.patternStatement.trim() ? (
-              pattern.patternStatement
-            ) : (
-              <span className="text-[12px] text-ink-faint">
-                No pattern statement recorded yet — a pattern must be explainable
-                as one clear movement in a single statement.
-              </span>
-            )}
-          </p>
-          {simple ? (
-            <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
-              {explainPatternStatus(pattern, result)}
-            </p>
-          ) : null}
-        </div>
-        <ViewGate min="analyst">
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <PatternValidationPill result={result} />
-            {recomputed ? <RecomputedNote /> : null}
-          </div>
-        </ViewGate>
+              Validated
+            </Pill>
+          </span>
+        ) : null}
       </div>
-
-      <ViewGate min="analyst">
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
-          <PatternTestChips result={result} />
-          <span className="font-mono text-[11.5px] text-ink-soft">
-            {pattern.clusterIds.length} cluster{pattern.clusterIds.length === 1 ? "" : "s"}
-          </span>
-          <span className="font-mono text-[11.5px] text-ink-soft">
-            {linkedSignals.length} key signal{linkedSignals.length === 1 ? "" : "s"}
-          </span>
-        </div>
-      </ViewGate>
-    </article>
+      <p className="mt-1 text-[12px] text-ink-faint">
+        {PATTERN_TYPE_LABELS[pattern.patternType]} · {shortPatternStatus(result)}{" "}
+        Draws on {countInWords(clusterCount)} cluster
+        {clusterCount === 1 ? "" : "s"} and {countInWords(linkedSignals.length)} key
+        signal{linkedSignals.length === 1 ? "" : "s"}.
+      </p>
+    </Link>
   );
 }
 
@@ -127,8 +90,21 @@ export default function PatternsPage() {
   const mode = useViewMode();
   const patterns = useIntelligenceStore((s) => s.patterns);
   const signals = useIntelligenceStore((s) => s.signals);
+  const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const rows = useMemo(
+    () =>
+      [...patterns]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map((pattern) => ({
+          pattern,
+          result: validatePattern(pattern, signals),
+          linkedSignals: signalsOfPattern(pattern, signals),
+        })),
+    [patterns, signals],
+  );
 
   if (!hydrated) {
     return (
@@ -139,99 +115,94 @@ export default function PatternsPage() {
     );
   }
 
-  const ordered = [...patterns].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const typesPresent = [...new Set(ordered.map((p) => p.patternType))];
+  const typesPresent = [...new Set(rows.map((r) => r.pattern.patternType))];
 
   // The type filter is an Analyst-view control — it never silently narrows
   // the list while the control itself is hidden in the simple view.
   const typeFilterActive = mode !== "simple" && typeFilter !== "all";
 
-  const filtered = ordered.filter((p) => {
-    const valid = validatePattern(p, signals).valid;
-    if (statusFilter === "validated" && !valid) return false;
-    if (statusFilter === "hypothesis" && valid) return false;
-    if (typeFilterActive && p.patternType !== (typeFilter as PatternType))
+  const q = query.trim().toLowerCase();
+  const filtered = rows.filter((r) => {
+    if (statusFilter === "validated" && !r.result.valid) return false;
+    if (statusFilter === "hypothesis" && r.result.valid) return false;
+    if (typeFilterActive && r.pattern.patternType !== (typeFilter as PatternType))
+      return false;
+    if (
+      q &&
+      !`${r.pattern.name} ${r.pattern.patternStatement}`.toLowerCase().includes(q)
+    )
       return false;
     return true;
   });
+
+  const validatedCount = rows.filter((r) => r.result.valid).length;
 
   return (
     <>
       <PatternsHeader />
       <WalkthroughPanel pageId="patterns" />
 
-      {ordered.length > 0 ? (
-        <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className="overline-label">Status</span>
-            <div
-              role="radiogroup"
-              aria-label="Filter patterns by validation status"
-              className="flex overflow-hidden rounded-[2px] border border-line"
-            >
-              {(Object.keys(STATUS_FILTER_LABELS) as StatusFilter[]).map((f) => (
-                <button
-                  key={f}
-                  role="radio"
-                  aria-checked={statusFilter === f}
-                  onClick={() => setStatusFilter(f)}
-                  className={`px-2.5 py-1 text-[11.5px] ${
-                    statusFilter === f
-                      ? "bg-accent font-medium text-white"
-                      : "bg-surface text-ink-soft hover:text-ink"
-                  } ${f !== "all" ? "border-l border-line" : ""}`}
-                >
-                  {STATUS_FILTER_LABELS[f]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <ViewGate min="analyst">
-            <label className="flex items-center gap-2">
-              <span className="overline-label">Type</span>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="border border-line bg-surface px-2 py-1 text-[12px] text-ink rounded-[2px] focus:border-accent focus:outline-none"
-              >
-                <option value="all">All types</option>
-                {typesPresent.map((t) => (
-                  <option key={t} value={t}>
-                    {PATTERN_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </ViewGate>
-        </div>
-      ) : null}
+      <ControlBar
+        more={
+          mode !== "simple" && typesPresent.length > 0 ? (
+            <ControlSelect
+              label="Type"
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={[
+                { value: "all", label: "All types" },
+                ...typesPresent.map((t) => ({
+                  value: t,
+                  label: PATTERN_TYPE_LABELS[t],
+                })),
+              ]}
+            />
+          ) : undefined
+        }
+        right={
+          rows.length > 0 ? (
+            <span className="text-[12px] text-ink-faint">
+              {validatedCount} of {rows.length} validated
+            </span>
+          ) : null
+        }
+      >
+        <ControlSearch value={query} onChange={setQuery} placeholder="Search patterns…" />
+        <ControlSelect
+          label="Status"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as StatusFilter)}
+          options={STATUS_OPTIONS}
+        />
+      </ControlBar>
 
-      {ordered.length > 0 ? (
-        <div className="mb-3">
-          <DepthHint>
-            Test-pass detail, confidence, evidence counts and the type filter
-          </DepthHint>
-        </div>
-      ) : null}
-
-      {ordered.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           message="No patterns yet. A pattern emerges when the same movement repeats across at least 3 sectors, 5 independent sources, and 6 months of evidence. Build and validate clusters first."
           actionLabel="Open Signal Clusters"
           actionHref="/clusters"
         />
       ) : filtered.length === 0 ? (
-        <p className="text-[12px] text-ink-faint">
-          No patterns match the current filters. Reset the status
-          {mode !== "simple" ? " or type" : ""} filter to see all {ordered.length}{" "}
-          pattern{ordered.length === 1 ? "" : "s"}.
-        </p>
+        <EmptyState
+          message={`Nothing matches the current filters. Reset the search or status${
+            mode !== "simple" ? " and type" : ""
+          } filters to see all ${countInWords(rows.length)} pattern${
+            rows.length === 1 ? "" : "s"
+          }. Patterns are promoted from repeated cluster logic, not created directly.`}
+          actionLabel="Open Signal Clusters"
+          actionHref="/clusters"
+        />
       ) : (
-        <div className="space-y-3">
-          {filtered.map((p) => (
-            <PatternCard key={p.id} pattern={p} signals={signals} />
+        <section aria-label="Patterns">
+          {filtered.map((r) => (
+            <PatternRow
+              key={r.pattern.id}
+              pattern={r.pattern}
+              result={r.result}
+              linkedSignals={r.linkedSignals}
+            />
           ))}
-        </div>
+        </section>
       )}
     </>
   );
