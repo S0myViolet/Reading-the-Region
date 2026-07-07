@@ -12,12 +12,14 @@
  */
 
 import Link from "next/link";
+import { useViewMode, ViewGate } from "@/components/ViewMode";
 import {
   ConfidenceBadge,
   IdChip,
   Pill,
   ReviewStatusBadge,
 } from "@/components/badges";
+import { explainScenarioEvidence } from "@/lib/explain";
 import { scenarioAssumptionHeavy, type ValidationResult } from "@/lib/validation";
 import type { Scenario, ScenarioQualityChecks } from "@/lib/types";
 import {
@@ -51,7 +53,11 @@ export function qualityPassCount(checks: ScenarioQualityChecks): number {
   return QUALITY_KEYS.filter((k) => checks[k]).length;
 }
 
-const QUALITY_DETAILS: Record<keyof ScenarioQualityChecks, string> = {
+/**
+ * What each of the nine quality tests actually asks — the rubric behind the
+ * pass/fail booleans, spelled out in Methodology view.
+ */
+export const QUALITY_DETAILS: Record<keyof ScenarioQualityChecks, string> = {
   plausible:
     "Could realistically develop from today's evidence — a possibility, not a fantasy.",
   internallyCoherent:
@@ -93,10 +99,22 @@ export function qualityChecklistResult(checks: ScenarioQualityChecks): Validatio
 }
 
 // ---------------------------------------------------------------------------
+// Evidence honesty, first sentence — for list cards
+// ---------------------------------------------------------------------------
+
+/** The link-count sentence of explainScenarioEvidence, for the one-line list reading. */
+export function evidenceFirstSentence(scenario: Scenario): string {
+  const full = explainScenarioEvidence(scenario);
+  const idx = full.indexOf(". ");
+  return idx === -1 ? full : full.slice(0, idx + 1);
+}
+
+// ---------------------------------------------------------------------------
 // List card
 // ---------------------------------------------------------------------------
 
 export function ScenarioCard({ scenario }: { scenario: Scenario }) {
+  const mode = useViewMode();
   const qualityPassed = qualityPassCount(scenario.qualityChecks);
   const assumptionHeavy = scenarioAssumptionHeavy(scenario);
   const assumptionCount = scenario.assumptions.length;
@@ -120,7 +138,11 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
             <Pill tone="info">{SCENARIO_TYPE_LABELS[scenario.scenarioType]}</Pill>
             <Pill>{SCENARIO_HORIZON_LABELS[scenario.horizon]}</Pill>
           </div>
-          <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-ink-soft">
+          <p
+            className={`mt-2 text-[13px] leading-relaxed text-ink-soft ${
+              mode === "simple" ? "line-clamp-2" : "line-clamp-3"
+            }`}
+          >
             {scenario.corePremise.trim() ? (
               scenario.corePremise
             ) : (
@@ -130,29 +152,37 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
               </span>
             )}
           </p>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
+            <span className="overline-label mr-2">Evidence</span>
+            {evidenceFirstSentence(scenario)}
+          </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <ConfidenceBadge level={scenario.confidence} />
-          <ReviewStatusBadge status={scenario.reviewStatus} />
-        </div>
+        <ViewGate min="analyst">
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <ConfidenceBadge level={scenario.confidence} />
+            <ReviewStatusBadge status={scenario.reviewStatus} />
+          </div>
+        </ViewGate>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="font-mono text-[11.5px] text-ink-soft">
-            {qualityPassed}/{QUALITY_TEST_TOTAL} quality tests
+      <ViewGate min="analyst">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="font-mono text-[11.5px] text-ink-soft">
+              {qualityPassed}/{QUALITY_TEST_TOTAL} quality tests
+            </span>
+            {qualityPassed < QUALITY_REVIEW_THRESHOLD ? (
+              <Pill tone="caution">review quality</Pill>
+            ) : null}
           </span>
-          {qualityPassed < QUALITY_REVIEW_THRESHOLD ? (
-            <Pill tone="caution">review quality</Pill>
-          ) : null}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="font-mono text-[11.5px] text-ink-soft">
-            {assumptionCount} assumption{assumptionCount === 1 ? "" : "s"}
+          <span className="inline-flex items-center gap-1.5">
+            <span className="font-mono text-[11.5px] text-ink-soft">
+              {assumptionCount} assumption{assumptionCount === 1 ? "" : "s"}
+            </span>
+            {assumptionHeavy ? <Pill tone="caution">assumption-heavy</Pill> : null}
           </span>
-          {assumptionHeavy ? <Pill tone="caution">assumption-heavy</Pill> : null}
-        </span>
-      </div>
+        </div>
+      </ViewGate>
     </article>
   );
 }

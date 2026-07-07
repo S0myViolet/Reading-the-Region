@@ -403,29 +403,47 @@ export default function NewContradictionPage() {
           </div>
         </section>
 
-        <section className="card">
-          <header className="border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Contradiction scores — five dimensions</h2>
-          </header>
-          <div className="space-y-4 px-4 py-4">
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {SCORE_KEYS.map((k) => (
-                <ScorePicker
-                  key={k}
-                  label={CONTRADICTION_SCORE_LABELS[k]}
-                  value={scores[k]}
-                  rubric={GENERIC_SCORE_RUBRIC}
-                  onChange={(v: Score) => setScores((prev) => ({ ...prev, [k]: v }))}
-                />
-              ))}
+        <ViewGate
+          min="analyst"
+          fallback={
+            <section className="card px-4 py-3">
+              <p className="overline-label mb-1">Scoring</p>
+              <p className="text-[12px] leading-relaxed text-ink-soft">
+                The five contradiction scores — tension strength, strategic
+                richness, evidence balance, future impact and emotional charge
+                — are judged in Analyst view. Saved from this view, the record
+                is flagged as needing human review until it is scored.
+              </p>
+              <div className="mt-2">
+                <DepthHint>Five-dimension contradiction scoring</DepthHint>
+              </div>
+            </section>
+          }
+        >
+          <section className="card">
+            <header className="border-b border-line px-4 py-2.5">
+              <h2 className="overline-label">Contradiction scores — five dimensions</h2>
+            </header>
+            <div className="space-y-4 px-4 py-4">
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {SCORE_KEYS.map((k) => (
+                  <ScorePicker
+                    key={k}
+                    label={CONTRADICTION_SCORE_LABELS[k]}
+                    value={scores[k]}
+                    rubric={GENERIC_SCORE_RUBRIC}
+                    onChange={(v: Score) => setScores((prev) => ({ ...prev, [k]: v }))}
+                  />
+                ))}
+              </div>
+              <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
+                Score honestly. Low evidence balance means one side is under-scanned
+                — strengthen the weaker side before drawing conclusions from this
+                tension.
+              </p>
             </div>
-            <p className="border-t border-line pt-3 text-[11.5px] text-ink-faint">
-              Score honestly. Low evidence balance means one side is under-scanned
-              — strengthen the weaker side before drawing conclusions from this
-              tension.
-            </p>
-          </div>
-        </section>
+          </section>
+        </ViewGate>
 
         {errors.length > 0 ? (
           <div className="card border-l-2 border-l-tension px-4 py-3">
@@ -446,7 +464,9 @@ export default function NewContradictionPage() {
             Cancel
           </Link>
           <p className="ml-2 text-[11.5px] text-ink-faint">
-            Saved as a draft. Selected signals are linked back to this record.
+            {mode === "simple"
+              ? "Saved as needing human review until scored. Selected signals are linked back to this record."
+              : "Saved as a draft. Selected signals are linked back to this record."}
           </p>
         </div>
       </div>

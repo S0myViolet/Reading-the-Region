@@ -13,6 +13,7 @@
 
 import { Pill } from "@/components/badges";
 import type { Driver, DriverScores, Score, Signal } from "@/lib/types";
+import { DRIVER_SCORE_LABELS } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 
 export const btnPrimary =
@@ -73,3 +74,219 @@ export function RecomputedNote() {
     <span className="text-[10.5px] text-ink-faint">status recomputed from evidence</span>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Counts in words (simple view never leads with bare numbers)
+// ---------------------------------------------------------------------------
+
+const NUMBER_WORDS = [
+  "no",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+];
+
+export function countInWords(n: number, singular: string, plural?: string): string {
+  const word = n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n);
+  return `${word} ${n === 1 ? singular : (plural ?? `${singular}s`)}`;
+}
+
+/** Pattern/signal counts for the simple list card, in words. */
+export function driverLinkCountsInWords(driver: Driver): string {
+  return `Explains ${countInWords(driver.patternIds.length, "pattern")} · rests on ${countInWords(driver.signalIds.length, "signal")}.`;
+}
+
+/**
+ * Evidence note for explainConfidenceGeneric — cites the driver's actual
+ * counts: patterns connected, signals, independent sources.
+ */
+export function driverEvidenceNote(driver: Driver): string {
+  return `this explanation currently rests on ${countInWords(driver.patternIds.length, "connected pattern")}, ${countInWords(driver.signalIds.length, "linked signal")} and ${countInWords(driver.independentSourceCount, "independent source")}.`;
+}
+
+// ---------------------------------------------------------------------------
+// Next step — derived from the live validation result
+// ---------------------------------------------------------------------------
+
+function lowerFirst(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+/**
+ * One next-step sentence: the first failing validation check, or the
+ * monitoring instruction once every criterion passes.
+ */
+export function driverNextStep(result: ValidationResult): string {
+  if (result.valid) {
+    return "Watch this driver's leading indicators — movement there is what confirms or weakens a validated explanation.";
+  }
+  const failing = result.checks.find((c) => !c.passed);
+  if (!failing) {
+    return "Review this driver's evidence links at the next weekly scan.";
+  }
+  return `Work on the first unmet criterion — ${lowerFirst(failing.label)}. Currently: ${lowerFirst(failing.detail)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Score readings — a score is never shown as a bare number. The wording is
+// derived from the score value alone: 1–2 low, 3 moderate, 4–5 strong.
+// ---------------------------------------------------------------------------
+
+export type ScoreBand = "low" | "moderate" | "strong";
+
+export function scoreBand(score: Score): ScoreBand {
+  return score <= 2 ? "low" : score === 3 ? "moderate" : "strong";
+}
+
+const DRIVER_SCORE_READINGS: Record<keyof DriverScores, Record<ScoreBand, string>> = {
+  explanatoryPower: {
+    low: "judged to explain little more than the patterns already say",
+    moderate: "judged to explain part of what its patterns show",
+    strong: "judged to account for its patterns with a clear mechanism",
+  },
+  crossSectorStrength: {
+    low: "its effects are judged visible in one sector at most",
+    moderate: "its effects are judged visible in a few adjacent sectors",
+    strong: "its effects are judged visible across many sectors",
+  },
+  evidenceStrength: {
+    low: "the evidence beneath it is judged thin or anecdotal",
+    moderate: "the evidence beneath it is judged credible but limited",
+    strong: "the evidence beneath it is judged broad and credible",
+  },
+  persistence: {
+    low: "judged possibly a short-lived episode rather than a lasting force",
+    moderate: "judged to have held for a meaningful period",
+    strong: "judged persistent, with no sign of fading",
+  },
+  reversibility: {
+    low: "the ease of this force being undone is judged low",
+    moderate: "the ease of this force being undone is judged moderate",
+    strong: "the ease of this force being undone is judged high",
+  },
+  behaviouralImpact: {
+    low: "judged to change little day-to-day behaviour so far",
+    moderate: "judged to be changing some behaviour in visible ways",
+    strong: "judged to be restructuring behaviour at scale",
+  },
+  structuralImpact: {
+    low: "judged to leave systems and institutions largely untouched",
+    moderate: "judged to be bending some systems and institutions",
+    strong: "judged to be reshaping systems and institutions",
+  },
+  contradictionRichness: {
+    low: "few tensions push back against it — possibly under-scanned",
+    moderate: "some real tensions push back against it",
+    strong: "it sits amid strong, well-evidenced tensions",
+  },
+  scenarioUsefulness: {
+    low: "judged to give scenario work little to build on",
+    moderate: "judged to give scenario work something to build on",
+    strong: "judged a load-bearing input for scenario work",
+  },
+  strategicRelevance: {
+    low: "judged to carry little strategic weight for now",
+    moderate: "judged to carry strategic weight within some categories",
+    strong: "judged to carry strategic weight across sectors",
+  },
+};
+
+/** One-sentence reading of a driver score, derived from its value. */
+export function driverScoreReading(dim: keyof DriverScores, score: Score): string {
+  return `${DRIVER_SCORE_READINGS[dim][scoreBand(score)]}.`;
+}
+
+// ---------------------------------------------------------------------------
+// Score chips (analyst list view)
+// ---------------------------------------------------------------------------
+
+/** Short mono labels for the ten driver scoring dimensions. */
+export const DRIVER_SCORE_CHIP_LABELS: Record<keyof DriverScores, string> = {
+  explanatoryPower: "Explains",
+  crossSectorStrength: "X-sector",
+  evidenceStrength: "Evidence",
+  persistence: "Persist",
+  reversibility: "Reverse",
+  behaviouralImpact: "Behaviour",
+  structuralImpact: "Structure",
+  contradictionRichness: "Tension",
+  scenarioUsefulness: "Scenario",
+  strategicRelevance: "Strategy",
+};
+
+const DRIVER_CHIP_KEYS = Object.keys(DRIVER_SCORE_CHIP_LABELS) as Array<
+  keyof DriverScores
+>;
+
+/** Compact mono score chips, e.g. “Explains 4 · Evidence 3 · Persist 5”. */
+export function DriverScoreChips({ scores }: { scores: DriverScores }) {
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      {DRIVER_CHIP_KEYS.map((k) => (
+        <span
+          key={k}
+          title={`${DRIVER_SCORE_LABELS[k]} — ${scores[k]}/5`}
+          className="border border-line bg-surface px-1.5 py-px font-mono text-[10.5px] tracking-wide text-ink-soft rounded-[2px]"
+        >
+          {DRIVER_SCORE_CHIP_LABELS[k]} {scores[k]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sorting and filtering (analyst list view)
+// ---------------------------------------------------------------------------
+
+export type DriverSort = "updated" | "explanatory" | "evidence" | "patterns";
+
+export const DRIVER_SORT_OPTIONS: Array<{ value: DriverSort; label: string }> = [
+  { value: "updated", label: "Recently updated" },
+  { value: "explanatory", label: "By explanatory power" },
+  { value: "evidence", label: "By evidence strength" },
+  { value: "patterns", label: "By patterns explained" },
+];
+
+export function sortDrivers(list: Driver[], sort: DriverSort): Driver[] {
+  const byUpdated = (a: Driver, b: Driver) => b.updatedAt.localeCompare(a.updatedAt);
+  const copy = [...list];
+  switch (sort) {
+    case "updated":
+      return copy.sort(byUpdated);
+    case "explanatory":
+      return copy.sort(
+        (a, b) =>
+          b.scores.explanatoryPower - a.scores.explanatoryPower || byUpdated(a, b),
+      );
+    case "evidence":
+      return copy.sort(
+        (a, b) =>
+          b.scores.evidenceStrength - a.scores.evidenceStrength || byUpdated(a, b),
+      );
+    case "patterns":
+      return copy.sort(
+        (a, b) => b.patternIds.length - a.patternIds.length || byUpdated(a, b),
+      );
+  }
+}
+
+export type DriverStatusFilter = "all" | "validated" | "hypothesis";
+
+export const DRIVER_STATUS_FILTER_OPTIONS: Array<{
+  value: DriverStatusFilter;
+  label: string;
+}> = [
+  { value: "all", label: "All drivers" },
+  { value: "validated", label: "Validated (computed)" },
+  { value: "hypothesis", label: "Hypotheses (computed)" },
+];

@@ -21,8 +21,11 @@ import {
 import { SectorTags } from "@/components/tags";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { EntityLink } from "@/components/EntityLink";
+import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { CheckboxList, Field, Select, TextArea } from "@/components/form";
+import { explainConfidenceGeneric, explainImplicationEvidence } from "@/lib/explain";
 import { nextId, useIntelligenceStore } from "@/lib/store";
+import { modeAtLeast } from "@/lib/viewMode";
 import { validateImplication } from "@/lib/validation";
 import type {
   ConfidenceLevel,
@@ -108,6 +111,8 @@ export function ImplicationCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const updateImplication = useIntelligenceStore((s) => s.updateImplication);
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
 
   const evidenceCount =
     imp.evidenceSignalIds.length + imp.evidenceDriverIds.length;
@@ -115,60 +120,118 @@ export function ImplicationCard({
   const unresolvedDrivers = imp.evidenceDriverIds.length - evidenceDrivers.length;
   const grounding = validateImplication(imp);
 
-  return (
-    <article className="card">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((e) => !e)}
-        className="block w-full px-4 pt-3 text-left"
-        title={expanded ? "Collapse details" : "Expand details"}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <span className="flex flex-wrap items-center gap-1.5">
+  const header = (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="flex flex-wrap items-center gap-1.5">
+          {analyst ? (
             <Pill tone="info">{IMPLICATION_TYPE_LABELS[imp.implicationType]}</Pill>
-            {imp.audiences.map((a) => (
-              <Pill key={a}>{IMPLICATION_AUDIENCE_LABELS[a]}</Pill>
-            ))}
-          </span>
-          <span className="flex shrink-0 flex-wrap items-center gap-1.5">
-            <ConfidenceBadge level={imp.confidence} />
-            <Pill title={TIME_HORIZON_LABELS[imp.timeHorizon]}>
-              {TIME_HORIZON_SHORT[imp.timeHorizon]}
-            </Pill>
-          </span>
-        </div>
+          ) : null}
+          {imp.audiences.map((a) => (
+            <Pill key={a}>{IMPLICATION_AUDIENCE_LABELS[a]}</Pill>
+          ))}
+        </span>
+        <span className="flex shrink-0 flex-wrap items-center gap-1.5">
+          {analyst ? (
+            <>
+              <ConfidenceBadge level={imp.confidence} />
+              <Pill title={TIME_HORIZON_LABELS[imp.timeHorizon]}>
+                {TIME_HORIZON_SHORT[imp.timeHorizon]}
+              </Pill>
+            </>
+          ) : (
+            <Pill>{TIME_HORIZON_LABELS[imp.timeHorizon]}</Pill>
+          )}
+        </span>
+      </div>
+      {analyst ? (
         <p className="mt-2">
           <IdChip id={imp.id} />
         </p>
-        <p className="mt-0.5 font-display text-[16px] leading-snug text-ink">
-          {imp.implication.trim() ? (
-            imp.implication
-          ) : (
-            <span className="text-[12.5px] text-ink-faint">
-              No implication statement recorded — state what should be done
-              differently now.
-            </span>
-          )}
+      ) : null}
+      <p
+        className={`${analyst ? "mt-0.5" : "mt-2"} font-display text-[16px] leading-snug text-ink`}
+      >
+        {imp.implication.trim() ? (
+          imp.implication
+        ) : (
+          <span className="text-[12.5px] text-ink-faint">
+            No implication statement recorded — state what should be done
+            differently now.
+          </span>
+        )}
+      </p>
+    </>
+  );
+
+  return (
+    <article className="card">
+      {analyst ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((e) => !e)}
+          className="block w-full px-4 pt-3 text-left"
+          title={expanded ? "Collapse details" : "Expand details"}
+        >
+          {header}
+        </button>
+      ) : (
+        <div className="px-4 pt-3">{header}</div>
+      )}
+
+      <div className="space-y-3 px-4 pt-3">
+        <div>
+          <p className="overline-label mb-1">Why it matters</p>
+          <p className="text-[13px] leading-relaxed text-ink-soft">
+            {imp.whyItMatters.trim() ? (
+              imp.whyItMatters
+            ) : (
+              <span className="text-[12px] text-ink-faint">
+                Not recorded — an implication without a stated stake cannot
+                be weighed against others.
+              </span>
+            )}
+          </p>
+        </div>
+
+        <div className="border border-line-strong border-l-2 border-l-accent bg-surface-muted px-3.5 py-3 rounded-[2px]">
+          <p className="overline-label mb-1">Recommended action</p>
+          <p className="text-[13.5px] font-medium leading-relaxed text-ink">
+            {imp.recommendedAction.trim() ? (
+              imp.recommendedAction
+            ) : (
+              <span className="text-[12px] font-normal text-ink-faint">
+                No action recorded yet — the implication is not usable until
+                it names a concrete present-day step.
+              </span>
+            )}
+          </p>
+        </div>
+
+        <p className="text-[12px] leading-relaxed text-ink-soft">
+          {explainConfidenceGeneric(imp.confidence, explainImplicationEvidence(imp))}
         </p>
-      </button>
+      </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-3 pt-2">
         {imp.sectors.length > 0 ? (
           <SectorTags sectors={imp.sectors} linked={false} />
         ) : null}
-        {evidenceCount > 0 ? (
-          <span className="font-mono text-[11px] text-ink-soft">
-            {evidenceCount} evidence link{evidenceCount === 1 ? "" : "s"}
-          </span>
-        ) : (
-          <Pill
-            tone="caution"
-            title="Recommendations must connect back to signals or drivers."
-          >
-            <span className="font-mono">no evidence links</span>
-          </Pill>
-        )}
+        {analyst ? (
+          evidenceCount > 0 ? (
+            <span className="font-mono text-[11px] text-ink-soft">
+              {evidenceCount} evidence link{evidenceCount === 1 ? "" : "s"}
+            </span>
+          ) : (
+            <Pill
+              tone="caution"
+              title="Recommendations must connect back to signals or drivers."
+            >
+              <span className="font-mono">no evidence links</span>
+            </Pill>
+          )
+        ) : null}
         {territory ? (
           <CompactLink
             href={`/territories/${territory.id}`}
@@ -185,32 +248,20 @@ export function ImplicationCard({
             title={scenario.title}
           />
         ) : null}
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((e) => !e)}
-          className="ml-auto text-[11.5px] text-ink-faint hover:text-accent-ink"
-        >
-          {expanded ? "▾ Hide details" : "▸ Details"}
-        </button>
+        {analyst ? (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((e) => !e)}
+            className="ml-auto text-[11.5px] text-ink-faint hover:text-accent-ink"
+          >
+            {expanded ? "▾ Hide details" : "▸ Details"}
+          </button>
+        ) : null}
       </div>
 
-      {expanded ? (
+      {analyst && expanded ? (
         <div className="space-y-4 border-t border-line px-4 py-4">
-          <div>
-            <p className="overline-label mb-1">Why it matters</p>
-            <p className="text-[13px] leading-relaxed text-ink-soft">
-              {imp.whyItMatters.trim() ? (
-                imp.whyItMatters
-              ) : (
-                <span className="text-[12px] text-ink-faint">
-                  Not recorded — an implication without a stated stake cannot
-                  be weighed against others.
-                </span>
-              )}
-            </p>
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="border border-line bg-surface px-3 py-2.5 rounded-[2px]">
               <p className="overline-label mb-1 text-accent-ink">Opportunity</p>
@@ -232,20 +283,6 @@ export function ImplicationCard({
                 )}
               </p>
             </div>
-          </div>
-
-          <div className="border border-line-strong border-l-2 border-l-accent bg-surface-muted px-3.5 py-3 rounded-[2px]">
-            <p className="overline-label mb-1">Recommended action</p>
-            <p className="text-[13.5px] font-medium leading-relaxed text-ink">
-              {imp.recommendedAction.trim() ? (
-                imp.recommendedAction
-              ) : (
-                <span className="text-[12px] font-normal text-ink-faint">
-                  No action recorded yet — the implication is not usable until
-                  it names a concrete present-day step.
-                </span>
-              )}
-            </p>
           </div>
 
           <ValidationChecklist

@@ -733,49 +733,51 @@ function SignalsContent() {
         ) : null}
       </section>
 
-      {/* Toolbar: count, sort, view */}
+      {/* Toolbar: count, plus sort and view controls in Analyst view */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11.5px] text-ink-faint">
           <span className="font-mono">{sorted.length}</span> of{" "}
           <span className="font-mono">{signals.length}</span> signals match
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
-            Sort
-            <Select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="w-auto"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <div className="flex overflow-hidden rounded-[2px] border border-line">
-            {(
-              [
-                { key: "cards", label: "Cards" },
-                { key: "table", label: "Table" },
-              ] as const
-            ).map((v) => (
-              <button
-                key={v.key}
-                type="button"
-                onClick={() => setView(v.key)}
-                className={`px-2.5 py-1 text-[11.5px] ${
-                  view === v.key
-                    ? "bg-accent-soft font-medium text-accent-ink"
-                    : "bg-surface text-ink-soft hover:text-ink"
-                }`}
+        {!simple ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+              Sort
+              <Select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="w-auto"
               >
-                {v.label}
-              </button>
-            ))}
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <div className="flex overflow-hidden rounded-[2px] border border-line">
+              {(
+                [
+                  { key: "cards", label: "Cards" },
+                  { key: "table", label: "Table" },
+                ] as const
+              ).map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => setView(v.key)}
+                  className={`px-2.5 py-1 text-[11.5px] ${
+                    view === v.key
+                      ? "bg-accent-soft font-medium text-accent-ink"
+                      : "bg-surface text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {signals.length === 0 ? (
@@ -797,10 +799,10 @@ function SignalsContent() {
             </button>
           </div>
         </>
-      ) : view === "cards" ? (
+      ) : simple || view === "cards" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {sorted.map((s) => (
-            <SignalCard key={s.id} signal={s} />
+            <SignalCard key={s.id} signal={s} simple={simple} />
           ))}
         </div>
       ) : (

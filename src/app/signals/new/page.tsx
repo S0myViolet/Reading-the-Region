@@ -7,6 +7,11 @@
  * to future), declare contradictions and assumptions, connect relationships,
  * then review and save. Low-confidence high-novelty signals and sensitive
  * tags are routed to human review automatically.
+ *
+ * The wizard is analyst work, so it only renders in Analyst or Methodology
+ * view. Simple view shows a calm explainer that routes capture through the
+ * Scan Inbox — or switches into Analyst view on demand, keeping any
+ * ?fromObservation= promotion context intact.
  */
 
 import Link from "next/link";
@@ -28,7 +33,9 @@ import {
   TextArea,
   TextInput,
 } from "@/components/form";
+import { useViewMode } from "@/components/ViewMode";
 import { nextId, useHydrated, useIntelligenceStore } from "@/lib/store";
+import { useViewModeStore } from "@/lib/viewMode";
 import {
   canPromoteObservation,
   promotionCriteriaMet,
@@ -184,13 +191,54 @@ const CONFIDENCE_ORDER: ConfidenceLevel[] = ["low", "medium", "high"];
 // Small presentation helpers
 // ---------------------------------------------------------------------------
 
-function NewSignalHeader() {
+function NewSignalHeader({ simple = false }: { simple?: boolean }) {
   return (
     <PageHeader
       overline="Scan & Classify"
       title="Add signal"
-      description="An eight-step guided capture: source the event, classify it, state why it matters, score it against the rubrics, climb the mandatory zooming ladder, declare contradictions and assumptions, connect relationships, then review and save."
+      description={
+        simple
+          ? "Signals enter the library either by promoting observations from the Scan Inbox or through the analyst capture wizard."
+          : "An eight-step guided capture: source the event, classify it, state why it matters, score it against the rubrics, climb the mandatory zooming ladder, declare contradictions and assumptions, connect relationships, then review and save."
+      }
     />
+  );
+}
+
+/**
+ * Simple-view landing: signal creation is analyst work, so the wizard stays
+ * closed and the primary path routes capture through the Scan Inbox. The
+ * mode switch is client state only, so any ?fromObservation= parameter (and
+ * the prefilled promotion form behind it) survives the change untouched.
+ */
+function SimpleCaptureExplainer({ fromObservation }: { fromObservation: string | null }) {
+  const setMode = useViewModeStore((s) => s.setMode);
+  return (
+    <section className="card max-w-2xl px-5 py-4">
+      <p className="overline-label mb-1.5">Before you add a signal</p>
+      <p className="text-[13px] leading-relaxed text-ink-soft">
+        Creating a signal is analyst work: each one is scored against the nine rubric
+        dimensions and read through the mandatory four-level zooming method before it can
+        carry weight in the evidence base. The usual starting point is simpler — capture what
+        you noticed as an observation in the Scan Inbox, and promote it to a signal once it
+        earns its place.
+      </p>
+      {fromObservation ? (
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
+          You arrived here promoting observation <IdChip id={fromObservation} />. Continuing
+          in Analyst view resumes that promotion with the observation&apos;s details
+          prefilled.
+        </p>
+      ) : null}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Link href="/inbox/new" className={btnPrimary}>
+          Capture an observation instead
+        </Link>
+        <button type="button" onClick={() => setMode("analyst")} className={btnSecondary}>
+          Continue in Analyst view
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -213,6 +261,7 @@ function listOrDash(items: string[]): string {
 
 function NewSignalContent() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromObservation = searchParams.get("fromObservation");
@@ -267,6 +316,15 @@ function NewSignalContent() {
       <>
         <NewSignalHeader />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
+      </>
+    );
+  }
+
+  if (mode === "simple") {
+    return (
+      <>
+        <NewSignalHeader simple />
+        <SimpleCaptureExplainer fromObservation={fromObservation} />
       </>
     );
   }

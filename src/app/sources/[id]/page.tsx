@@ -14,10 +14,20 @@ import { EmptyState } from "@/components/EmptyState";
 import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
 import { SourceBiasTags } from "@/components/tags";
 import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import type { Source } from "@/lib/types";
-import { SOURCE_ROLE_LABELS, SOURCE_TYPE_LABELS } from "@/lib/types";
-import { ROLE_WEIGHT_NOTES, fmtDate, weighingGuidance } from "../source-ui";
+import {
+  CREDIBILITY_LABELS,
+  SOURCE_ROLE_LABELS,
+  SOURCE_TYPE_LABELS,
+} from "@/lib/types";
+import {
+  ROLE_WEIGHT_NOTES,
+  credibilityLine,
+  fmtDate,
+  weighingGuidance,
+} from "../source-ui";
 
 // ---------------------------------------------------------------------------
 // Facts card
@@ -64,16 +74,25 @@ function FactsCard({
         <div>
           <dt className="overline-label">Credibility</dt>
           <dd className="mt-1">
-            <SourceCredibilityBadge score={src.credibility} />
-            <p className="mt-1 text-[11.5px] text-ink-faint">
-              Credibility scores trust in the source&apos;s claims on their own. It is
-              assessed separately from role — a credible source can still be the wrong
-              tool for a given job.
+            <ViewGate min="analyst">
+              <div className="mb-1">
+                <SourceCredibilityBadge score={src.credibility} />
+              </div>
+            </ViewGate>
+            <p className="text-[13px] leading-relaxed text-ink-soft">
+              {credibilityLine(src)}
             </p>
+            <ViewGate min="analyst">
+              <p className="mt-1 text-[11.5px] text-ink-faint">
+                Credibility scores trust in the source&apos;s claims on their own. It is
+                assessed separately from role — a credible source can still be the wrong
+                tool for a given job.
+              </p>
+            </ViewGate>
           </dd>
         </div>
         <div>
-          <dt className="overline-label">Roles</dt>
+          <dt className="overline-label">What this source is good for</dt>
           <dd className="mt-1">
             {src.roles.length > 0 ? (
               <ul className="space-y-2">
@@ -96,36 +115,30 @@ function FactsCard({
             )}
           </dd>
         </div>
-        <div>
-          <dt className="overline-label">Bias tags</dt>
-          <dd className="mt-1">
-            <SourceBiasTags tags={src.biasTags} />
-          </dd>
-        </div>
-        <div>
-          <dt className="overline-label">Notes</dt>
-          <dd className="mt-0.5 text-[13px] leading-relaxed text-ink-soft">
-            {src.notes.trim() ? (
-              src.notes
-            ) : (
-              <span className="text-ink-faint">No notes recorded.</span>
-            )}
-          </dd>
-        </div>
-        <div className="grid gap-3 border-t border-line pt-3 sm:grid-cols-2">
+        <ViewGate min="analyst">
           <div>
-            <dt className="overline-label">Date added</dt>
-            <dd className="mt-0.5 text-[12.5px] text-ink-soft">
-              {fmtDate(src.dateAdded)}
+            <dt className="overline-label">Bias tags</dt>
+            <dd className="mt-1">
+              <SourceBiasTags tags={src.biasTags} />
             </dd>
           </div>
           <div>
-            <dt className="overline-label">Linked evidence</dt>
-            <dd className="mt-0.5 font-mono text-[12px] text-ink-soft">
-              {observationCount} observation{observationCount === 1 ? "" : "s"} ·{" "}
-              {signalCount} signal{signalCount === 1 ? "" : "s"}
+            <dt className="overline-label">Notes</dt>
+            <dd className="mt-0.5 text-[13px] leading-relaxed text-ink-soft">
+              {src.notes.trim() ? (
+                src.notes
+              ) : (
+                <span className="text-ink-faint">No notes recorded.</span>
+              )}
             </dd>
           </div>
+        </ViewGate>
+        <div className="border-t border-line pt-3">
+          <dt className="overline-label">Linked evidence</dt>
+          <dd className="mt-0.5 text-[12.5px] text-ink-soft">
+            {observationCount} observation{observationCount === 1 ? "" : "s"} ·{" "}
+            {signalCount} signal{signalCount === 1 ? "" : "s"}
+          </dd>
         </div>
       </dl>
     </section>
@@ -136,8 +149,17 @@ function FactsCard({
 // Weighting guidance card
 // ---------------------------------------------------------------------------
 
-function GuidanceCard({ src }: { src: Source }) {
+function GuidanceCard({
+  src,
+  observationCount,
+  signalCount,
+}: {
+  src: Source;
+  observationCount: number;
+  signalCount: number;
+}) {
   const lines = weighingGuidance(src);
+  const linkedCount = observationCount + signalCount;
   return (
     <section className="card">
       <header className="border-b border-line px-4 py-2.5">
@@ -153,10 +175,72 @@ function GuidanceCard({ src }: { src: Source }) {
           </li>
         ))}
       </ul>
+      {linkedCount > 0 ? (
+        <p className="border-t border-line px-4 py-2 text-[11.5px] text-ink-soft">
+          Every citation inherits this weighting: the {observationCount} observation
+          {observationCount === 1 ? "" : "s"} and {signalCount} signal
+          {signalCount === 1 ? "" : "s"} linked below carry evidence at{" "}
+          {CREDIBILITY_LABELS[src.credibility].toLowerCase()}.
+        </p>
+      ) : null}
       <p className="border-t border-line px-4 py-2 text-[11px] text-ink-faint">
         Generated from the recorded credibility and roles — update the source record
         if either judgement has changed.
       </p>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Methodology card — credibility scale, credibility-vs-role rule, audit fields
+// ---------------------------------------------------------------------------
+
+function MethodologyCard({ src }: { src: Source }) {
+  return (
+    <section className="card">
+      <header className="border-b border-line px-4 py-2.5">
+        <h3 className="overline-label">Assessment methodology</h3>
+      </header>
+      <div className="space-y-3 px-4 py-3">
+        <div>
+          <p className="overline-label mb-1">Credibility scale</p>
+          <ul className="space-y-0.5">
+            {([5, 4, 3, 2, 1] as const).map((n) => (
+              <li key={n} className="text-[12px] text-ink-soft">
+                <span className="font-mono text-[11px] text-ink-faint">{n}</span>{" "}
+                — {CREDIBILITY_LABELS[n]}
+                {src.credibility === n ? (
+                  <span className="text-ink-faint"> (this source)</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="overline-label mb-1">Credibility is not role</p>
+          <p className="text-[12px] leading-relaxed text-ink-soft">
+            Credibility says how far the source&apos;s claims can be trusted on their
+            own; role says what job it performs in the workflow. The two are recorded
+            independently, because a source can be excellent at one job and unsafe
+            for another — a social platform is often strong discovery but weak
+            validation, while a government report is strong validation but slow
+            discovery. Sources scoring 2 or below are safe for discovery, unsafe for
+            validation.
+          </p>
+        </div>
+        <div className="grid gap-3 border-t border-line pt-3 sm:grid-cols-2">
+          <div>
+            <p className="overline-label">Record id</p>
+            <p className="mt-0.5 font-mono text-[12px] text-ink-soft">{src.id}</p>
+          </div>
+          <div>
+            <p className="overline-label">Date added</p>
+            <p className="mt-0.5 text-[12.5px] text-ink-soft">
+              {fmtDate(src.dateAdded)}
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -269,10 +353,12 @@ export default function SourceDetailPage() {
       <PageHeader
         overline="Scan & Classify"
         title={src.name}
-        description={`${SOURCE_TYPE_LABELS[src.sourceType]} · added ${fmtDate(src.dateAdded)}`}
+        description={SOURCE_TYPE_LABELS[src.sourceType]}
         actions={
           <div className="flex flex-col items-end gap-1">
-            <SourceCredibilityBadge score={src.credibility} />
+            <ViewGate min="analyst">
+              <SourceCredibilityBadge score={src.credibility} />
+            </ViewGate>
             {src.isDemo ? (
               <span className="flex items-center gap-1.5">
                 <DemoTag />
@@ -284,8 +370,11 @@ export default function SourceDetailPage() {
           </div>
         }
       />
-      <div className="mb-4">
-        <IdChip id={src.id} />
+      <div className="mb-4 space-y-2">
+        <ViewGate min="analyst">
+          <IdChip id={src.id} />
+        </ViewGate>
+        <DepthHint>Bias tags, weighting guidance and the credibility scale</DepthHint>
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
@@ -295,7 +384,16 @@ export default function SourceDetailPage() {
             observationCount={linkedObservations.length}
             signalCount={linkedSignals.length}
           />
-          <GuidanceCard src={src} />
+          <ViewGate min="analyst">
+            <GuidanceCard
+              src={src}
+              observationCount={linkedObservations.length}
+              signalCount={linkedSignals.length}
+            />
+          </ViewGate>
+          <ViewGate min="methodology">
+            <MethodologyCard src={src} />
+          </ViewGate>
         </div>
         <div className="mt-5 lg:mt-0">
           <RelatedObjectsPanel groups={groups} />
