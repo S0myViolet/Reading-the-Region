@@ -1030,15 +1030,17 @@ export default function MethodologyPage() {
         </Section>
 
         {/* Workflow -------------------------------------------------------- */}
-        <section id="workflow" className="scroll-mt-20 border-t border-line pt-6">
+        <section id="workflow" className="scroll-mt-20">
           <h2 className="font-display text-[19px] leading-snug text-ink">
             The recommended workflow
           </h2>
-          <P>
-            The full journey through the system, from raw scanning to living monitoring. It is a
-            loop, not a line — step 15 returns the analyst to step 1.
-          </P>
-          <ol className="mt-3 max-w-3xl">
+          <div className="mt-4">
+            <P>
+              The full journey through the system, from raw scanning to living monitoring. It is a
+              loop, not a line — step 15 returns the analyst to step 1.
+            </P>
+          </div>
+          <ol className="mt-4 max-w-2xl">
             {RECOMMENDED_WORKFLOW.map((step) => (
               <li key={step.step} className="flex gap-3 border-b border-line py-2 last:border-b-0">
                 <span className="w-6 shrink-0 pt-px font-mono text-[11.5px] text-ink-faint">
