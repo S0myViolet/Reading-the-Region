@@ -4,9 +4,9 @@
  * Monitoring — the layer that prevents foresight from becoming static.
  *
  * Every future territory and driver is watched through leading indicators
- * checked on a declared cadence. The page shows the trend distribution,
- * which checks are overdue, and lets analysts record checks — the living
- * part of the system.
+ * checked on a declared cadence. Calm layout: header, plain trend figures
+ * (which double as filters), one control bar, and the indicator list grouped
+ * by territory. Analyst machinery sits behind row disclosure.
  */
 
 import { Suspense, useState } from "react";
@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
-import { Field, Select } from "@/components/form";
+import { ControlBar, ControlSelect } from "@/components/ControlBar";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { indicatorOverdue } from "@/lib/derived";
 import { modeAtLeast } from "@/lib/viewMode";
@@ -34,9 +34,9 @@ import {
 } from "@/lib/types";
 import {
   AddIndicatorForm,
-  CadenceStrip,
-  MonitoringIndicatorCard,
-  MonitoringQuestionsCard,
+  CadenceRhythm,
+  MonitoringIndicatorRow,
+  MonitoringQuestions,
   type LinkedRef,
 } from "./monitoring-ui";
 
@@ -52,7 +52,6 @@ const TREND_ORDER: IndicatorTrend[] = [
 function MonitoringHeader({ actions }: { actions?: React.ReactNode }) {
   return (
     <PageHeader
-      overline="Apply & Monitor"
       title="Monitoring"
       description={DEFINITIONS.indicator}
       actions={actions}
@@ -69,8 +68,8 @@ function LoadingState() {
   );
 }
 
-/** One summary tile: count of indicators in a trend (or overdue), click to filter. */
-function StatusTile({
+/** One plain figure: count of indicators in a trend (or overdue), click to filter. */
+function StatusFigure({
   label,
   count,
   active,
@@ -84,24 +83,27 @@ function StatusTile({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-[3px] border px-3 py-2.5 text-left ${
-        active
-          ? "border-accent bg-accent-soft"
-          : "border-line bg-surface hover:border-line-strong"
-      }`}
-    >
+    <button type="button" onClick={onClick} aria-pressed={active} className="text-left">
       <span
-        className={`block font-mono text-[22px] leading-none ${
-          cautionary && count > 0 ? "text-caution" : "text-ink"
+        className={`block font-mono text-[20px] leading-none ${
+          cautionary && count > 0
+            ? "text-caution"
+            : active
+              ? "text-accent-ink"
+              : "text-ink"
         }`}
       >
         {count}
       </span>
-      <span className="overline-label mt-1.5 block">{label}</span>
+      <span
+        className={`mt-1.5 block text-[11px] ${
+          active
+            ? "text-ink underline decoration-line-strong underline-offset-4"
+            : "text-ink-faint"
+        }`}
+      >
+        {label}
+      </span>
     </button>
   );
 }
@@ -160,21 +162,11 @@ function MonitoringContent() {
       (cadenceFilter === "" || i.cadence === cadenceFilter),
   );
 
-  const activeFilterLabels: string[] = [];
-  if (filter !== null)
-    activeFilterLabels.push(
-      filter === "overdue" ? "Overdue" : INDICATOR_TREND_LABELS[filter],
-    );
-  if (territoryFilter !== "")
-    activeFilterLabels.push(
-      territoryFilter === "unattached"
-        ? "No territory linkage"
-        : (territories.find((t) => t.id === territoryFilter)?.name ??
-            territoryFilter),
-    );
-  if (typeFilter !== "") activeFilterLabels.push(INDICATOR_TYPE_LABELS[typeFilter]);
-  if (cadenceFilter !== "") activeFilterLabels.push(CADENCE_LABELS[cadenceFilter]);
-  const anyFilterActive = activeFilterLabels.length > 0;
+  const anyFilterActive =
+    filter !== null ||
+    territoryFilter !== "" ||
+    typeFilter !== "" ||
+    cadenceFilter !== "";
 
   const clearFilters = () => {
     setFilter(null);
@@ -204,7 +196,7 @@ function MonitoringContent() {
       items: unattached,
     });
 
-  // --- link resolution for the cards ---------------------------------------
+  // --- link resolution for the rows ----------------------------------------
   const territoryRef = (id: string | null): LinkedRef | null =>
     id === null
       ? null
@@ -224,8 +216,8 @@ function MonitoringContent() {
               onClick={() => setAdding((a) => !a)}
               className={
                 adding
-                  ? "rounded-[2px] border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft hover:border-line-strong"
-                  : "rounded-[2px] border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink"
+                  ? "rounded-[4px] bg-surface-muted px-3.5 py-1.5 text-[12.5px] text-ink-soft hover:text-ink"
+                  : "rounded-[4px] bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-accent-ink"
               }
             >
               {adding ? "Close form" : "Add indicator"}
@@ -234,19 +226,14 @@ function MonitoringContent() {
         }
       />
       <WalkthroughPanel pageId="monitoring" />
-      <div className="mb-4">
-        <DepthHint>
-          Indicator classification, evidence detail and check recording
-        </DepthHint>
-      </div>
 
       {analyst && adding ? (
         <AddIndicatorForm onClose={() => setAdding(false)} />
       ) : null}
 
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="mb-8 flex flex-wrap items-start gap-x-10 gap-y-4">
         {TREND_ORDER.map((t) => (
-          <StatusTile
+          <StatusFigure
             key={t}
             label={INDICATOR_TREND_LABELS[t]}
             count={trendCounts[t]}
@@ -254,7 +241,7 @@ function MonitoringContent() {
             onClick={() => setFilter((f) => (f === t ? null : t))}
           />
         ))}
-        <StatusTile
+        <StatusFigure
           label="Overdue"
           count={overdueCount}
           active={filter === "overdue"}
@@ -263,100 +250,74 @@ function MonitoringContent() {
         />
       </div>
 
-      <section className="card mb-5">
-        <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-          <h2 className="overline-label">Filters</h2>
-          {anyFilterActive ? (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-            >
-              Reset filters
-            </button>
-          ) : null}
-        </header>
-        <div
-          className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
-            analyst ? "lg:grid-cols-3" : ""
-          }`}
-        >
-          <Field label="Territory">
-            <Select
-              value={territoryFilter}
-              onChange={(e) => setTerritoryFilter(e.target.value)}
-            >
-              <option value="">All territories</option>
-              {territories.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-              <option value="unattached">No territory linkage</option>
-            </Select>
-          </Field>
-          {analyst ? (
+      <ControlBar
+        right={
+          anyFilterActive ? (
             <>
-              <Field label="Indicator type">
-                <Select
-                  value={typeFilter}
-                  onChange={(e) =>
-                    setTypeFilter(e.target.value as IndicatorType | "")
-                  }
-                >
-                  <option value="">All types</option>
-                  {(Object.keys(INDICATOR_TYPE_LABELS) as IndicatorType[]).map(
-                    (t) => (
-                      <option key={t} value={t}>
-                        {INDICATOR_TYPE_LABELS[t]}
-                      </option>
-                    ),
-                  )}
-                </Select>
-              </Field>
-              <Field label="Cadence">
-                <Select
-                  value={cadenceFilter}
-                  onChange={(e) =>
-                    setCadenceFilter(e.target.value as MonitoringCadence | "")
-                  }
-                >
-                  <option value="">All cadences</option>
-                  {(Object.keys(CADENCE_LABELS) as MonitoringCadence[]).map(
-                    (c) => (
-                      <option key={c} value={c}>
-                        {CADENCE_LABELS[c]}
-                      </option>
-                    ),
-                  )}
-                </Select>
-              </Field>
+              <span className="text-[12px] text-ink-faint">
+                {visible.length} of {indicators.length}
+              </span>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+              >
+                Clear
+              </button>
             </>
-          ) : null}
-        </div>
-      </section>
-
-      <ViewGate min="analyst">
-        <MonitoringQuestionsCard />
-      </ViewGate>
-      <ViewGate min="methodology">
-        <CadenceStrip />
-      </ViewGate>
-
-      {anyFilterActive ? (
-        <p className="mb-4 flex flex-wrap items-center gap-2 text-[11.5px] text-ink-faint">
-          Showing {visible.length} of {indicators.length} indicator
-          {indicators.length === 1 ? "" : "s"} — filter:{" "}
-          {activeFilterLabels.join(" · ")}.
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
-          >
-            Clear filters
-          </button>
-        </p>
-      ) : null}
+          ) : null
+        }
+        more={
+          <>
+            <ControlSelect
+              label="Type"
+              value={typeFilter}
+              onChange={(v) => setTypeFilter(v as IndicatorType | "")}
+              options={[
+                { value: "", label: "All types" },
+                ...(Object.keys(INDICATOR_TYPE_LABELS) as IndicatorType[]).map(
+                  (t) => ({ value: t, label: INDICATOR_TYPE_LABELS[t] }),
+                ),
+              ]}
+            />
+            <ControlSelect
+              label="Cadence"
+              value={cadenceFilter}
+              onChange={(v) => setCadenceFilter(v as MonitoringCadence | "")}
+              options={[
+                { value: "", label: "All cadences" },
+                ...(Object.keys(CADENCE_LABELS) as MonitoringCadence[]).map(
+                  (c) => ({ value: c, label: CADENCE_LABELS[c] }),
+                ),
+              ]}
+            />
+          </>
+        }
+      >
+        <ControlSelect
+          label="Trend"
+          value={filter ?? "all"}
+          onChange={(v) => setFilter(v === "all" ? null : (v as FilterKey))}
+          options={[
+            { value: "all", label: "All trends" },
+            ...TREND_ORDER.map((t) => ({
+              value: t,
+              label: INDICATOR_TREND_LABELS[t],
+            })),
+            { value: "overdue", label: "Overdue" },
+          ]}
+        />
+        <ControlSelect
+          label="Territory"
+          value={territoryFilter}
+          onChange={setTerritoryFilter}
+          options={[
+            { value: "", label: "All territories" },
+            ...territories.map((t) => ({ value: t.id, label: t.name })),
+            { value: "unattached", label: "No territory linkage" },
+          ]}
+        />
+      </ControlBar>
 
       {indicators.length === 0 ? (
         <EmptyState
@@ -365,61 +326,41 @@ function MonitoringContent() {
           actionHref="/territories"
         />
       ) : visible.length === 0 ? (
-        <div className="card px-5 py-6 text-center">
-          <p className="text-[12.5px] text-ink-soft">
-            No indicators match this filter.
+        <div className="px-6 py-16 text-center">
+          <p className="text-[13px] text-ink-soft">
+            No indicators match the current filters.
           </p>
           <button
             type="button"
             onClick={clearFilters}
-            className="mt-3 rounded-[2px] border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft hover:border-line-strong"
+            className="mt-4 text-[12.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:text-ink"
           >
             Clear filters
           </button>
         </div>
       ) : (
         groups.map((g) => (
-          <section key={g.key} className="mb-6">
-            <header className="mb-2 flex flex-wrap items-end justify-between gap-2 border-b border-line pb-1.5">
-              <div>
-                <p className="overline-label">
-                  {g.territoryId !== null ? (
-                    <>
-                      Future territory
-                      {analyst ? (
-                        <>
-                          {" "}
-                          ·{" "}
-                          <span className="font-mono normal-case">
-                            {g.territoryId}
-                          </span>
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    "No territory linkage"
-                  )}
-                </p>
-                <h2 className="font-display text-[17px] leading-snug text-ink">
-                  {g.territoryId !== null ? (
-                    <Link
-                      href={`/territories/${g.territoryId}`}
-                      className="hover:text-accent-ink hover:underline"
-                    >
-                      {g.heading}
-                    </Link>
-                  ) : (
-                    g.heading
-                  )}
-                </h2>
-              </div>
-              <span className="font-mono text-[11px] text-ink-faint">
+          <section key={g.key} className="mb-10" aria-label={g.heading}>
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="text-[13px] font-medium text-ink">
+                {g.territoryId !== null ? (
+                  <Link
+                    href={`/territories/${g.territoryId}`}
+                    className="hover:text-accent-ink"
+                  >
+                    {g.heading}
+                  </Link>
+                ) : (
+                  g.heading
+                )}
+              </h2>
+              <span className="text-[11.5px] text-ink-faint">
                 {g.items.length} indicator{g.items.length === 1 ? "" : "s"}
               </span>
-            </header>
-            <div className="space-y-3">
+            </div>
+            <div>
               {g.items.map((i) => (
-                <MonitoringIndicatorCard
+                <MonitoringIndicatorRow
                   key={i.id}
                   indicator={i}
                   territory={territoryRef(i.territoryId)}
@@ -431,6 +372,19 @@ function MonitoringContent() {
           </section>
         ))
       )}
+
+      <div className="mt-6">
+        <DepthHint>
+          Indicator classification, evidence detail and check recording
+        </DepthHint>
+      </div>
+
+      <ViewGate min="analyst">
+        <MonitoringQuestions />
+      </ViewGate>
+      <ViewGate min="methodology">
+        <CadenceRhythm />
+      </ViewGate>
     </>
   );
 }

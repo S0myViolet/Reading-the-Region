@@ -66,6 +66,7 @@ import {
   fmtDate,
   signalsOfDriver,
   statusDisagrees,
+  textLink,
 } from "../driver-ui";
 
 /** How many signal links show in the relationship trail before capping. */
@@ -539,7 +540,7 @@ function EvidenceTab({
               {driverSignals.length > EVIDENCE_SIGNAL_COLLAPSE ? (
                 <button
                   type="button"
-                  className="mt-3 text-[12px] text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+                  className={`mt-3 ${textLink}`}
                   onClick={() => setShowAllSignals((v) => !v)}
                 >
                   {collapsed
