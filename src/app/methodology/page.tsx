@@ -195,32 +195,32 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-20 border-t border-line pt-6">
+    <section id={id} className="scroll-mt-20">
       <h2 className="font-display text-[19px] leading-snug text-ink">
         <span className="mr-2.5 align-middle font-mono text-[12px] tracking-wide text-ink-faint">
           {String(num).padStart(2, "0")}
         </span>
         {title}
       </h2>
-      <div className="mt-3 space-y-3">{children}</div>
+      <div className="mt-4 space-y-4">{children}</div>
     </section>
   );
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="max-w-3xl text-[13px] leading-relaxed text-ink-soft">{children}</p>;
+  return <p className="max-w-2xl text-[14px] leading-relaxed text-ink-soft">{children}</p>;
 }
 
 function Definition({ text }: { text: string }) {
   return (
-    <p className="max-w-3xl border-l-2 border-accent pl-3 font-display text-[15px] leading-snug text-ink">
+    <p className="max-w-2xl border-l-2 border-accent pl-4 font-display text-[15.5px] leading-snug text-ink">
       “{text}”
     </p>
   );
 }
 
 function SubHeading({ children }: { children: React.ReactNode }) {
-  return <h3 className="overline-label pt-1">{children}</h3>;
+  return <h3 className="pt-2 text-[13px] font-medium text-ink">{children}</h3>;
 }
 
 function ThresholdTable({
@@ -257,9 +257,9 @@ function ThresholdTable({
 
 function TwoColumnList({ items }: { items: string[] }) {
   return (
-    <ul className="grid max-w-3xl gap-x-6 gap-y-1.5 sm:grid-cols-2">
+    <ul className="grid max-w-3xl gap-x-8 gap-y-1.5 sm:grid-cols-2">
       {items.map((item) => (
-        <li key={item} className="flex gap-2 text-[12.5px] text-ink-soft">
+        <li key={item} className="flex gap-2 text-[13px] text-ink-soft">
           <span aria-hidden className="text-ink-faint">
             —
           </span>
@@ -298,19 +298,18 @@ export default function MethodologyPage() {
   return (
     <div>
       <PageHeader
-        overline="System"
         title="Methodology"
         description="How Reading the Region turns scattered observation into defensible foresight."
       />
 
-      {/* Table of contents */}
-      <nav aria-label="Contents" className="card mb-8 px-4 py-3">
-        <p className="overline-label mb-2">Contents</p>
-        <ol className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Table of contents — a quiet list of text links */}
+      <nav aria-label="Contents" className="mb-12">
+        <p className="mb-3 text-[13px] font-medium text-ink">Contents</p>
+        <ol className="grid max-w-3xl gap-x-10 gap-y-1.5 sm:grid-cols-2">
           {SECTIONS.map((s, i) => (
             <li key={s.id}>
-              <a href={`#${s.id}`} className="flex gap-2 text-[12.5px] text-ink-soft hover:text-ink">
-                <span className="w-5 shrink-0 font-mono text-[11px] text-ink-faint">
+              <a href={`#${s.id}`} className="flex gap-2.5 text-[13px] text-ink-soft hover:text-ink">
+                <span className="w-5 shrink-0 pt-px font-mono text-[11px] text-ink-faint">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 {s.title}
@@ -318,8 +317,8 @@ export default function MethodologyPage() {
             </li>
           ))}
           <li>
-            <a href="#workflow" className="flex gap-2 text-[12.5px] text-ink-soft hover:text-ink">
-              <span aria-hidden className="w-5 shrink-0 font-mono text-[11px] text-ink-faint">
+            <a href="#workflow" className="flex gap-2.5 text-[13px] text-ink-soft hover:text-ink">
+              <span aria-hidden className="w-5 shrink-0 pt-px font-mono text-[11px] text-ink-faint">
                 →
               </span>
               The recommended workflow
@@ -328,7 +327,7 @@ export default function MethodologyPage() {
         </ol>
       </nav>
 
-      <div className="space-y-10">
+      <div className="space-y-12">
         {/* 1 ------------------------------------------------------------- */}
         <Section num={1} id="what-it-is" title="What Reading the Region is">
           <P>
@@ -521,13 +520,13 @@ export default function MethodologyPage() {
             judgement, but it is a judgement against shared language, so two reviewers disagreeing
             about a 3 versus a 4 are at least disagreeing about the same thing.
           </P>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-x-10 gap-y-8 md:grid-cols-2 xl:grid-cols-3">
             {SCORE_DIMENSIONS.map((dim) => (
-              <div key={dim} className="card overflow-hidden">
-                <p className="border-b border-line px-3 py-2 text-[12px] font-medium text-ink">
+              <div key={dim}>
+                <p className="text-[12.5px] font-medium text-ink">
                   {SCORE_DIMENSION_LABELS[dim]}
                 </p>
-                <table className="data-table">
+                <table className="data-table mt-1 [&_td:first-child]:pl-0">
                   <tbody>
                     {SCORE_STEPS.map((n) => (
                       <tr key={n}>
