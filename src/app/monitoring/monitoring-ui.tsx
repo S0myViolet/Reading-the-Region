@@ -51,6 +51,34 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Cadence lengths in days, mirroring the overdue rule in lib/derived.ts
+ * (route-local copy — the lib map is not exported).
+ */
+const NEXT_CHECK_DAYS: Record<MonitoringCadence, number> = {
+  weekly: 7,
+  monthly: 31,
+  quarterly: 92,
+  biannual: 183,
+  annual: 366,
+};
+
+/** "Next check due by …" in words, from the cadence and the last check date. */
+function nextCheckLine(i: MonitoringIndicator): string {
+  const due = new Date(
+    new Date(i.dateLastChecked).getTime() + NEXT_CHECK_DAYS[i.cadence] * 86_400_000,
+  );
+  const dueText = due.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const cadenceWord = CADENCE_LABELS[i.cadence].toLowerCase();
+  return indicatorOverdue(i)
+    ? `Check overdue — it was due by ${dueText}; this indicator is checked ${cadenceWord}.`
+    : `Next check due by ${dueText} — this indicator is checked ${cadenceWord}.`;
+}
+
 const TREND_OPTIONS = Object.entries(INDICATOR_TREND_LABELS) as Array<
   [IndicatorTrend, string]
 >;
@@ -243,6 +271,8 @@ export function MonitoringIndicatorCard({
   signal: LinkedRef | null;
 }) {
   const [checking, setChecking] = useState(false);
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
   const overdue = indicatorOverdue(indicator);
   const hasLinks = territory !== null || driver !== null || signal !== null;
 
@@ -251,55 +281,85 @@ export function MonitoringIndicatorCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 max-w-2xl">
           <p className="overline-label mb-0.5">
-            Monitoring indicator · <IdChip id={indicator.id} />
+            Monitoring indicator
+            {analyst ? (
+              <>
+                {" "}
+                · <IdChip id={indicator.id} />
+              </>
+            ) : null}
           </p>
           <h3 className="text-[14.5px] font-medium leading-snug text-ink">
             {indicator.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Pill>{INDICATOR_TYPE_LABELS[indicator.indicatorType]}</Pill>
+            {analyst ? (
+              <Pill>{INDICATOR_TYPE_LABELS[indicator.indicatorType]}</Pill>
+            ) : null}
             <TrendBadge trend={indicator.trend} />
+            {overdue ? (
+              <Pill
+                tone="caution"
+                title="Past its review cadence — check and update the status."
+              >
+                Overdue
+              </Pill>
+            ) : null}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setChecking((c) => !c)}
-          className={secondaryBtn + " shrink-0"}
-        >
-          {checking ? "Close check form" : "Record check"}
-        </button>
+        {analyst ? (
+          <button
+            type="button"
+            onClick={() => setChecking((c) => !c)}
+            className={secondaryBtn + " shrink-0"}
+          >
+            {checking ? "Close check form" : "Record check"}
+          </button>
+        ) : null}
       </div>
 
       <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
         {indicator.description}
       </p>
 
-      <dl className="mt-2.5 space-y-1.5">
-        <div>
-          <dt className="overline-label">Current status</dt>
-          <dd className="text-[12.5px] text-ink-soft">
-            {indicator.currentStatus.trim() ? (
-              indicator.currentStatus
-            ) : (
+      <div className="mt-2.5">
+        <p className="overline-label">Reading</p>
+        <p className="text-[12.5px] leading-relaxed text-ink-soft">
+          {indicator.currentStatus.trim() ? (
+            explainIndicator(indicator)
+          ) : (
+            <>
               <span className="text-ink-faint">
-                Not recorded yet — record a check to capture the current state.
-              </span>
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt className="overline-label">Evidence</dt>
-          <dd className="text-[12.5px] text-ink-soft">
-            {indicator.evidence.trim() ? (
-              indicator.evidence
-            ) : (
-              <span className="text-ink-faint">
-                No evidence recorded — a trend without evidence is an opinion.
-              </span>
-            )}
-          </dd>
-        </div>
-      </dl>
+                No status recorded yet — a check should capture what the
+                indicator shows.
+              </span>{" "}
+              {explainIndicator(indicator).trim()}
+            </>
+          )}
+        </p>
+        <p
+          className={`mt-1 text-[12px] ${overdue ? "text-caution" : "text-ink-faint"}`}
+        >
+          {nextCheckLine(indicator)}
+        </p>
+      </div>
+
+      <ViewGate min="analyst">
+        <dl className="mt-2.5 space-y-1.5">
+          <div>
+            <dt className="overline-label">Evidence</dt>
+            <dd className="text-[12.5px] text-ink-soft">
+              {indicator.evidence.trim() ? (
+                indicator.evidence
+              ) : (
+                <span className="text-ink-faint">
+                  No evidence recorded — a trend without evidence is an opinion.
+                </span>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </ViewGate>
 
       {hasLinks ? (
         <div className="mt-2.5 grid gap-1.5 sm:grid-cols-3">
@@ -315,32 +375,47 @@ export function MonitoringIndicatorCard({
         </div>
       ) : null}
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
-        <span className="text-[11.5px] text-ink-faint">
-          Last checked{" "}
-          <span className="font-mono text-ink-soft">
-            {formatDate(indicator.dateLastChecked)}
+      <ViewGate min="analyst">
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5">
+          <span className="text-[11.5px] text-ink-faint">
+            Last checked{" "}
+            <span className="font-mono text-ink-soft">
+              {formatDate(indicator.dateLastChecked)}
+            </span>
           </span>
-        </span>
-        <span className="text-[11.5px] text-ink-faint">
-          Cadence <span className="text-ink-soft">{CADENCE_LABELS[indicator.cadence]}</span>
-        </span>
-        {overdue ? (
-          <Pill tone="caution" title="Past its review cadence — check and update the status.">
-            Overdue
-          </Pill>
-        ) : null}
-        <ConfidenceBadge level={indicator.confidence} />
-      </div>
-
-      {indicator.notes.trim() ? (
-        <div className="mt-2">
-          <p className="overline-label">Notes</p>
-          <p className="text-[11.5px] leading-relaxed text-ink-faint">{indicator.notes}</p>
+          <span className="text-[11.5px] text-ink-faint">
+            Cadence{" "}
+            <span className="text-ink-soft">{CADENCE_LABELS[indicator.cadence]}</span>
+          </span>
+          <ConfidenceBadge level={indicator.confidence} />
         </div>
-      ) : null}
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+          {explainConfidenceGeneric(
+            indicator.confidence,
+            indicator.evidence.trim()
+              ? "based on the evidence recorded at the last check."
+              : "no evidence recorded yet — record a check citing material before this trend carries weight.",
+          )}
+        </p>
 
-      {checking ? (
+        {indicator.notes.trim() ? (
+          <div className="mt-2">
+            <p className="overline-label">Notes</p>
+            <p className="text-[11.5px] leading-relaxed text-ink-faint">
+              {indicator.notes}
+            </p>
+          </div>
+        ) : null}
+      </ViewGate>
+
+      <ViewGate min="methodology">
+        <p className="mt-2 border-t border-line pt-2 text-[11px] text-ink-faint">
+          Created {formatDate(indicator.createdAt)} · Updated{" "}
+          {formatDate(indicator.updatedAt)}
+        </p>
+      </ViewGate>
+
+      {analyst && checking ? (
         <RecordCheckForm indicator={indicator} onDone={() => setChecking(false)} />
       ) : null}
     </article>

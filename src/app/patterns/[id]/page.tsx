@@ -6,8 +6,17 @@
  * optional stronger threshold, evidence links, contradictions, and review
  * controls. Validation status is always computed from the evidence; the
  * stored validationStatus is never presented on its own.
+ *
+ * Visibility layers: the simple view reads as prose — statement, validation
+ * status in plain language (which tests passed or failed), strategic
+ * meaning, what could contradict it, next step — with the relationship trail
+ * alongside. Analyst view opens the full tabs (four tests in detail, strong
+ * threshold, key-signal table, cluster statuses, review controls);
+ * Methodology view adds the threshold table, the persistence arithmetic and
+ * the audit trail.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -18,12 +27,14 @@ import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import {
   ConfidenceBadge,
   IdChip,
   Pill,
   ProvenanceBadge,
   ReviewStatusBadge,
+  SignalStrengthBadge,
 } from "@/components/badges";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
@@ -31,10 +42,18 @@ import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import {
   monthsBetween,
   patternStrongThreshold,
+  validateCluster,
   validatePattern,
   type ValidationResult,
 } from "@/lib/validation";
-import type { ConfidenceLevel, Pattern, ReviewStatus, Signal } from "@/lib/types";
+import { explainContradiction, explainPatternStatus } from "@/lib/explain";
+import type {
+  ConfidenceLevel,
+  Contradiction,
+  Pattern,
+  ReviewStatus,
+  Signal,
+} from "@/lib/types";
 import {
   ACTOR_TYPE_LABELS,
   CONFIDENCE_LABELS,
@@ -49,12 +68,118 @@ import {
   derivePatternFacts,
   findCheck,
   fmtDate,
+  nextStepForPattern,
   signalsOfPattern,
   statusDisagrees,
 } from "../pattern-ui";
 
+/** Cluster link plus its own live validity, for the Evidence tab. */
+interface LinkedClusterStatus {
+  id: string;
+  name: string;
+  valid: boolean;
+  passedCount: number;
+  totalCount: number;
+}
+
 // ---------------------------------------------------------------------------
-// Overview tab
+// Simple view — the pattern as readable prose, depth on demand
+// ---------------------------------------------------------------------------
+
+function SimpleView({
+  pattern,
+  result,
+  linkedContradictions,
+  recomputed,
+}: {
+  pattern: Pattern;
+  result: ValidationResult;
+  linkedContradictions: Contradiction[];
+  recomputed: boolean;
+}) {
+  return (
+    <div className="space-y-4">
+      <section className="card px-4 py-4">
+        <p className="overline-label mb-2">Pattern statement</p>
+        {pattern.patternStatement.trim() ? (
+          <blockquote className="border-l-2 border-l-accent pl-4 font-display text-[17px] italic leading-relaxed text-ink">
+            {pattern.patternStatement}
+          </blockquote>
+        ) : (
+          <p className="text-[12px] text-ink-faint">
+            No pattern statement recorded yet. A pattern must be explainable as
+            one clear movement in a single statement — without it, the coherence
+            test cannot pass.
+          </p>
+        )}
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1.5">Validation status</p>
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+          <PatternValidationPill result={result} />
+          {recomputed ? <RecomputedNote /> : null}
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {explainPatternStatus(pattern, result)}
+        </p>
+      </section>
+
+      <section className="card px-4 py-3">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <p className="overline-label">Strategic meaning</p>
+          <ProvenanceBadge label="human_interpretation" />
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {pattern.strategicMeaning.trim() ? (
+            pattern.strategicMeaning
+          ) : (
+            <span className="text-[12px] text-ink-faint">
+              No strategic meaning recorded yet. State what this movement means
+              for decisions — interpretation, clearly labelled as such.
+            </span>
+          )}
+        </p>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1.5">What could contradict this</p>
+        {linkedContradictions.length > 0 ? (
+          <ul className="space-y-2">
+            {linkedContradictions.map((c) => (
+              <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
+                {explainContradiction(c)}{" "}
+                <Link
+                  href={`/contradictions/${c.id}`}
+                  className="whitespace-nowrap text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
+                >
+                  View {c.id}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <NoContradictionNote />
+        )}
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Next step</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {nextStepForPattern(result)}
+        </p>
+      </section>
+
+      <DepthHint>
+        The four tests in detail, the strong-pattern threshold, key-signal and
+        cluster evidence, and review controls
+      </DepthHint>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Overview tab (analyst)
 // ---------------------------------------------------------------------------
 
 function OverviewTab({
@@ -173,7 +298,7 @@ function OverviewTab({
 }
 
 // ---------------------------------------------------------------------------
-// Validation tab
+// Validation tab (analyst)
 // ---------------------------------------------------------------------------
 
 function ValidationTab({
@@ -232,7 +357,7 @@ function ValidationTab({
 }
 
 // ---------------------------------------------------------------------------
-// Evidence tab
+// Evidence tab (analyst)
 // ---------------------------------------------------------------------------
 
 function EvidenceTab({
@@ -242,7 +367,7 @@ function EvidenceTab({
 }: {
   pattern: Pattern;
   patternSignals: Signal[];
-  patternClusters: Array<{ id: string; name: string }>;
+  patternClusters: LinkedClusterStatus[];
 }) {
   const minSources = PATTERN_THRESHOLDS.minIndependentSources;
   return (
@@ -270,10 +395,33 @@ function EvidenceTab({
           Key signals ({patternSignals.length})
         </p>
         {patternSignals.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {patternSignals.map((s) => (
-              <EntityLink key={s.id} kind="signal" id={s.id} title={s.title} />
-            ))}
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Signal</th>
+                  <th>Strength</th>
+                  <th>Confidence</th>
+                  <th>Country</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patternSignals.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <EntityLink kind="signal" id={s.id} title={s.title} />
+                    </td>
+                    <td>
+                      <SignalStrengthBadge strength={s.signalStrength} />
+                    </td>
+                    <td>
+                      <ConfidenceBadge level={s.confidence} />
+                    </td>
+                    <td className="text-[12px] text-ink-soft">{s.country}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="text-[11.5px] text-ink-faint">
@@ -290,7 +438,19 @@ function EvidenceTab({
         {patternClusters.length > 0 ? (
           <div className="grid gap-2 sm:grid-cols-2">
             {patternClusters.map((c) => (
-              <EntityLink key={c.id} kind="cluster" id={c.id} title={c.name} />
+              <div key={c.id}>
+                <EntityLink kind="cluster" id={c.id} title={c.name} />
+                <div className="mt-1 pl-0.5">
+                  <Pill
+                    tone={c.valid ? "accent" : "caution"}
+                    title={`${c.passedCount} of ${c.totalCount} cluster validation checks passed`}
+                  >
+                    {c.valid
+                      ? "Valid cluster"
+                      : `Candidate — ${c.passedCount}/${c.totalCount} checks`}
+                  </Pill>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -305,7 +465,128 @@ function EvidenceTab({
 }
 
 // ---------------------------------------------------------------------------
-// Review tab
+// Methodology tab — thresholds spelled out, persistence arithmetic, audit trail
+// ---------------------------------------------------------------------------
+
+function MethodologyTab({
+  pattern,
+  result,
+}: {
+  pattern: Pattern;
+  result: ValidationResult;
+}) {
+  const t = PATTERN_THRESHOLDS;
+  const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
+  const thresholdRows: Array<[string, string]> = [
+    ["Breadth test — minimum sectors", String(t.minSectors)],
+    ["Depth test — minimum independent sources", String(t.minIndependentSources)],
+    ["Persistence test — minimum months of evidence", String(t.minMonthsPersistence)],
+    ["Coherence test — one clear movement in a single statement", "qualitative"],
+    ["Strong pattern — minimum signals", String(t.strongMinSignals)],
+    ["Strong pattern — minimum sectors", String(t.strongMinSectors)],
+    ["Strong pattern — minimum geographies", String(t.strongMinGeographies)],
+    ["Strong pattern — minimum actor types", String(t.strongMinActorTypes)],
+  ];
+  return (
+    <div className="space-y-4">
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">Pattern validation thresholds</h3>
+        </header>
+        <div className="overflow-x-auto px-4 py-3">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              {thresholdRows.map(([label, value]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  <td className="font-mono text-[11.5px]">{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+            A pattern is validated only when breadth, depth, persistence and
+            coherence all pass. The strong-pattern rows are optional — they mark
+            extra weight, they do not gate validation. This pattern currently
+            passes {result.passedCount} of {result.totalCount} tests.
+          </p>
+        </div>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Persistence arithmetic</p>
+        <p className="text-[13px] text-ink">
+          First evidence {fmtDate(pattern.firstEvidenceDate)}{" "}
+          <span aria-hidden className="text-ink-faint">
+            →
+          </span>{" "}
+          latest evidence {fmtDate(pattern.latestEvidenceDate)}
+        </p>
+        <p className="mt-1 text-[11.5px] text-ink-faint">
+          Persistence is measured as calendar months between the first and
+          latest evidence dates: {months} month{months === 1 ? "" : "s"}{" "}
+          (minimum {t.minMonthsPersistence}). Extending the window requires new
+          evidence, not a new claim.
+        </p>
+      </section>
+
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">Audit trail</h3>
+        </header>
+        <dl className="space-y-2.5 px-4 py-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Record id</dt>
+            <dd>
+              <IdChip id={pattern.id} />
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Created</dt>
+            <dd className="text-[12.5px] text-ink">{fmtDate(pattern.createdAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Last updated</dt>
+            <dd className="text-[12.5px] text-ink">{fmtDate(pattern.updatedAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Review status</dt>
+            <dd>
+              <ReviewStatusBadge status={pattern.reviewStatus} />
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Stored validation status</dt>
+            <dd className="font-mono text-[11.5px] text-ink-soft">
+              {pattern.validationStatus}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Computed from evidence</dt>
+            <dd className="font-mono text-[11.5px] text-ink-soft">
+              {result.valid ? "validated" : "not validated"} · {result.passedCount}/
+              {result.totalCount} tests
+            </dd>
+          </div>
+        </dl>
+        <p className="border-t border-line px-4 py-2.5 text-[11.5px] text-ink-faint">
+          Review status is a human decision recorded in the Review tab. When the
+          stored validation status disagrees with the computed result, the
+          computed result wins and the disagreement is stated.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Review tab (analyst)
 // ---------------------------------------------------------------------------
 
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
@@ -442,8 +723,10 @@ function PersistenceGuidanceCard({
 export default function PatternDetailPage() {
   const params = useParams<{ id: string }>();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const patterns = useIntelligenceStore((s) => s.patterns);
   const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
   const clusters = useIntelligenceStore((s) => s.clusters);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
   const drivers = useIntelligenceStore((s) => s.drivers);
@@ -489,6 +772,18 @@ export default function PatternDetailPage() {
   );
   const persistenceFailed = !(findCheck(result, "Persistence test")?.passed ?? false);
   const recomputed = statusDisagrees(pattern, result);
+  const simple = mode === "simple";
+
+  const clusterStatuses: LinkedClusterStatus[] = linkedClusters.map((c) => {
+    const clusterResult = validateCluster(c, signals, sources);
+    return {
+      id: c.id,
+      name: c.name,
+      valid: clusterResult.valid,
+      passedCount: clusterResult.passedCount,
+      totalCount: clusterResult.totalCount,
+    };
+  });
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Patterns", href: "/patterns" },
@@ -530,6 +825,62 @@ export default function PatternDetailPage() {
     },
   ];
 
+  const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      content: <OverviewTab pattern={pattern} patternSignals={patternSignals} />,
+    },
+    {
+      id: "validation",
+      label: "Validation",
+      content: (
+        <ValidationTab
+          pattern={pattern}
+          result={result}
+          strongResult={strongResult}
+        />
+      ),
+    },
+    {
+      id: "evidence",
+      label: "Evidence",
+      content: (
+        <EvidenceTab
+          pattern={pattern}
+          patternSignals={patternSignals}
+          patternClusters={clusterStatuses}
+        />
+      ),
+    },
+    {
+      id: "contradictions",
+      label: `Contradictions (${linkedContradictions.length})`,
+      content:
+        linkedContradictions.length > 0 ? (
+          <div className="space-y-4">
+            {linkedContradictions.map((c) => (
+              <ContradictionPanel key={c.id} contradiction={c} />
+            ))}
+          </div>
+        ) : (
+          <NoContradictionNote />
+        ),
+    },
+    {
+      id: "review",
+      label: "Review",
+      content: <ReviewTab pattern={pattern} />,
+    },
+  ];
+  if (mode === "methodology") {
+    tabs.push({
+      id: "methodology",
+      label: "Methodology",
+      content: <MethodologyTab pattern={pattern} result={result} />,
+    });
+  }
+
   return (
     <>
       <Breadcrumbs items={crumbs} />
@@ -537,87 +888,50 @@ export default function PatternDetailPage() {
         overline={`Connect & Synthesize · ${pattern.id}`}
         title={pattern.name}
         actions={
-          <div className="flex flex-col items-end gap-1">
-            <PatternValidationPill result={result} />
-            {recomputed ? <RecomputedNote /> : null}
-            <span className="font-mono text-[11px] text-ink-faint">
-              {result.passedCount}/{result.totalCount} tests passed
-            </span>
-          </div>
+          simple ? (
+            <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
+          ) : (
+            <div className="flex flex-col items-end gap-1">
+              <PatternValidationPill result={result} />
+              {recomputed ? <RecomputedNote /> : null}
+              <span className="font-mono text-[11px] text-ink-faint">
+                {result.passedCount}/{result.totalCount} tests passed
+              </span>
+            </div>
+          )
         }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>
-          <Tabs
-            tabs={[
-              {
-                id: "overview",
-                label: "Overview",
-                content: (
-                  <OverviewTab pattern={pattern} patternSignals={patternSignals} />
-                ),
-              },
-              {
-                id: "validation",
-                label: "Validation",
-                content: (
-                  <ValidationTab
-                    pattern={pattern}
-                    result={result}
-                    strongResult={strongResult}
-                  />
-                ),
-              },
-              {
-                id: "evidence",
-                label: "Evidence",
-                content: (
-                  <EvidenceTab
-                    pattern={pattern}
-                    patternSignals={patternSignals}
-                    patternClusters={linkedClusters.map((c) => ({
-                      id: c.id,
-                      name: c.name,
-                    }))}
-                  />
-                ),
-              },
-              {
-                id: "contradictions",
-                label: `Contradictions (${linkedContradictions.length})`,
-                content:
-                  linkedContradictions.length > 0 ? (
-                    <div className="space-y-4">
-                      {linkedContradictions.map((c) => (
-                        <ContradictionPanel key={c.id} contradiction={c} />
-                      ))}
-                    </div>
-                  ) : (
-                    <NoContradictionNote />
-                  ),
-              },
-              {
-                id: "review",
-                label: "Review",
-                content: <ReviewTab pattern={pattern} />,
-              },
-            ]}
-          />
+          {simple ? (
+            <SimpleView
+              pattern={pattern}
+              result={result}
+              linkedContradictions={linkedContradictions}
+              recomputed={recomputed}
+            />
+          ) : (
+            <Tabs tabs={tabs} />
+          )}
         </div>
 
         <aside className="mt-6 space-y-4 lg:mt-0">
-          <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-            <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
-            <ReviewStatusBadge status={pattern.reviewStatus} />
-            <ConfidenceBadge level={pattern.confidence} />
-            <IdChip id={pattern.id} />
-          </div>
+          <ViewGate min="analyst">
+            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
+              <Pill tone="info">{PATTERN_TYPE_LABELS[pattern.patternType]}</Pill>
+              <ReviewStatusBadge status={pattern.reviewStatus} />
+              <ConfidenceBadge level={pattern.confidence} />
+              <IdChip id={pattern.id} />
+            </div>
+          </ViewGate>
           <RelatedObjectsPanel groups={relatedGroups} />
-          {persistenceFailed ? (
-            <PersistenceGuidanceCard pattern={pattern} result={result} />
-          ) : null}
-          <BiasCheckPanel />
+          <ViewGate min="analyst">
+            {persistenceFailed ? (
+              <PersistenceGuidanceCard pattern={pattern} result={result} />
+            ) : null}
+            <BiasCheckPanel />
+          </ViewGate>
         </aside>
       </div>
     </>

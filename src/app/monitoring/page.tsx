@@ -15,11 +15,23 @@ import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { indicatorOverdue } from "@/lib/derived";
+import { modeAtLeast } from "@/lib/viewMode";
 import { DEFINITIONS } from "@/lib/copy";
-import type { IndicatorTrend, MonitoringIndicator } from "@/lib/types";
-import { INDICATOR_TREND_LABELS } from "@/lib/types";
+import type {
+  IndicatorTrend,
+  IndicatorType,
+  MonitoringCadence,
+  MonitoringIndicator,
+} from "@/lib/types";
+import {
+  CADENCE_LABELS,
+  INDICATOR_TREND_LABELS,
+  INDICATOR_TYPE_LABELS,
+} from "@/lib/types";
 import {
   AddIndicatorForm,
   CadenceStrip,
