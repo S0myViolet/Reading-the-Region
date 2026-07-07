@@ -5,6 +5,12 @@
  * question, linked signals, live validation against the cluster thresholds,
  * contradictions, and review controls. Validity is always computed from the
  * evidence; the stored status is never presented on its own.
+ *
+ * Visibility layers: the simple view reads as prose — statement, status in
+ * plain language, evidence summary, what could contradict it, next step —
+ * with the relationship trail alongside. Analyst view opens the full tabs
+ * (validation checklist, nine-dimension scores, per-signal table, review
+ * controls); Methodology view adds the threshold table and audit trail.
  */
 
 import Link from "next/link";
@@ -19,6 +25,7 @@ import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { ScoreGrid } from "@/components/ScorePanel";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import {
   ConfidenceBadge,
   IdChip,
@@ -29,7 +36,18 @@ import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
-import type { Cluster, ConfidenceLevel, ReviewStatus, Signal } from "@/lib/types";
+import {
+  explainClusterStatus,
+  explainContradiction,
+  nextStepForCluster,
+} from "@/lib/explain";
+import type {
+  Cluster,
+  ConfidenceLevel,
+  Contradiction,
+  ReviewStatus,
+  Signal,
+} from "@/lib/types";
 import {
   ACTOR_TYPE_LABELS,
   CLUSTER_SCORE_LABELS,
@@ -47,7 +65,95 @@ import {
 } from "../cluster-ui";
 
 // ---------------------------------------------------------------------------
-// Overview tab
+// Simple view — the cluster as readable prose, depth on demand
+// ---------------------------------------------------------------------------
+
+function SimpleView({
+  cluster,
+  result,
+  linkedContradictions,
+}: {
+  cluster: Cluster;
+  result: ValidationResult;
+  linkedContradictions: Contradiction[];
+}) {
+  return (
+    <div className="space-y-4">
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Cluster statement</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {cluster.clusterStatement.trim() ? (
+            cluster.clusterStatement
+          ) : (
+            <span className="text-[12px] text-ink-faint">
+              No cluster statement recorded yet.
+            </span>
+          )}
+        </p>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1.5">Status</p>
+        <div className="mb-1.5">
+          <ClusterValidityPill result={result} />
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {explainClusterStatus(cluster, result)}
+        </p>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Evidence summary</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {cluster.evidenceSummary.trim() ? (
+            cluster.evidenceSummary
+          ) : (
+            <span className="text-[12px] text-ink-faint">
+              No evidence summary recorded yet. Summarise what the linked signals
+              show — and where they disagree.
+            </span>
+          )}
+        </p>
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1.5">What could contradict this</p>
+        {linkedContradictions.length > 0 ? (
+          <ul className="space-y-2">
+            {linkedContradictions.map((c) => (
+              <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
+                {explainContradiction(c)}{" "}
+                <Link
+                  href={`/contradictions/${c.id}`}
+                  className="whitespace-nowrap text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
+                >
+                  View {c.id}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <NoContradictionNote />
+        )}
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-1">Next step</p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {nextStepForCluster(cluster, result)}
+        </p>
+      </section>
+
+      <DepthHint>
+        Validation checks, nine-dimension scores, per-signal detail and review
+        controls
+      </DepthHint>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Overview tab (analyst)
 // ---------------------------------------------------------------------------
 
 function OverviewTab({
@@ -165,7 +271,7 @@ function OverviewTab({
 }
 
 // ---------------------------------------------------------------------------
-// Signals tab
+// Signals tab (analyst) — linked signals with per-signal scores
 // ---------------------------------------------------------------------------
 
 function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
@@ -179,22 +285,51 @@ function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
     );
   }
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      {clusterSignals.map((s) => (
-        <div key={s.id}>
-          <EntityLink kind="signal" id={s.id} title={s.title} />
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-0.5">
-            <SignalStrengthBadge strength={s.signalStrength} />
-            <ConfidenceBadge level={s.confidence} />
-          </div>
-        </div>
-      ))}
+    <div className="space-y-3">
+      <div className="overflow-x-auto">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Strength</th>
+              <th>Confidence</th>
+              <th>Evidence</th>
+              <th>Strategic relevance</th>
+              <th>Momentum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clusterSignals.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <EntityLink kind="signal" id={s.id} title={s.title} />
+                </td>
+                <td>
+                  <SignalStrengthBadge strength={s.signalStrength} />
+                </td>
+                <td>
+                  <ConfidenceBadge level={s.confidence} />
+                </td>
+                <td className="font-mono text-[11.5px]">{s.scores.evidence}/5</td>
+                <td className="font-mono text-[11.5px]">
+                  {s.scores.strategicRelevance}/5
+                </td>
+                <td className="font-mono text-[11.5px]">{s.scores.momentum}/5</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11.5px] text-ink-faint">
+        Per-signal scores are the analyst judgements recorded on each signal —
+        open a signal for its full scoring panel and rubric anchors.
+      </p>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Validation tab
+// Validation tab (analyst)
 // ---------------------------------------------------------------------------
 
 function ValidationTab({
@@ -236,7 +371,108 @@ function ValidationTab({
 }
 
 // ---------------------------------------------------------------------------
-// Review tab
+// Methodology tab — thresholds spelled out + audit trail
+// ---------------------------------------------------------------------------
+
+function MethodologyTab({
+  cluster,
+  result,
+}: {
+  cluster: Cluster;
+  result: ValidationResult;
+}) {
+  const t = CLUSTER_THRESHOLDS;
+  const thresholdRows: Array<[string, string]> = [
+    ["Minimum linked signals", String(t.minSignals)],
+    ["Minimum independent sources across linked signals", String(t.minIndependentSources)],
+    ["Minimum sectors represented", String(t.minSectors)],
+    ["Minimum actor types represented", String(t.minActorTypes)],
+    ["Minimum linked contradictions", String(t.minContradictions)],
+    ["Minimum breadth score", `${t.minBreadth}/5`],
+    ["Minimum depth score", `${t.minDepth}/5`],
+    ["Minimum coherence score", `${t.minCoherence}/5`],
+    ["Minimum strategic relevance score", `${t.minStrategicRelevance}/5`],
+  ];
+  return (
+    <div className="space-y-4">
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">Cluster validation thresholds</h3>
+        </header>
+        <div className="overflow-x-auto px-4 py-3">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              {thresholdRows.map(([label, value]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  <td className="font-mono text-[11.5px]">{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+            A cluster is valid only when every requirement passes, plus a clear
+            unifying question. The score minimums support validation; they never
+            override the evidence thresholds. This cluster currently passes{" "}
+            {result.passedCount} of {result.totalCount} checks.
+          </p>
+        </div>
+      </section>
+
+      <section className="card">
+        <header className="border-b border-line px-4 py-2.5">
+          <h3 className="overline-label">Audit trail</h3>
+        </header>
+        <dl className="space-y-2.5 px-4 py-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Record id</dt>
+            <dd>
+              <IdChip id={cluster.id} />
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Created</dt>
+            <dd className="text-[12.5px] text-ink">{fmtDate(cluster.createdAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Last updated</dt>
+            <dd className="text-[12.5px] text-ink">{fmtDate(cluster.updatedAt)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Review status</dt>
+            <dd>
+              <ReviewStatusBadge status={cluster.reviewStatus} />
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Stored status field</dt>
+            <dd className="font-mono text-[11.5px] text-ink-soft">{cluster.status}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="overline-label">Computed from evidence</dt>
+            <dd className="font-mono text-[11.5px] text-ink-soft">
+              {result.valid ? "valid" : "candidate"} · {result.passedCount}/
+              {result.totalCount} checks
+            </dd>
+          </div>
+        </dl>
+        <p className="border-t border-line px-4 py-2.5 text-[11.5px] text-ink-faint">
+          Review status is a human decision recorded in the Review tab. It is
+          stored separately from computed validity and never overrides it.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Review tab (analyst)
 // ---------------------------------------------------------------------------
 
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
@@ -372,6 +608,7 @@ function CandidateGuidanceCard({ result }: { result: ValidationResult }) {
 export default function ClusterDetailPage() {
   const params = useParams<{ id: string }>();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const clusters = useIntelligenceStore((s) => s.clusters);
   const signals = useIntelligenceStore((s) => s.signals);
   const sources = useIntelligenceStore((s) => s.sources);
@@ -422,6 +659,7 @@ export default function ClusterDetailPage() {
   const linkedDrivers = drivers.filter((d) =>
     cluster.possibleDriverIds.includes(d.id),
   );
+  const simple = mode === "simple";
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Signal Clusters", href: "/clusters" },
@@ -462,74 +700,98 @@ export default function ClusterDetailPage() {
     },
   ];
 
+  const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      content: <OverviewTab cluster={cluster} clusterSignals={clusterSignals} />,
+    },
+    {
+      id: "signals",
+      label: `Signals (${clusterSignals.length})`,
+      content: <SignalsTab clusterSignals={clusterSignals} />,
+    },
+    {
+      id: "validation",
+      label: "Validation",
+      content: <ValidationTab cluster={cluster} result={result} />,
+    },
+    {
+      id: "contradictions",
+      label: `Contradictions (${linkedContradictions.length})`,
+      content:
+        linkedContradictions.length > 0 ? (
+          <div className="space-y-4">
+            {linkedContradictions.map((c) => (
+              <ContradictionPanel key={c.id} contradiction={c} />
+            ))}
+          </div>
+        ) : (
+          <NoContradictionNote />
+        ),
+    },
+    {
+      id: "review",
+      label: "Review",
+      content: <ReviewTab cluster={cluster} />,
+    },
+  ];
+  if (mode === "methodology") {
+    tabs.push({
+      id: "methodology",
+      label: "Methodology",
+      content: <MethodologyTab cluster={cluster} result={result} />,
+    });
+  }
+
   return (
     <>
       <Breadcrumbs items={crumbs} />
       <PageHeader
         overline={`Connect & Synthesize · ${cluster.id}`}
         title={cluster.name}
+        description={
+          simple && cluster.unifyingQuestion.trim()
+            ? cluster.unifyingQuestion
+            : undefined
+        }
         actions={
-          <div className="flex flex-col items-end gap-1">
-            <ClusterValidityPill result={result} />
-            <span className="font-mono text-[11px] text-ink-faint">
-              {result.passedCount}/{result.totalCount} checks passed
-            </span>
-          </div>
+          simple ? undefined : (
+            <div className="flex flex-col items-end gap-1">
+              <ClusterValidityPill result={result} />
+              <span className="font-mono text-[11px] text-ink-faint">
+                {result.passedCount}/{result.totalCount} checks passed
+              </span>
+            </div>
+          )
         }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>
-          <Tabs
-            tabs={[
-              {
-                id: "overview",
-                label: "Overview",
-                content: (
-                  <OverviewTab cluster={cluster} clusterSignals={clusterSignals} />
-                ),
-              },
-              {
-                id: "signals",
-                label: `Signals (${clusterSignals.length})`,
-                content: <SignalsTab clusterSignals={clusterSignals} />,
-              },
-              {
-                id: "validation",
-                label: "Validation",
-                content: <ValidationTab cluster={cluster} result={result} />,
-              },
-              {
-                id: "contradictions",
-                label: `Contradictions (${linkedContradictions.length})`,
-                content:
-                  linkedContradictions.length > 0 ? (
-                    <div className="space-y-4">
-                      {linkedContradictions.map((c) => (
-                        <ContradictionPanel key={c.id} contradiction={c} />
-                      ))}
-                    </div>
-                  ) : (
-                    <NoContradictionNote />
-                  ),
-              },
-              {
-                id: "review",
-                label: "Review",
-                content: <ReviewTab cluster={cluster} />,
-              },
-            ]}
-          />
+          {simple ? (
+            <SimpleView
+              cluster={cluster}
+              result={result}
+              linkedContradictions={linkedContradictions}
+            />
+          ) : (
+            <Tabs tabs={tabs} />
+          )}
         </div>
 
         <aside className="mt-6 space-y-4 lg:mt-0">
-          <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
-            <ReviewStatusBadge status={cluster.reviewStatus} />
-            <ConfidenceBadge level={cluster.confidence} />
-            <IdChip id={cluster.id} />
-          </div>
+          <ViewGate min="analyst">
+            <div className="card flex flex-wrap items-center gap-1.5 px-4 py-2.5">
+              <ReviewStatusBadge status={cluster.reviewStatus} />
+              <ConfidenceBadge level={cluster.confidence} />
+              <IdChip id={cluster.id} />
+            </div>
+          </ViewGate>
           <RelatedObjectsPanel groups={relatedGroups} />
-          {!result.valid ? <CandidateGuidanceCard result={result} /> : null}
+          <ViewGate min="analyst">
+            {!result.valid ? <CandidateGuidanceCard result={result} /> : null}
+          </ViewGate>
         </aside>
       </div>
     </>

@@ -1,10 +1,14 @@
 "use client";
 
 /**
- * Signal detail — the full evidence record for one signal, disclosed
- * progressively: overview, evidence, scoring, the mandatory zooming ladder,
- * systems analysis, contradictions, and human review. The right column holds
- * the reading guidance (Guided Mode) and the relationship trail.
+ * Signal detail — the full evidence record for one signal, disclosed through
+ * visibility layers. Simple view reads as a plain column: what happened, why
+ * it matters, how confident, the evidence, what could contradict it, and the
+ * next step. Analyst view opens the tabs: overview, evidence, scoring, the
+ * mandatory zooming ladder, systems analysis, contradictions, and human
+ * review. Methodology view adds rubric anchors, provenance labels, the audit
+ * trail, and the zoom-completeness checklist. The right column holds the
+ * reading guidance (Guided Mode) and the relationship trail in every mode.
  */
 
 import Link from "next/link";
@@ -30,14 +34,31 @@ import { SignalScorePanel } from "@/components/ScorePanel";
 import { ZoomingPanel } from "@/components/ZoomingPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import {
+  EvidenceQualityLine,
+  ExplainedConfidence,
+  ExplainedScore,
+} from "@/components/Explained";
 import { Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { zoomComplete } from "@/lib/validation";
-import type { ConfidenceLevel, ReviewStatus, Signal, Source } from "@/lib/types";
+import { explainContradiction, nextStepForSignal } from "@/lib/explain";
+import type {
+  ConfidenceLevel,
+  Contradiction,
+  ReviewStatus,
+  Score,
+  Signal,
+  SignalScores,
+  Source,
+} from "@/lib/types";
 import {
   ACTOR_TYPE_LABELS,
   CONFIDENCE_LABELS,
   REVIEW_STATUS_LABELS,
+  SCORE_DIMENSION_LABELS,
+  SCORE_RUBRICS,
   SOURCE_ROLE_LABELS,
   SOURCE_TYPE_LABELS,
   TIME_HORIZON_LABELS,
@@ -84,8 +105,94 @@ function FaintNote({ children }: { children: React.ReactNode }) {
   return <p className="text-[11.5px] text-ink-faint">{children}</p>;
 }
 
+function linkedSources(signal: Signal, sources: Source[]): Source[] {
+  return signal.sourceIds
+    .map((id) => sources.find((s) => s.id === id))
+    .filter((s): s is Source => Boolean(s));
+}
+
 // ---------------------------------------------------------------------------
-// Tabs
+// Simple view — one readable column, no analysis machinery
+// ---------------------------------------------------------------------------
+
+function SimpleView({
+  signal,
+  sources,
+  contradictions,
+}: {
+  signal: Signal;
+  sources: Source[];
+  contradictions: Contradiction[];
+}) {
+  const linked = linkedSources(signal, sources);
+  return (
+    <div className="space-y-4">
+      <Block label="What happened">
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          {signal.zoom.whatHappened.trim() || signal.description}
+        </p>
+      </Block>
+
+      <Block label="Why it matters" accent>
+        <p className="text-[13px] leading-relaxed text-ink-soft">{signal.whyItMatters}</p>
+      </Block>
+
+      <Block label="How confident">
+        <ExplainedConfidence signal={signal} sources={sources} />
+      </Block>
+
+      <Block label="What evidence supports it">
+        <EvidenceQualityLine signal={signal} sources={sources} />
+        {linked.length > 0 ? (
+          <ul className="mt-2 space-y-1">
+            {linked.map((src) => (
+              <li key={src.id} className="flex flex-wrap items-center gap-1.5">
+                <Link
+                  href={`/sources/${src.id}`}
+                  className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
+                >
+                  {src.name}
+                </Link>
+                {src.isDemo ? <DemoTag /> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </Block>
+
+      <Block label="What could contradict it">
+        {contradictions.length > 0 ? (
+          <ul className="space-y-2">
+            {contradictions.map((c) => (
+              <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
+                <Link
+                  href={`/contradictions/${c.id}`}
+                  className="font-medium text-ink hover:text-accent-ink hover:underline"
+                >
+                  {c.name}
+                </Link>
+                {": "}
+                {explainContradiction(c)}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <NoContradictionNote />
+        )}
+      </Block>
+
+      <p className="text-[12px] leading-relaxed text-ink-soft">
+        <span className="overline-label mr-2">Next step</span>
+        {nextStepForSignal(signal)}
+      </p>
+
+      <DepthHint>Scoring, zooming analysis, source bias and validation detail</DepthHint>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tabs (analyst view and deeper)
 // ---------------------------------------------------------------------------
 
 function OverviewTab({ signal }: { signal: Signal }) {
@@ -205,9 +312,7 @@ function OverviewTab({ signal }: { signal: Signal }) {
 }
 
 function EvidenceTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
-  const linked = signal.sourceIds
-    .map((id) => sources.find((s) => s.id === id))
-    .filter((s): s is Source => Boolean(s));
+  const linked = linkedSources(signal, sources);
 
   return (
     <div className="space-y-4">
@@ -271,7 +376,9 @@ function EvidenceTab({ signal, sources }: { signal: Signal; sources: Source[] })
         <section className="card border-l-2 border-l-caution px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <p className="overline-label">AI-drafted note</p>
-            <ProvenanceBadge label={signal.aiNotesLabel ?? "ai_inference"} />
+            <ViewGate min="methodology">
+              <ProvenanceBadge label={signal.aiNotesLabel ?? "ai_inference"} />
+            </ViewGate>
           </div>
           <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
             {signal.aiNotes}
@@ -285,12 +392,34 @@ function EvidenceTab({ signal, sources }: { signal: Signal; sources: Source[] })
 
 const CONFIDENCE_ORDER: ConfidenceLevel[] = ["low", "medium", "high"];
 
-function ScoringTab({ signal }: { signal: Signal }) {
+/** The dimensions whose reasons are spelled out, not just tooltipped. */
+const EXPLAINED_DIMS: Array<keyof SignalScores> = [
+  "novelty",
+  "momentum",
+  "evidence",
+  "strategicRelevance",
+];
+
+const SCORE_STEPS: Score[] = [1, 2, 3, 4, 5];
+
+function ScoringTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
   return (
     <div className="space-y-4">
       <section className="card px-4 py-3">
         <p className="overline-label mb-2">Nine-dimension scoring</p>
         <SignalScorePanel scores={signal.scores} />
+      </section>
+
+      <section className="card px-4 py-3">
+        <p className="overline-label mb-2">Why these scores</p>
+        <div className="space-y-3">
+          {EXPLAINED_DIMS.map((dim) => (
+            <ExplainedScore key={dim} dim={dim} signal={signal} sources={sources} />
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-ink-faint">
+          Remaining dimensions carry their rubric anchor as a tooltip on the score bars above.
+        </p>
       </section>
 
       <section className="card px-4 py-3">
@@ -323,6 +452,49 @@ function ScoringTab({ signal }: { signal: Signal }) {
           ))}
         </ul>
       </section>
+
+      <ViewGate min="methodology">
+        <section className="card">
+          <header className="border-b border-line px-4 py-2.5">
+            <h3 className="overline-label">Rubric anchors — this signal&apos;s position marked</h3>
+          </header>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Dimension</th>
+                  {SCORE_STEPS.map((n) => (
+                    <th key={n}>{n}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(Object.keys(SCORE_DIMENSION_LABELS) as Array<keyof SignalScores>).map(
+                  (k) => (
+                    <tr key={k}>
+                      <td className="whitespace-nowrap text-[12px] font-medium text-ink">
+                        {SCORE_DIMENSION_LABELS[k]}
+                      </td>
+                      {SCORE_STEPS.map((n) => (
+                        <td
+                          key={n}
+                          className={`text-[11.5px] ${
+                            signal.scores[k] === n
+                              ? "bg-accent-soft font-medium text-accent-ink"
+                              : "text-ink-soft"
+                          }`}
+                        >
+                          {SCORE_RUBRICS[k][n]}
+                        </td>
+                      ))}
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </ViewGate>
     </div>
   );
 }
@@ -336,12 +508,14 @@ function ZoomingTab({ signal }: { signal: Signal }) {
         is not a signal reading, it is a guess.
       </p>
       <ZoomingPanel zoom={signal.zoom} />
-      <ValidationChecklist
-        result={zoomComplete(signal)}
-        title="Zooming completeness"
-        passedLabel="Ladder complete"
-        failedLabel="Ladder incomplete"
-      />
+      <ViewGate min="methodology">
+        <ValidationChecklist
+          result={zoomComplete(signal)}
+          title="Zooming completeness"
+          passedLabel="Ladder complete"
+          failedLabel="Ladder incomplete"
+        />
+      </ViewGate>
     </div>
   );
 }
@@ -474,6 +648,28 @@ function ReviewTab({ signal }: { signal: Signal }) {
         </label>
       </section>
 
+      <ViewGate min="methodology">
+        <section className="card px-4 py-3">
+          <p className="overline-label mb-2">Audit trail</p>
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <Fact label="Created">{fmtDate(signal.createdAt)}</Fact>
+            <Fact label="Last updated">{fmtDate(signal.updatedAt)}</Fact>
+            <Fact label="Review status on record">
+              {REVIEW_STATUS_LABELS[signal.reviewStatus]}
+            </Fact>
+            <Fact label="Provenance">
+              {signal.observationId ? (
+                <>
+                  Promoted from observation <IdChip id={signal.observationId} />
+                </>
+              ) : (
+                "Captured directly as a signal"
+              )}
+            </Fact>
+          </dl>
+        </section>
+      </ViewGate>
+
       <div className="flex items-center gap-3">
         <button type="button" onClick={handleSave} className={btnPrimary}>
           Save review
@@ -525,6 +721,7 @@ function resolveItems<T extends { id: string }>(
 
 export default function SignalDetailPage() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const params = useParams<{ id: string }>();
   const id = params.id;
 
@@ -649,42 +846,56 @@ export default function SignalDetailPage() {
         <IdChip id={signal.id} />
         <SignalStrengthBadge strength={signal.signalStrength} />
         <ConfidenceBadge level={signal.confidence} />
-        <ReviewStatusBadge status={signal.reviewStatus} />
-        <Pill tone="neutral" title="Time horizon">
-          {TIME_HORIZON_LABELS[signal.timeHorizon]}
-        </Pill>
+        <ViewGate min="analyst">
+          <ReviewStatusBadge status={signal.reviewStatus} />
+          <Pill tone="neutral" title="Time horizon">
+            {TIME_HORIZON_LABELS[signal.timeHorizon]}
+          </Pill>
+        </ViewGate>
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div className="min-w-0">
-          <Tabs
-            tabs={[
-              { id: "overview", label: "Overview", content: <OverviewTab signal={signal} /> },
-              {
-                id: "evidence",
-                label: "Evidence",
-                content: <EvidenceTab signal={signal} sources={sources} />,
-              },
-              { id: "scoring", label: "Scoring", content: <ScoringTab signal={signal} /> },
-              { id: "zooming", label: "Zooming", content: <ZoomingTab signal={signal} /> },
-              { id: "systems", label: "Systems", content: <SystemsTab signal={signal} /> },
-              {
-                id: "contradictions",
-                label: "Contradictions",
-                content:
-                  linkedContradictions.length > 0 ? (
-                    <div className="space-y-4">
-                      {linkedContradictions.map((c) => (
-                        <ContradictionPanel key={c.id} contradiction={c} />
-                      ))}
-                    </div>
-                  ) : (
-                    <NoContradictionNote />
-                  ),
-              },
-              { id: "review", label: "Review", content: <ReviewTab signal={signal} /> },
-            ]}
-          />
+          {mode === "simple" ? (
+            <SimpleView
+              signal={signal}
+              sources={sources}
+              contradictions={linkedContradictions}
+            />
+          ) : (
+            <Tabs
+              tabs={[
+                { id: "overview", label: "Overview", content: <OverviewTab signal={signal} /> },
+                {
+                  id: "evidence",
+                  label: "Evidence",
+                  content: <EvidenceTab signal={signal} sources={sources} />,
+                },
+                {
+                  id: "scoring",
+                  label: "Scoring",
+                  content: <ScoringTab signal={signal} sources={sources} />,
+                },
+                { id: "zooming", label: "Zooming", content: <ZoomingTab signal={signal} /> },
+                { id: "systems", label: "Systems", content: <SystemsTab signal={signal} /> },
+                {
+                  id: "contradictions",
+                  label: "Contradictions",
+                  content:
+                    linkedContradictions.length > 0 ? (
+                      <div className="space-y-4">
+                        {linkedContradictions.map((c) => (
+                          <ContradictionPanel key={c.id} contradiction={c} />
+                        ))}
+                      </div>
+                    ) : (
+                      <NoContradictionNote />
+                    ),
+                },
+                { id: "review", label: "Review", content: <ReviewTab signal={signal} /> },
+              ]}
+            />
+          )}
         </div>
         <aside className="mt-6 space-y-4 lg:mt-0">
           {guidedMode ? <ReadingGuidePanel /> : null}

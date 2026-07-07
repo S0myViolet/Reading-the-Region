@@ -3,8 +3,10 @@
 /**
  * Signal Library — the core evidence base of the platform. Every signal is
  * present-day evidence suggesting a future possibility; nothing here is a
- * trend. The library supports dense filtering, card and table views, and
- * cross-links into clusters, contradictions, and the rest of the pipeline.
+ * trend. Simple view is a readable card list with the essential filters;
+ * Analyst view opens dense filtering, sorting, the table view, and the mono
+ * score chips, cross-linking into clusters, contradictions, and the rest of
+ * the pipeline.
  */
 
 import Link from "next/link";
@@ -21,7 +23,9 @@ import {
 } from "@/components/badges";
 import { SectorTags } from "@/components/tags";
 import { Select, TextInput } from "@/components/form";
+import { DepthHint, useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { scoreHeadline } from "@/lib/explain";
 import { zoomComplete } from "@/lib/validation";
 import { DEFINITIONS } from "@/lib/copy";
 import type {
@@ -239,7 +243,7 @@ function MinScoreSelect({
   );
 }
 
-function SignalCard({ signal }: { signal: Signal }) {
+function SignalCard({ signal, simple }: { signal: Signal; simple: boolean }) {
   return (
     <article className="card flex flex-col px-4 py-3">
       <div className="flex items-center justify-between gap-2">
@@ -259,8 +263,14 @@ function SignalCard({ signal }: { signal: Signal }) {
         <SignalStrengthBadge strength={signal.signalStrength} />
         <ConfidenceBadge level={signal.confidence} />
         <ReviewStatusBadge status={signal.reviewStatus} />
-        <ScoreChips scores={signal.scores} />
+        {!simple ? <ScoreChips scores={signal.scores} /> : null}
       </div>
+      {simple ? (
+        <p className="mt-1.5 text-[11.5px] text-ink-soft">
+          {scoreHeadline("novelty", signal.scores.novelty)} ·{" "}
+          {scoreHeadline("momentum", signal.scores.momentum)}
+        </p>
+      ) : null}
       {signal.sectors.length > 0 ? (
         <div className="mt-2">
           <SectorTags sectors={signal.sectors} />
@@ -271,12 +281,14 @@ function SignalCard({ signal }: { signal: Signal }) {
           {signal.country}
           {signal.city ? ` · ${signal.city}` : ""}
         </span>
-        <span
-          className="font-mono"
-          title={TIME_HORIZON_LABELS[signal.timeHorizon]}
-        >
-          {TIME_HORIZON_SHORT[signal.timeHorizon]}
-        </span>
+        {!simple ? (
+          <span
+            className="font-mono"
+            title={TIME_HORIZON_LABELS[signal.timeHorizon]}
+          >
+            {TIME_HORIZON_SHORT[signal.timeHorizon]}
+          </span>
+        ) : null}
         <span title="Linked clusters and contradictions">
           {signal.clusterIds.length} cluster{signal.clusterIds.length === 1 ? "" : "s"} ·{" "}
           {signal.contradictionIds.length} contradiction
@@ -369,6 +381,7 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
 
 function SignalsContent() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const searchParams = useSearchParams();
   const signals = useIntelligenceStore((s) => s.signals);
   const sources = useIntelligenceStore((s) => s.sources);
@@ -453,6 +466,7 @@ function SignalsContent() {
     );
   }
 
+  const simple = mode === "simple";
   const activeCount = countActiveFilters(filters);
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((f) => ({ ...f, [key]: value }));
@@ -482,6 +496,11 @@ function SignalsContent() {
   return (
     <>
       <SignalsHeader />
+      {simple ? (
+        <div className="-mt-3 mb-4">
+          <DepthHint>Full filters, scoring columns and table view</DepthHint>
+        </div>
+      ) : null}
       <WalkthroughPanel pageId="signals" />
 
       {/* Filter bar */}
@@ -525,16 +544,18 @@ function SignalsContent() {
                   ))}
                 </Select>
               </FilterField>
-              <FilterField label="City">
-                <Select value={filters.city} onChange={(e) => set("city", e.target.value)}>
-                  <option value="">Any</option>
-                  {cityOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
+              {!simple ? (
+                <FilterField label="City">
+                  <Select value={filters.city} onChange={(e) => set("city", e.target.value)}>
+                    <option value="">Any</option>
+                    {cityOptions.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
+                </FilterField>
+              ) : null}
               <FilterField label="Sector">
                 <Select
                   value={filters.sector}
@@ -548,38 +569,44 @@ function SignalsContent() {
                   ))}
                 </Select>
               </FilterField>
-              <FilterField label="Source type">
-                <Select
-                  value={filters.sourceType}
-                  onChange={(e) => set("sourceType", e.target.value as Filters["sourceType"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(SOURCE_TYPE_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              <FilterField label="Min source credibility">
-                <MinScoreSelect
-                  value={filters.minCredibility}
-                  onChange={(v) => set("minCredibility", v)}
-                />
-              </FilterField>
-              <FilterField label="Signal strength">
-                <Select
-                  value={filters.strength}
-                  onChange={(e) => set("strength", e.target.value as Filters["strength"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(SIGNAL_STRENGTH_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
+              {!simple ? (
+                <>
+                  <FilterField label="Source type">
+                    <Select
+                      value={filters.sourceType}
+                      onChange={(e) =>
+                        set("sourceType", e.target.value as Filters["sourceType"])
+                      }
+                    >
+                      <option value="">Any</option>
+                      {optionsFrom(SOURCE_TYPE_LABELS).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FilterField>
+                  <FilterField label="Min source credibility">
+                    <MinScoreSelect
+                      value={filters.minCredibility}
+                      onChange={(v) => set("minCredibility", v)}
+                    />
+                  </FilterField>
+                  <FilterField label="Signal strength">
+                    <Select
+                      value={filters.strength}
+                      onChange={(e) => set("strength", e.target.value as Filters["strength"])}
+                    >
+                      <option value="">Any</option>
+                      {optionsFrom(SIGNAL_STRENGTH_LABELS).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FilterField>
+                </>
+              ) : null}
               <FilterField label="Confidence">
                 <Select
                   value={filters.confidence}
@@ -593,69 +620,75 @@ function SignalsContent() {
                   ))}
                 </Select>
               </FilterField>
-              <FilterField label="Time horizon">
-                <Select
-                  value={filters.horizon}
-                  onChange={(e) => set("horizon", e.target.value as Filters["horizon"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(TIME_HORIZON_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              <FilterField label="Min novelty">
-                <MinScoreSelect
-                  value={filters.minNovelty}
-                  onChange={(v) => set("minNovelty", v)}
-                />
-              </FilterField>
-              <FilterField label="Min momentum">
-                <MinScoreSelect
-                  value={filters.minMomentum}
-                  onChange={(v) => set("minMomentum", v)}
-                />
-              </FilterField>
-              <FilterField label="Min evidence">
-                <MinScoreSelect
-                  value={filters.minEvidence}
-                  onChange={(v) => set("minEvidence", v)}
-                />
-              </FilterField>
-              <FilterField label="Min strategic relevance">
-                <MinScoreSelect
-                  value={filters.minStrategic}
-                  onChange={(v) => set("minStrategic", v)}
-                />
-              </FilterField>
-              <FilterField label="System affected">
-                <Select
-                  value={filters.system}
-                  onChange={(e) => set("system", e.target.value as Filters["system"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(SYSTEM_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
-              <FilterField label="Actor type">
-                <Select
-                  value={filters.actorType}
-                  onChange={(e) => set("actorType", e.target.value as Filters["actorType"])}
-                >
-                  <option value="">Any</option>
-                  {optionsFrom(ACTOR_TYPE_LABELS).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </FilterField>
+              {!simple ? (
+                <>
+                  <FilterField label="Time horizon">
+                    <Select
+                      value={filters.horizon}
+                      onChange={(e) => set("horizon", e.target.value as Filters["horizon"])}
+                    >
+                      <option value="">Any</option>
+                      {optionsFrom(TIME_HORIZON_LABELS).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FilterField>
+                  <FilterField label="Min novelty">
+                    <MinScoreSelect
+                      value={filters.minNovelty}
+                      onChange={(v) => set("minNovelty", v)}
+                    />
+                  </FilterField>
+                  <FilterField label="Min momentum">
+                    <MinScoreSelect
+                      value={filters.minMomentum}
+                      onChange={(v) => set("minMomentum", v)}
+                    />
+                  </FilterField>
+                  <FilterField label="Min evidence">
+                    <MinScoreSelect
+                      value={filters.minEvidence}
+                      onChange={(v) => set("minEvidence", v)}
+                    />
+                  </FilterField>
+                  <FilterField label="Min strategic relevance">
+                    <MinScoreSelect
+                      value={filters.minStrategic}
+                      onChange={(v) => set("minStrategic", v)}
+                    />
+                  </FilterField>
+                  <FilterField label="System affected">
+                    <Select
+                      value={filters.system}
+                      onChange={(e) => set("system", e.target.value as Filters["system"])}
+                    >
+                      <option value="">Any</option>
+                      {optionsFrom(SYSTEM_LABELS).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FilterField>
+                  <FilterField label="Actor type">
+                    <Select
+                      value={filters.actorType}
+                      onChange={(e) =>
+                        set("actorType", e.target.value as Filters["actorType"])
+                      }
+                    >
+                      <option value="">Any</option>
+                      {optionsFrom(ACTOR_TYPE_LABELS).map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FilterField>
+                </>
+              ) : null}
               <FilterField label="Review status">
                 <Select
                   value={filters.review}
@@ -677,23 +710,25 @@ function SignalsContent() {
                 />
               </FilterField>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
-              {specialToggles.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  title={t.title}
-                  onClick={() => set(t.key, !filters[t.key])}
-                  className={`border px-2.5 py-1 text-[11.5px] rounded-[2px] ${
-                    filters[t.key]
-                      ? "border-accent bg-accent-soft font-medium text-accent-ink"
-                      : "border-line bg-surface text-ink-soft hover:border-line-strong"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            {!simple ? (
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+                {specialToggles.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    title={t.title}
+                    onClick={() => set(t.key, !filters[t.key])}
+                    className={`border px-2.5 py-1 text-[11.5px] rounded-[2px] ${
+                      filters[t.key]
+                        ? "border-accent bg-accent-soft font-medium text-accent-ink"
+                        : "border-line bg-surface text-ink-soft hover:border-line-strong"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </section>

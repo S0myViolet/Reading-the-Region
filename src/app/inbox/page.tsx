@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { IdChip, SourceCredibilityBadge } from "@/components/badges";
@@ -61,7 +62,7 @@ function InboxHeader() {
   );
 }
 
-function ObservationRow({ obs }: { obs: Observation }) {
+function ObservationRow({ obs, showFull }: { obs: Observation; showFull: boolean }) {
   const sources = useIntelligenceStore((s) => s.sources);
   const source = obs.sourceId
     ? sources.find((s) => s.id === obs.sourceId) ?? null
@@ -94,17 +95,21 @@ function ObservationRow({ obs }: { obs: Observation }) {
       <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
         {fmtDate(obs.dateObserved)}
       </td>
-      <td className="text-[12.5px] text-ink-soft">
-        {obs.country}
-        {obs.city ? <span className="text-ink-faint"> · {obs.city}</span> : null}
-      </td>
-      <td>
-        {obs.sectors.length > 0 ? (
-          <SectorTags sectors={obs.sectors} />
-        ) : (
-          <span className="text-[11px] text-ink-faint">Unclassified</span>
-        )}
-      </td>
+      {showFull ? (
+        <>
+          <td className="text-[12.5px] text-ink-soft">
+            {obs.country}
+            {obs.city ? <span className="text-ink-faint"> · {obs.city}</span> : null}
+          </td>
+          <td>
+            {obs.sectors.length > 0 ? (
+              <SectorTags sectors={obs.sectors} />
+            ) : (
+              <span className="text-[11px] text-ink-faint">Unclassified</span>
+            )}
+          </td>
+        </>
+      ) : null}
       <td>
         <span
           className={`font-mono text-[11.5px] whitespace-nowrap ${
@@ -134,6 +139,10 @@ function InboxContent() {
   const hydrated = useHydrated();
   const searchParams = useSearchParams();
   const observations = useIntelligenceStore((s) => s.observations);
+  // Simple view keeps triage-critical columns only; Analyst restores the
+  // geography and sector classification columns. Hydration-safe: "simple"
+  // until the client store loads.
+  const showFull = useViewMode() !== "simple";
 
   if (!hydrated) {
     return (
@@ -216,15 +225,19 @@ function InboxContent() {
                   <th>Observation</th>
                   <th>Source</th>
                   <th>Observed</th>
-                  <th>Geography</th>
-                  <th>Sectors</th>
+                  {showFull ? (
+                    <>
+                      <th>Geography</th>
+                      <th>Sectors</th>
+                    </>
+                  ) : null}
                   <th>Promotion</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((o) => (
-                  <ObservationRow key={o.id} obs={o} />
+                  <ObservationRow key={o.id} obs={o} showFull={showFull} />
                 ))}
               </tbody>
             </table>

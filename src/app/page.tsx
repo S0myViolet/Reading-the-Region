@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { IntelligencePipeline } from "@/components/IntelligencePipeline";
 import { PageHeader } from "@/components/PageHeader";
 import { ScoreBar } from "@/components/ScorePanel";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { RECOMMENDED_WORKFLOW } from "@/lib/copy";
 import {
@@ -37,6 +38,7 @@ import {
   strengtheningTerritories,
   type ManagementItem,
 } from "@/lib/derived";
+import { scoreHeadline } from "@/lib/explain";
 import { useHydrated, useIntelligenceStore, type IntelligenceData } from "@/lib/store";
 import { OBSERVATION_STATUS_LABELS, SCORE_RUBRICS } from "@/lib/types";
 
@@ -137,6 +139,7 @@ function ManagementCard({ item }: { item: ManagementItem }) {
 
 export default function OverviewPage() {
   const hydrated = useHydrated();
+  const viewMode = useViewMode();
   const observations = useIntelligenceStore((s) => s.observations);
   const sources = useIntelligenceStore((s) => s.sources);
   const signals = useIntelligenceStore((s) => s.signals);
@@ -323,16 +326,26 @@ export default function OverviewPage() {
                     {s.description}
                   </p>
                   <div className="mt-2.5 space-y-1.5">
-                    <ScoreBar
-                      value={s.scores.novelty}
-                      label="Novelty"
-                      rubric={SCORE_RUBRICS.novelty[s.scores.novelty]}
-                    />
-                    <ScoreBar
-                      value={s.scores.strategicRelevance}
-                      label="Strategic relevance"
-                      rubric={SCORE_RUBRICS.strategicRelevance[s.scores.strategicRelevance]}
-                    />
+                    <ViewGate
+                      min="analyst"
+                      fallback={
+                        <p className="text-[12px] text-ink-soft">
+                          {scoreHeadline("novelty", s.scores.novelty)} ·{" "}
+                          {scoreHeadline("strategicRelevance", s.scores.strategicRelevance)}.
+                        </p>
+                      }
+                    >
+                      <ScoreBar
+                        value={s.scores.novelty}
+                        label="Novelty"
+                        rubric={SCORE_RUBRICS.novelty[s.scores.novelty]}
+                      />
+                      <ScoreBar
+                        value={s.scores.strategicRelevance}
+                        label="Strategic relevance"
+                        rubric={SCORE_RUBRICS.strategicRelevance[s.scores.strategicRelevance]}
+                      />
+                    </ViewGate>
                   </div>
                 </div>
                 <footer className="flex flex-wrap items-center gap-1.5 border-t border-line px-4 py-2">
@@ -425,6 +438,13 @@ export default function OverviewPage() {
         )}
       </section>
 
+      {viewMode === "simple" ? (
+        <div className="mb-6">
+          <DepthHint>System health, the noise archive and management queries</DepthHint>
+        </div>
+      ) : null}
+
+      <ViewGate min="analyst">
       {/* Noise filter ------------------------------------------------------ */}
       <section className="mb-6">
         <SectionHeading
@@ -498,6 +518,7 @@ export default function OverviewPage() {
           ))}
         </div>
       </section>
+      </ViewGate>
 
       {/* Recommended workflow ----------------------------------------------- */}
       <section className="mb-6">

@@ -13,7 +13,8 @@
  */
 
 import { Pill } from "@/components/badges";
-import type { FutureTerritory, TerritoryMonitoringStatus } from "@/lib/types";
+import { explainTerritoryStatus } from "@/lib/explain";
+import type { FutureTerritory, Score, TerritoryMonitoringStatus } from "@/lib/types";
 
 export const btnPrimary =
   "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
@@ -57,6 +58,85 @@ export function ScenarioReadinessPill({ readiness }: { readiness: Readiness }) {
       {READINESS_LABELS[readiness]}
     </Pill>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Plain-language helpers for the visibility layers
+// ---------------------------------------------------------------------------
+
+const NUMBER_WORDS = [
+  "no",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+];
+
+/** Small counts written out in words: "two drivers", "one pattern", "no indicators". */
+export function countInWords(n: number, singular: string, plural?: string): string {
+  const word = n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n);
+  return `${word} ${n === 1 ? singular : (plural ?? `${singular}s`)}`;
+}
+
+/**
+ * The indicator-movement sentence from explainTerritoryStatus — the short
+ * plain reading that sits next to the status badge on list cards. Falls back
+ * to the full explanation if the sentence split ever fails.
+ */
+export function territoryStatusSentence(t: FutureTerritory): string {
+  const full = explainTerritoryStatus(t);
+  const parts = full.split(". ");
+  return parts.length > 1 ? parts.slice(1).join(". ") : full;
+}
+
+/** The 1–5 evidence-strength score paired with words, for the analyst reading. */
+export const EVIDENCE_STRENGTH_WORDS: Record<Score, string> = {
+  1: "Very weak — closer to assertion than evidence",
+  2: "Weak — early evidence with thin coverage",
+  3: "Moderate — credible evidence with clear gaps",
+  4: "Strong — multiple independent lines of evidence",
+  5: "Very strong — broad, independent and consistent evidence",
+};
+
+const EVIDENCE_STRENGTH_SHORT: Record<Score, string> = {
+  1: "very weak",
+  2: "weak",
+  3: "moderate",
+  4: "strong",
+  5: "very strong",
+};
+
+/** Evidence-strength chip: the score never appears without its word. */
+export function EvidenceStrengthChip({ value }: { value: Score }) {
+  const tone: "accent" | "info" | "caution" =
+    value >= 4 ? "accent" : value === 3 ? "info" : "caution";
+  return (
+    <Pill tone={tone} title={EVIDENCE_STRENGTH_WORDS[value]}>
+      Evidence {value}/5 · {EVIDENCE_STRENGTH_SHORT[value]}
+    </Pill>
+  );
+}
+
+/**
+ * Task-based next step for a territory. Order matters: a territory without
+ * indicators cannot be tracked, so that gap always comes first.
+ */
+export function territoryNextStep(t: FutureTerritory): string {
+  if (t.leadingIndicatorIds.length === 0) {
+    return "Add leading indicators before this territory is treated as active — without them it cannot be tracked, only asserted.";
+  }
+  if (t.scenarioIds.length === 0) {
+    return "Generate scenarios from this territory to explore how it could evolve under different conditions.";
+  }
+  return "Review its indicators at the monitoring cadence.";
 }
 
 /**

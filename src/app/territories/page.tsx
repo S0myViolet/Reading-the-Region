@@ -5,9 +5,12 @@
  * convergence of multiple drivers. A territory is not a trend, theme,
  * category, campaign idea, prediction, or buzzword; it appears here only
  * after drivers, patterns, clusters, signals, and contradictions exist
- * beneath it. The list keeps the evidence discipline visible: every card
- * shows evidence strength, what the territory rests on, and whether it is
- * ready to generate scenarios.
+ * beneath it.
+ *
+ * Visibility layers: the simple reading shows each territory's name,
+ * definition, status in plain language (badge never alone) and what it rests
+ * on in words. Analyst view adds evidence-strength chips, scenario readiness,
+ * review columns and the naming discipline.
  */
 
 import Link from "next/link";
@@ -15,6 +18,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { ScoreBar } from "@/components/ScorePanel";
+import { ViewGate } from "@/components/ViewMode";
 import {
   ConfidenceBadge,
   IdChip,
@@ -24,7 +28,12 @@ import {
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { DEFINITIONS } from "@/lib/copy";
 import type { FutureTerritory } from "@/lib/types";
-import { ScenarioReadinessPill } from "./territory-ui";
+import {
+  countInWords,
+  EvidenceStrengthChip,
+  ScenarioReadinessPill,
+  territoryStatusSentence,
+} from "./territory-ui";
 
 function TerritoriesHeader() {
   return (
@@ -148,27 +157,42 @@ function TerritoryCard({ territory }: { territory: FutureTerritory }) {
             )}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <TerritoryStatusBadge status={territory.monitoringStatus} />
-          <ScenarioReadinessPill readiness={territory.scenarioReadiness} />
-          <ConfidenceBadge level={territory.confidence} />
-          <ReviewStatusBadge status={territory.reviewStatus} />
-        </div>
+        <ViewGate min="analyst">
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <ScenarioReadinessPill readiness={territory.scenarioReadiness} />
+            <ConfidenceBadge level={territory.confidence} />
+            <ReviewStatusBadge status={territory.reviewStatus} />
+          </div>
+        </ViewGate>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-2.5">
-        <ScoreBar value={territory.evidenceStrength} label="Evidence strength" />
-        <span className="font-mono text-[11.5px] text-ink-soft">
-          {territory.driverIds.length} driver{territory.driverIds.length === 1 ? "" : "s"}
-        </span>
-        <span className="font-mono text-[11.5px] text-ink-soft">
-          {territory.patternIds.length} pattern{territory.patternIds.length === 1 ? "" : "s"}
-        </span>
-        <span className="font-mono text-[11.5px] text-ink-soft">
-          {territory.contradictionIds.length} contradiction
-          {territory.contradictionIds.length === 1 ? "" : "s"}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <TerritoryStatusBadge status={territory.monitoringStatus} />
+        <span className="text-[12px] leading-relaxed text-ink-soft">
+          {territoryStatusSentence(territory)}
         </span>
       </div>
+      <p className="mt-1 text-[12px] text-ink-soft">
+        Rests on {countInWords(territory.driverIds.length, "driver")} and{" "}
+        {countInWords(territory.patternIds.length, "pattern")}.
+      </p>
+
+      <ViewGate min="analyst">
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-2.5">
+          <ScoreBar value={territory.evidenceStrength} label="Evidence strength" />
+          <EvidenceStrengthChip value={territory.evidenceStrength} />
+          <span className="font-mono text-[11.5px] text-ink-soft">
+            {territory.driverIds.length} driver{territory.driverIds.length === 1 ? "" : "s"}
+          </span>
+          <span className="font-mono text-[11.5px] text-ink-soft">
+            {territory.patternIds.length} pattern{territory.patternIds.length === 1 ? "" : "s"}
+          </span>
+          <span className="font-mono text-[11.5px] text-ink-soft">
+            {territory.contradictionIds.length} contradiction
+            {territory.contradictionIds.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      </ViewGate>
     </article>
   );
 }
@@ -194,7 +218,9 @@ export default function TerritoriesPage() {
     <>
       <TerritoriesHeader />
       <WalkthroughPanel pageId="territories" />
-      <NamingRulesCard />
+      <ViewGate min="analyst">
+        <NamingRulesCard />
+      </ViewGate>
 
       {ordered.length === 0 ? (
         <EmptyState

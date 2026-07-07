@@ -9,7 +9,11 @@
 
 import { Pill } from "@/components/badges";
 import type { Source, SourceRole } from "@/lib/types";
-import { SOURCE_ROLE_LABELS } from "@/lib/types";
+import {
+  CREDIBILITY_LABELS,
+  SOURCE_ROLE_LABELS,
+  SOURCE_TYPE_LABELS,
+} from "@/lib/types";
 
 export const btnPrimary =
   "border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink";
@@ -41,6 +45,37 @@ export const ROLE_WEIGHT_NOTES: Record<SourceRole, string> = {
   monitoring:
     "Checked on a regular cadence for indicator updates; more useful for trend direction than for one-off claims.",
 };
+
+/**
+ * Credibility in words with a one-line reason, derived from the recorded
+ * type and roles — never invented. E.g. "High credibility — government /
+ * official policy; strongest as validation, weaker for early discovery."
+ */
+export function credibilityLine(src: Source): string {
+  const cred = CREDIBILITY_LABELS[src.credibility];
+  const type = SOURCE_TYPE_LABELS[src.sourceType].toLowerCase();
+  const hasDiscovery = src.roles.includes("discovery");
+  const hasValidation = src.roles.includes("validation");
+
+  let roleClause: string;
+  if (hasDiscovery && hasValidation) {
+    roleClause = "used for both early discovery and validation";
+  } else if (hasValidation) {
+    roleClause = "strongest as validation, weaker for early discovery";
+  } else if (hasDiscovery) {
+    roleClause = "strong for early discovery, weaker for validation";
+  } else if (src.roles.length > 0) {
+    const names = src.roles.map((r) => SOURCE_ROLE_LABELS[r].toLowerCase());
+    roleClause = `used as ${
+      names.length === 1
+        ? `a ${names[0]}`
+        : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+    }`;
+  } else {
+    roleClause = "no role recorded yet, so its evidence cannot be weighted consistently";
+  }
+  return `${cred} — ${type}; ${roleClause}.`;
+}
 
 /** Compact role pills for table rows. */
 export function RolePills({ roles }: { roles: SourceRole[] }) {

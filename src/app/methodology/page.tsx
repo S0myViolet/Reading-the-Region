@@ -40,6 +40,7 @@ import {
   type SignalScores,
   type SignalStrength,
 } from "@/lib/types";
+import { VIEW_MODE_DESCRIPTIONS, VIEW_MODE_LABELS } from "@/lib/viewMode";
 
 // ---------------------------------------------------------------------------
 // Local content data (display copy only — all constants come from lib)
@@ -66,6 +67,10 @@ const SECTIONS: Array<{ id: string; title: string }> = [
   { id: "monitoring", title: "Monitoring" },
   { id: "guardrails", title: "Hallucination and evidence guardrails" },
   { id: "biases", title: "Biases to avoid" },
+  {
+    id: "visibility-layers",
+    title: "Visibility layers: a simple surface over a rigorous engine",
+  },
 ];
 
 /** Pyramid layers, bottom (1) to top (12). */
@@ -982,6 +987,47 @@ export default function MethodologyPage() {
           <div className="max-w-3xl pt-1">
             <BiasCheckPanel />
           </div>
+        </Section>
+
+        {/* 21 ------------------------------------------------------------ */}
+        <Section
+          num={21}
+          id="visibility-layers"
+          title="Visibility layers: a simple surface over a rigorous engine"
+        >
+          <P>
+            The interface never removes rigour; it stages its disclosure. Every page is written to
+            be read at three depths, and the view-depth control changes only what is shown —
+            scoring, validation, and the audit machinery keep operating underneath whichever view
+            is open, and nothing recorded in the base is ever out of reach.
+          </P>
+          <LabelValueList
+            items={[
+              {
+                label: VIEW_MODE_LABELS.simple,
+                value: `The default, for normal users reading the base and capturing observations. ${VIEW_MODE_DESCRIPTIONS.simple}`,
+              },
+              {
+                label: VIEW_MODE_LABELS.analyst,
+                value: `For researchers and strategists interrogating the evidence. ${VIEW_MODE_DESCRIPTIONS.analyst}`,
+              },
+              {
+                label: VIEW_MODE_LABELS.methodology,
+                value: `For admins and expert users auditing the system itself. ${VIEW_MODE_DESCRIPTIONS.methodology}`,
+              },
+            ]}
+          />
+          <P>
+            One rule holds at every depth: a score, confidence level, or status is never shown
+            bare. Each is paired with a plain-language reason derived from the object&rsquo;s own
+            data — its linked sources, counts, and rubric anchors — so the simple view is a
+            faithful summary of the evidence, never a softened substitute for it.
+          </P>
+          <P>
+            The view-depth control sits in the shell sidebar and in Settings. Changing it is a
+            reading preference, stored separately from the intelligence data: switching views
+            never edits, promotes, or discards anything in the evidence base.
+          </P>
         </Section>
 
         {/* Workflow -------------------------------------------------------- */}

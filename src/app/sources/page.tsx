@@ -22,7 +22,9 @@ import {
   TextArea,
   TextInput,
 } from "@/components/form";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { nextId, useHydrated, useIntelligenceStore } from "@/lib/store";
+import { modeAtLeast } from "@/lib/viewMode";
 import type { BiasTag, Score, Source, SourceRole, SourceType } from "@/lib/types";
 import {
   BIAS_TAG_LABELS,
@@ -89,6 +91,52 @@ function PrincipleStrip() {
             </p>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Credibility scale (methodology view)
+// ---------------------------------------------------------------------------
+
+function CredibilityScaleCard() {
+  return (
+    <section className="card mb-5">
+      <header className="border-b border-line px-4 py-2.5">
+        <h2 className="overline-label">Credibility scale</h2>
+      </header>
+      <div className="px-4 py-3">
+        <p className="text-[12px] text-ink-soft">
+          Every source carries one credibility score from 1 to 5. The score is a
+          judgement about the source itself, recorded once and weighed everywhere
+          the source is cited.
+        </p>
+        <div className="mt-2 overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Score</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([5, 4, 3, 2, 1] as const).map((n) => (
+                <tr key={n}>
+                  <td className="font-mono text-[12px] text-ink-soft">{n}</td>
+                  <td className="text-[12.5px] text-ink-soft">
+                    {CREDIBILITY_LABELS[n]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[11.5px] text-ink-faint">
+          Sources scoring 2 or below are safe for discovery but unsafe for
+          validation — evidence found through them must be confirmed by an
+          independent, higher-credibility source before it supports a conclusion.
+        </p>
       </div>
     </section>
   );
@@ -213,47 +261,60 @@ function AddSourceForm() {
                 ))}
               </Select>
             </Field>
-            <Field
-              label="Credibility"
-              hint="How far can claims from this source be trusted, on their own?"
-            >
-              <ScorePicker
+            <ViewGate min="analyst">
+              <Field
                 label="Credibility"
-                value={credibility}
-                rubric={CREDIBILITY_LABELS}
-                onChange={setCredibility}
+                hint="How far can claims from this source be trusted, on their own?"
+              >
+                <ScorePicker
+                  label="Credibility"
+                  value={credibility}
+                  rubric={CREDIBILITY_LABELS}
+                  onChange={setCredibility}
+                />
+              </Field>
+            </ViewGate>
+          </div>
+          <ViewGate
+            min="analyst"
+            fallback={
+              <p className="text-[11.5px] text-ink-faint">
+                Credibility, roles and bias tags are assessed in Analyst view.
+                Until then the source is recorded at medium credibility with no
+                roles, and its evidence is weighted accordingly.
+              </p>
+            }
+          >
+            <Field
+              label="Roles"
+              hint="The jobs this source performs in the workflow. Roles do not raise or lower credibility."
+            >
+              <CheckboxList
+                options={ROLE_OPTIONS.map(([value, label]) => ({ value, label }))}
+                selected={roles}
+                onChange={setRoles}
+                columns={2}
               />
             </Field>
-          </div>
-          <Field
-            label="Roles"
-            hint="The jobs this source performs in the workflow. Roles do not raise or lower credibility."
-          >
-            <CheckboxList
-              options={ROLE_OPTIONS.map(([value, label]) => ({ value, label }))}
-              selected={roles}
-              onChange={setRoles}
-              columns={2}
-            />
-          </Field>
-          <Field
-            label="Bias tags"
-            hint="Known distortions to weigh whenever this source is cited."
-          >
-            <CheckboxList
-              options={BIAS_OPTIONS.map(([value, label]) => ({ value, label }))}
-              selected={biasTags}
-              onChange={setBiasTags}
-              columns={2}
-            />
-          </Field>
-          <Field label="Notes">
-            <TextArea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Coverage, method, known limitations, how it has performed as evidence…"
-            />
-          </Field>
+            <Field
+              label="Bias tags"
+              hint="Known distortions to weigh whenever this source is cited."
+            >
+              <CheckboxList
+                options={BIAS_OPTIONS.map(([value, label]) => ({ value, label }))}
+                selected={biasTags}
+                onChange={setBiasTags}
+                columns={2}
+              />
+            </Field>
+            <Field label="Notes">
+              <TextArea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Coverage, method, known limitations, how it has performed as evidence…"
+              />
+            </Field>
+          </ViewGate>
           {error ? <p className="text-[12px] text-tension">{error}</p> : null}
           <div className="flex items-center gap-2">
             <button type="submit" className={btnPrimary}>
@@ -284,11 +345,16 @@ function SourceRow({
   src,
   observationCount,
   signalCount,
+  analyst,
+  methodology,
 }: {
   src: Source;
   observationCount: number;
   signalCount: number;
+  analyst: boolean;
+  methodology: boolean;
 }) {
+  const linkedCount = observationCount + signalCount;
   return (
     <tr>
       <td>
@@ -301,35 +367,58 @@ function SourceRow({
           </Link>
           {src.isDemo ? <DemoTag /> : null}
         </div>
-        <div className="mt-0.5">
-          <IdChip id={src.id} />
-        </div>
+        {analyst ? (
+          <div className="mt-0.5">
+            <IdChip id={src.id} />
+          </div>
+        ) : null}
       </td>
       <td className="text-[12.5px] text-ink-soft">{SOURCE_TYPE_LABELS[src.sourceType]}</td>
       <td>
-        <SourceCredibilityBadge score={src.credibility} />
+        {analyst ? (
+          <SourceCredibilityBadge score={src.credibility} />
+        ) : (
+          <span className="text-[12.5px] text-ink-soft">
+            {CREDIBILITY_LABELS[src.credibility]}
+          </span>
+        )}
       </td>
       <td>
         <RolePills roles={src.roles} />
       </td>
-      <td>
-        <SourceBiasTags tags={src.biasTags} />
-      </td>
-      <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
-        {fmtDate(src.dateAdded)}
-      </td>
-      <td
-        className="text-right font-mono text-[12px] text-ink-soft"
-        title="Observations citing this source"
-      >
-        {observationCount}
-      </td>
-      <td
-        className="text-right font-mono text-[12px] text-ink-soft"
-        title="Signals citing this source"
-      >
-        {signalCount}
-      </td>
+      {analyst ? (
+        <td>
+          <SourceBiasTags tags={src.biasTags} />
+        </td>
+      ) : null}
+      {methodology ? (
+        <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
+          {fmtDate(src.dateAdded)}
+        </td>
+      ) : null}
+      {analyst ? (
+        <>
+          <td
+            className="text-right font-mono text-[12px] text-ink-soft"
+            title="Observations citing this source"
+          >
+            {observationCount}
+          </td>
+          <td
+            className="text-right font-mono text-[12px] text-ink-soft"
+            title="Signals citing this source"
+          >
+            {signalCount}
+          </td>
+        </>
+      ) : (
+        <td
+          className="text-right text-[12.5px] text-ink-soft"
+          title="Observations and signals citing this source"
+        >
+          {linkedCount} linked item{linkedCount === 1 ? "" : "s"}
+        </td>
+      )}
     </tr>
   );
 }
@@ -341,6 +430,9 @@ function SourceRow({
 function SourcesContent() {
   const hydrated = useHydrated();
   const searchParams = useSearchParams();
+  const mode = useViewMode();
+  const analyst = modeAtLeast(mode, "analyst");
+  const methodology = modeAtLeast(mode, "methodology");
   const sources = useIntelligenceStore((s) => s.sources);
   const observations = useIntelligenceStore((s) => s.observations);
   const signals = useIntelligenceStore((s) => s.signals);
@@ -385,11 +477,47 @@ function SourcesContent() {
     minCred !== 1 ||
     maxCred !== 5;
 
+  // Simple view offers credibility as a named band; Analyst view exposes the
+  // underlying min/max bounds. Both drive the same state.
+  const credBand =
+    minCred === 1 && maxCred === 5
+      ? "all"
+      : minCred === 4 && maxCred === 5
+        ? "high"
+        : minCred === 3 && maxCred === 3
+          ? "medium"
+          : minCred === 1 && maxCred === 2
+            ? "low"
+            : "custom";
+  const setCredBand = (value: string) => {
+    if (value === "all") {
+      setMinCred(1);
+      setMaxCred(5);
+    } else if (value === "high") {
+      setMinCred(4);
+      setMaxCred(5);
+    } else if (value === "medium") {
+      setMinCred(3);
+      setMaxCred(3);
+    } else if (value === "low") {
+      setMinCred(1);
+      setMaxCred(2);
+    }
+  };
+
   return (
     <>
       <SourcesHeader />
       <WalkthroughPanel pageId="sources" />
-      <PrincipleStrip />
+      <div className="mb-4">
+        <DepthHint>
+          Bias tags, the credibility scale and role weighting detail
+        </DepthHint>
+      </div>
+      <ViewGate min="methodology">
+        <PrincipleStrip />
+        <CredibilityScaleCard />
+      </ViewGate>
       <AddSourceForm />
 
       <section className="card mb-4">
@@ -411,7 +539,11 @@ function SourcesContent() {
             </button>
           ) : null}
         </header>
-        <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div
+          className={`grid gap-3 px-4 py-3 sm:grid-cols-2 ${
+            analyst ? "lg:grid-cols-5" : "lg:grid-cols-3"
+          }`}
+        >
           <Field label="Source type">
             <Select
               value={typeFilter}
@@ -425,30 +557,48 @@ function SourcesContent() {
               ))}
             </Select>
           </Field>
-          <Field label="Min credibility">
-            <Select
-              value={String(minCred)}
-              onChange={(e) => setMinCred(Number(e.target.value) as Score)}
-            >
-              {CRED_VALUES.map((n) => (
-                <option key={n} value={n}>
-                  {n} — {CREDIBILITY_LABELS[n]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Max credibility">
-            <Select
-              value={String(maxCred)}
-              onChange={(e) => setMaxCred(Number(e.target.value) as Score)}
-            >
-              {CRED_VALUES.map((n) => (
-                <option key={n} value={n}>
-                  {n} — {CREDIBILITY_LABELS[n]}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          {analyst ? (
+            <>
+              <Field label="Min credibility">
+                <Select
+                  value={String(minCred)}
+                  onChange={(e) => setMinCred(Number(e.target.value) as Score)}
+                >
+                  {CRED_VALUES.map((n) => (
+                    <option key={n} value={n}>
+                      {n} — {CREDIBILITY_LABELS[n]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Max credibility">
+                <Select
+                  value={String(maxCred)}
+                  onChange={(e) => setMaxCred(Number(e.target.value) as Score)}
+                >
+                  {CRED_VALUES.map((n) => (
+                    <option key={n} value={n}>
+                      {n} — {CREDIBILITY_LABELS[n]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          ) : (
+            <Field label="Credibility">
+              <Select value={credBand} onChange={(e) => setCredBand(e.target.value)}>
+                <option value="all">All credibility levels</option>
+                <option value="high">High or very high credibility</option>
+                <option value="medium">Medium credibility</option>
+                <option value="low">Low or low–medium credibility</option>
+                {credBand === "custom" ? (
+                  <option value="custom" disabled>
+                    Custom range (set in Analyst view)
+                  </option>
+                ) : null}
+              </Select>
+            </Field>
+          )}
           <Field label="Role">
             <Select
               value={roleFilter}
@@ -462,19 +612,21 @@ function SourcesContent() {
               ))}
             </Select>
           </Field>
-          <Field label="Bias tag">
-            <Select
-              value={biasFilter}
-              onChange={(e) => setBiasFilter(e.target.value as "all" | BiasTag)}
-            >
-              <option value="all">All bias tags</option>
-              {BIAS_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          {analyst ? (
+            <Field label="Bias tag">
+              <Select
+                value={biasFilter}
+                onChange={(e) => setBiasFilter(e.target.value as "all" | BiasTag)}
+              >
+                <option value="all">All bias tags</option>
+                {BIAS_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
         </div>
         {minCred > maxCred ? (
           <p className="border-t border-line px-4 py-2 text-[11.5px] text-caution">

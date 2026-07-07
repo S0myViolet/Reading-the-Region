@@ -10,13 +10,22 @@ import Link from "next/link";
 import { useState } from "react";
 import { ReviewStatusBadge } from "@/components/badges";
 import { PageHeader } from "@/components/PageHeader";
+import { ViewModeSwitch } from "@/components/ViewMode";
 import { WALKTHROUGHS } from "@/lib/copy";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/types";
+import {
+  VIEW_MODE_DESCRIPTIONS,
+  VIEW_MODE_LABELS,
+  type ViewMode,
+} from "@/lib/viewMode";
 
 // ---------------------------------------------------------------------------
 // Reference copy
 // ---------------------------------------------------------------------------
+
+/** The three view depths, in ascending order, for the definition list. */
+const VIEW_MODES: ViewMode[] = ["simple", "analyst", "methodology"];
 
 /** One-line meaning for each review status, shown in the reference card. */
 const REVIEW_STATUS_MEANINGS: Record<ReviewStatus, string> = {
@@ -198,6 +207,33 @@ export default function SettingsPage() {
         title="Settings"
         description="Workspace preferences, guidance, and data administration."
       />
+
+      {/* View depth -------------------------------------------------------- */}
+      <SettingsCard
+        title="View depth"
+        caption="How much of the analytical engine each page shows. The same control appears in the sidebar; changing it never touches the evidence base."
+      >
+        <div className="border-b border-line px-4 py-3">
+          <div className="max-w-sm">
+            <ViewModeSwitch />
+          </div>
+        </div>
+        <dl className="space-y-2.5 px-4 py-3">
+          {VIEW_MODES.map((m) => (
+            <div key={m} className="max-w-2xl">
+              <dt className="text-[12.5px] font-medium text-ink">
+                {VIEW_MODE_LABELS[m]}
+                {m === "simple" ? (
+                  <span className="font-normal text-ink-faint"> — default</span>
+                ) : null}
+              </dt>
+              <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
+                {VIEW_MODE_DESCRIPTIONS[m]}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </SettingsCard>
 
       {/* Guidance --------------------------------------------------------- */}
       <SettingsCard

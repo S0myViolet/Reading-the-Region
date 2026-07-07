@@ -5,6 +5,10 @@
  * Both sides are captured as statements with their own evidence and their own
  * supporting signals; the record is saved as a draft and each selected signal
  * is linked back to the contradiction bidirectionally.
+ *
+ * Visibility layers: the simple view shows the essential capture fields; the
+ * five-dimension scoring completes in Analyst view. A record saved from the
+ * simple view is flagged as needing human review until it is scored.
  */
 
 import Link from "next/link";
@@ -20,6 +24,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/form";
+import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { nextId, useHydrated, useIntelligenceStore } from "@/lib/store";
 import type {
   ContradictionScores,
@@ -137,6 +142,7 @@ function SideSection({
 export default function NewContradictionPage() {
   const router = useRouter();
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const contradictions = useIntelligenceStore((s) => s.contradictions);
   const signals = useIntelligenceStore((s) => s.signals);
   const addContradiction = useIntelligenceStore((s) => s.addContradiction);

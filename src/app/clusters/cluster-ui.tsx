@@ -35,6 +35,45 @@ export function fmtDate(iso: string): string {
   });
 }
 
+const SMALL_NUMBER_WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+  "twenty",
+];
+
+/** Small counts written out in words for the simple reading view. */
+export function countInWords(n: number): string {
+  return n >= 0 && n < SMALL_NUMBER_WORDS.length ? SMALL_NUMBER_WORDS[n] : String(n);
+}
+
+/**
+ * Short one-sentence status for list cards, derived from the live
+ * ValidationResult — never from the stored status alone.
+ */
+export function shortClusterStatus(result: ValidationResult): string {
+  return result.valid
+    ? `Valid cluster — passes all ${result.totalCount} checks.`
+    : `Candidate — passes ${result.passedCount} of ${result.totalCount} checks.`;
+}
+
 /**
  * Validity pill computed from a live ValidationResult — never from the
  * stored cluster status alone.

@@ -15,6 +15,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
+import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { SectorTags, SourceBiasTags } from "@/components/tags";
 import { EntityLink, RelatedObjectsPanel } from "@/components/EntityLink";
 import { CheckboxList, TextArea, TextInput } from "@/components/form";
@@ -387,9 +388,11 @@ export default function ObservationDetailPage() {
                     {SOURCE_TYPE_LABELS[obs.sourceType]}
                   </p>
                   {source ? (
-                    <div className="mt-1.5">
-                      <SourceBiasTags tags={source.biasTags} />
-                    </div>
+                    <ViewGate min="analyst">
+                      <div className="mt-1.5">
+                        <SourceBiasTags tags={source.biasTags} />
+                      </div>
+                    </ViewGate>
                   ) : (
                     <p className="mt-1.5 text-[11px] text-ink-faint">
                       Quick-capture source — not yet registered in the source
@@ -500,6 +503,7 @@ export default function ObservationDetailPage() {
                   </p>
                 )}
               </div>
+              <DepthHint>Source bias tags and credibility detail</DepthHint>
             </div>
           </section>
         </div>

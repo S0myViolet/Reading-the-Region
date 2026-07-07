@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { useViewMode } from "@/components/ViewMode";
 import {
   CheckboxList,
   Field,
@@ -61,6 +62,7 @@ function NewObservationHeader() {
 export default function NewObservationPage() {
   const router = useRouter();
   const hydrated = useHydrated();
+  const viewMode = useViewMode();
   const observations = useIntelligenceStore((s) => s.observations);
   const sources = useIntelligenceStore((s) => s.sources);
   const addObservation = useIntelligenceStore((s) => s.addObservation);
@@ -83,6 +85,7 @@ export default function NewObservationPage() {
   const [initialNotes, setInitialNotes] = useState("");
   const [potentialFutureRelevance, setPotentialFutureRelevance] = useState("");
   const [checklist, setChecklist] = useState<PromotionChecklist>(EMPTY_CHECKLIST);
+  const [criteriaOpen, setCriteriaOpen] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
   if (!hydrated) {
@@ -373,7 +376,18 @@ export default function NewObservationPage() {
 
         <section className="card">
           <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="overline-label">Promotion checklist</h2>
+            {viewMode === "simple" ? (
+              <button
+                type="button"
+                onClick={() => setCriteriaOpen((o) => !o)}
+                className="overline-label hover:text-accent-ink"
+                aria-expanded={criteriaOpen}
+              >
+                {criteriaOpen ? "▾" : "▸"} Optional: first-pass promotion criteria
+              </button>
+            ) : (
+              <h2 className="overline-label">Promotion checklist</h2>
+            )}
             <span
               className={`font-mono text-[11.5px] ${
                 criteriaMet >= PROMOTION_MIN_CRITERIA
@@ -384,6 +398,14 @@ export default function NewObservationPage() {
               {criteriaMet}/{PROMOTION_CRITERIA.length} criteria
             </span>
           </header>
+          {viewMode === "simple" && !criteriaOpen ? (
+            <p className="px-4 py-3 text-[11.5px] text-ink-faint">
+              You can save without touching this — the observation lands as
+              unreviewed and is triaged on its detail page. Open the checklist to
+              record a first pass on the {PROMOTION_CRITERIA.length} promotion
+              criteria now.
+            </p>
+          ) : (
           <div className="space-y-3 px-4 py-4">
             <CheckboxList<keyof PromotionChecklist>
               options={PROMOTION_CRITERIA.map((c) => ({
@@ -409,6 +431,7 @@ export default function NewObservationPage() {
               be promoted from its triage panel.
             </p>
           </div>
+          )}
         </section>
 
         {errors.length > 0 ? (
