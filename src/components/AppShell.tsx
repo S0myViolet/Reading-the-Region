@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { indicatorOverdue } from "@/lib/derived";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { OnboardingModal } from "./OnboardingModal";
 import { SearchOverlay } from "./SearchOverlay";
@@ -91,10 +92,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         signalsNeedingReview: signals.filter((s) =>
           ["needs_human_review", "ai_suggested", "needs_evidence"].includes(s.reviewStatus),
         ).length,
-        overdueIndicators: 0,
+        overdueIndicators: indicators.filter((i) => indicatorOverdue(i)).length,
       }
     : { unreviewedObservations: 0, signalsNeedingReview: 0, overdueIndicators: 0 };
-  void indicators;
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
