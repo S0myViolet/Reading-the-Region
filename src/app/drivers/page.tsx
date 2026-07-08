@@ -8,9 +8,12 @@
  * validation criteria; the stored status is never trusted on its own.
  *
  * Layout has exactly four layers: header, one control bar, the driver list,
- * and the collapsed page guide. Each driver is one .list-row — name, a
- * plain-language status sentence with counts in words, and the accent pill
- * only when validation is earned. The describe-vs-explain test sits collapsed
+ * and the collapsed page guide. In the simple view each driver is one
+ * .list-row — name, a plain-language status sentence with counts in words,
+ * and the accent pill only when validation is earned. The advanced row leads
+ * with the driver's meaning (the first sentence of its statement), then live
+ * counts, its standing in plain words, and — for a hypothesis — the first
+ * requirement it still fails. The describe-vs-explain test sits collapsed
  * below the list.
  */
 
@@ -29,12 +32,17 @@ import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateDriver } from "@/lib/validation";
 import { explainDriverStatus } from "@/lib/explain";
 import { DEFINITIONS } from "@/lib/copy";
+import { firstSentence } from "@/lib/simple";
 import type { Driver, Signal } from "@/lib/types";
+import { CONFIDENCE_LABELS } from "@/lib/types";
 import {
   DRIVER_SORT_OPTIONS,
   DRIVER_STATUS_FILTER_OPTIONS,
   ValidatedPill,
   driverLinkCountsInWords,
+  driverMissingPhrases,
+  signalsOfDriver,
+  signalsStillNeeded,
   sortDrivers,
   type DriverSort,
   type DriverStatusFilter,
@@ -44,21 +52,83 @@ function DriversHeader() {
   return <PageHeader title="Drivers" description={DEFINITIONS.driver} />;
 }
 
-function DriverRow({ driver, signals }: { driver: Driver; signals: Signal[] }) {
+function DriverRow({
+  driver,
+  signals,
+  advanced,
+}: {
+  driver: Driver;
+  signals: Signal[];
+  advanced: boolean;
+}) {
   const result = validateDriver(driver, signals);
+
+  if (!advanced) {
+    return (
+      <Link href={`/drivers/${driver.id}`} className="list-row group">
+        <div className="flex items-baseline justify-between gap-6">
+          <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+            {driver.name}
+          </p>
+          <span className="shrink-0">
+            <ValidatedPill result={result} />
+          </span>
+        </div>
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
+          {explainDriverStatus(driver, result)} {driverLinkCountsInWords(driver)}
+        </p>
+      </Link>
+    );
+  }
+
+  // Advanced row: meaning first, then live counts, standing in plain words,
+  // and — for a hypothesis — the first requirement it still fails.
+  const missing = driverMissingPhrases(driver, signalsOfDriver(driver, signals), result);
+  const needed = signalsStillNeeded(driver);
+  const patterns = driver.patternIds.length;
+  const linked = driver.signalIds.length;
+
   return (
     <Link href={`/drivers/${driver.id}`} className="list-row group">
       <div className="flex items-baseline justify-between gap-6">
         <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
           {driver.name}
         </p>
-        <span className="shrink-0">
-          <ValidatedPill result={result} />
+        <span className="shrink-0 text-[11px] text-ink-faint">
+          {CONFIDENCE_LABELS[driver.confidence]}
         </span>
       </div>
-      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
-        {explainDriverStatus(driver, result)} {driverLinkCountsInWords(driver)}
+      <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+        {firstSentence(driver.driverStatement)}
       </p>
+      <p className="mt-1.5 text-[12px] text-ink-faint">
+        Explains {patterns} pattern{patterns === 1 ? "" : "s"} and {linked} linked
+        signal{linked === 1 ? "" : "s"}.
+      </p>
+      <p className="mt-1 text-[12px] leading-relaxed">
+        {result.valid ? (
+          <>
+            <span className="font-medium text-accent-ink">Validated driver</span>
+            <span className="text-ink-soft">
+              {" "}
+              — passes all {result.totalCount} checks.
+            </span>
+          </>
+        ) : (
+          <span className="text-ink-soft">
+            Still a hypothesis. Passes {result.passedCount} of {result.totalCount}{" "}
+            validation checks.
+            {needed > 0
+              ? ` Needs ${needed} more linked signal${needed === 1 ? "" : "s"}.`
+              : ""}
+          </span>
+        )}
+      </p>
+      {!result.valid && missing.length > 0 ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-caution">
+          Missing: {missing[0]}.
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -201,7 +271,12 @@ export default function DriversPage() {
       ) : (
         <section aria-label="Drivers">
           {rows.map((d) => (
-            <DriverRow key={d.id} driver={d} signals={signals} />
+            <DriverRow
+              key={d.id}
+              driver={d}
+              signals={signals}
+              advanced={mode !== "simple"}
+            />
           ))}
         </section>
       )}

@@ -2,6 +2,9 @@ import Link from "next/link";
 import type { EntityKind } from "@/lib/types";
 import { ENTITY_KIND_LABELS, ENTITY_ROUTES } from "@/lib/types";
 
+/** Kinds whose records live on a list page rather than their own route. */
+const LIST_ONLY_KINDS = new Set<EntityKind>(["implication", "indicator"]);
+
 /** Cross-link to any intelligence object — a quiet two-line text link. */
 export function EntityLink({
   kind,
@@ -12,8 +15,11 @@ export function EntityLink({
   id: string;
   title: string;
 }) {
+  const href = LIST_ONLY_KINDS.has(kind)
+    ? ENTITY_ROUTES[kind]
+    : `${ENTITY_ROUTES[kind]}/${id}`;
   return (
-    <Link href={`${ENTITY_ROUTES[kind]}/${id}`} className="group block py-0.5">
+    <Link href={href} className="group block py-0.5">
       <span className="block text-[10.5px] text-ink-faint">
         {ENTITY_KIND_LABELS[kind]} · <span className="font-mono">{id}</span>
       </span>

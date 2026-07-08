@@ -6,16 +6,14 @@
  * status is never presented on its own, and a weak driver is never shown as
  * validated.
  *
- * The left column reads as an article: small headings, prose and whitespace,
- * no card boxes. Visibility layers: the simple view leads with the driver
- * statement, then what it explains, a plain-language status sentence,
- * confidence with its reason, the tensions that could contradict it, and a
- * next step. Analyst view opens the tabbed workspace — scores read as
- * sentences, validation checklist, effect chains as an indented ladder,
- * evidence links, leading indicators with trends, and review controls.
- * Methodology view adds the validation thresholds against this driver's
- * actuals and the audit trail. The relationship trail is visible in every
- * mode.
+ * The page answers five questions in order, plain English first: what is
+ * this force, why it matters, what could weaken it, what to watch next —
+ * then the full depth (live validation checks, score readings, effect
+ * chains, evidence links, structured tensions, review controls). The simple
+ * view keeps its original article layout untouched. Analyst view opens the
+ * tabbed workspace with a status strip under the title; Methodology view
+ * adds the threshold table and the audit trail. The evidence trail sits in
+ * the right rail — top links by default, the full trail on request.
  */
 
 import Link from "next/link";
@@ -26,13 +24,26 @@ import { PageHeader } from "@/components/PageHeader";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
-import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
-import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
+import { NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
-import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
+import {
+  ConnectBlock,
+  IncompleteNote,
+  RelationshipTrail,
+  ShowAllList,
+  StatusStrip,
+  TensionBlock,
+  ValidationCheckRows,
+  type TrailGroup,
+} from "@/components/connect";
 import { ScoreBar } from "@/components/ScorePanel";
-import { ConfidenceBadge, ProvenanceBadge, TrendBadge } from "@/components/badges";
+import {
+  ConfidenceBadge,
+  ProvenanceBadge,
+  SignalStrengthBadge,
+  TrendBadge,
+} from "@/components/badges";
 import { SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
@@ -43,39 +54,55 @@ import {
   explainConfidenceGeneric,
   explainContradiction,
   explainDriverStatus,
+  patternPlainMeaning,
 } from "@/lib/explain";
+import { firstSentence } from "@/lib/simple";
 import type {
   ConfidenceLevel,
   Contradiction,
   Driver,
   DriverScores,
   MonitoringIndicator,
+  Pattern,
   ReviewStatus,
   Signal,
+  Source,
 } from "@/lib/types";
 import {
   CONFIDENCE_LABELS,
+  CONTRADICTION_TYPE_LABELS,
   DRIVER_SCORE_LABELS,
   DRIVER_THRESHOLDS,
   REVIEW_STATUS_LABELS,
 } from "@/lib/types";
 import {
-  DriverStanding,
   RecomputedNote,
   btnPrimary,
+  driverCheckRows,
   driverEvidenceNote,
+  driverMissingPhrases,
   driverNextStep,
   driverScoreReading,
+  driverStatusStripItems,
+  driverWhyItMatters,
+  firstOrderEffectSentence,
   fmtDate,
+  mainContradictionOfDriver,
   signalsOfDriver,
+  sourcesOfDriver,
+  statementLead,
   statusDisagrees,
-  textLink,
+  strengthenSidesSentence,
+  systemsTouchedLine,
+  whatItExplainsParas,
 } from "../driver-ui";
 
-/** How many signal links show in the relationship trail before capping. */
+/** How many signal links show in the simple-view relationship trail. */
 const TRAIL_SIGNAL_CAP = 8;
-/** How many signal links show on the Evidence tab before collapsing. */
-const EVIDENCE_SIGNAL_COLLAPSE = 10;
+/** How many signals the Evidence tab shows before the show-all control. */
+const EVIDENCE_SIGNAL_PREVIEW = 8;
+/** How many steps each main sidebar trail group shows by default. */
+const SIDEBAR_PREVIEW = 5;
 
 const DRIVER_SCORE_KEYS = Object.keys(DRIVER_SCORE_LABELS) as Array<
   keyof DriverScores
@@ -90,9 +117,12 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+const disclosureSummary =
+  "cursor-pointer list-none text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft";
+
 // ---------------------------------------------------------------------------
-// Overview — the simple layer. Rendered flat in simple view and as the
-// Overview tab in Analyst view (where its gated sections open up).
+// Simple view — unchanged article layout: statement, what it explains,
+// standing, confidence, tensions, next step.
 // ---------------------------------------------------------------------------
 
 function OverviewContent({
@@ -194,15 +224,171 @@ function OverviewContent({
         Scoring, effect chains, possible futures, evidence links and validation
         detail
       </DepthHint>
+    </article>
+  );
+}
 
-      <ViewGate min="analyst">
-        <div className="space-y-8">
-          <section>
-            <SectionHeading>
-              Possible futures — if this force continues
-            </SectionHeading>
-            {driver.possibleFutures.length > 0 ? (
-              <ul className="mt-2 space-y-2.5">
+// ---------------------------------------------------------------------------
+// Overview tab (analyst) — plain English first: what the force is, why it
+// matters, what could weaken it, what to watch next. Depth follows.
+// ---------------------------------------------------------------------------
+
+function AdvancedOverviewTab({
+  driver,
+  result,
+  driverSignals,
+  mainContradiction,
+  otherContradictionCount,
+  linkedIndicators,
+}: {
+  driver: Driver;
+  result: ValidationResult;
+  driverSignals: Signal[];
+  mainContradiction: Contradiction | null;
+  otherContradictionCount: number;
+  linkedIndicators: MonitoringIndicator[];
+}) {
+  const { lead, rest } = statementLead(driver);
+  const whyParas = driverWhyItMatters(driver, driverSignals);
+  const explainsParas = whatItExplainsParas(driver);
+  const watchList = linkedIndicators.slice(0, 4);
+
+  return (
+    <div className="max-w-2xl space-y-8">
+      <ConnectBlock heading="What is this force?">
+        {lead ? (
+          <>
+            <p>{lead}</p>
+            {rest ? (
+              <details className="mt-1.5">
+                <summary className={disclosureSummary}>
+                  Show the full statement
+                </summary>
+                <p className="mt-1.5">{rest}</p>
+              </details>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-[12px] text-ink-faint">
+            No driver statement recorded yet. A driver must explain, not
+            describe — state the force that would produce the patterns it
+            claims to explain.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="Why it matters">
+        {whyParas.length > 0 ? (
+          <div className="space-y-1.5">
+            {whyParas.map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[12px] text-ink-faint">
+            Not recorded yet. Say who has to act differently if this force is
+            real — without that, the driver is trivia.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What could weaken it">
+        {mainContradiction ? (
+          <>
+            <p>{explainContradiction(mainContradiction)}</p>
+            <p className="mt-1.5">
+              {firstSentence(
+                mainContradiction.underlyingTension.trim() ||
+                  mainContradiction.strategicImplication,
+              )}{" "}
+              <Link
+                href={`/contradictions/${mainContradiction.id}`}
+                className="whitespace-nowrap text-[12px] underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+              >
+                Open this tension
+              </Link>
+            </p>
+            {otherContradictionCount > 0 ? (
+              <p className="mt-1.5 text-[12px] text-ink-faint">
+                {otherContradictionCount} more tension
+                {otherContradictionCount === 1 ? " sits" : "s sit"} on the
+                Contradictions tab.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <IncompleteNote
+            missing="No contradiction is linked to this driver yet."
+            whyItMatters="A force nobody has argued against has not been tested."
+            nextStep="Look for evidence that cuts against this explanation and link it as a contradiction."
+          />
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What to watch next">
+        {watchList.length > 0 ? (
+          <ul className="space-y-1.5">
+            {watchList.map((i) => (
+              <li key={i.id}>
+                <Link
+                  href="/monitoring"
+                  className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                >
+                  {i.name}
+                </Link>
+                <span className="text-ink-faint"> — {firstSentence(i.description)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            No leading indicators are attached yet, so there is nothing to
+            watch. Decide what should move first if this force is real, then
+            track it in Monitoring.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <div className="space-y-8 border-t border-line pt-6">
+        <ConnectBlock heading="What it explains">
+          {explainsParas.length > 0 ? (
+            <>
+              <ViewGate min="methodology">
+                <p className="mb-1.5">
+                  <ProvenanceBadge label="human_interpretation" />
+                </p>
+              </ViewGate>
+              <div className="space-y-1.5">
+                {explainsParas.map((p) => (
+                  <p key={p}>{p}</p>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-[12px] text-ink-faint">
+              Not recorded yet. Name the patterns this force accounts for — a
+              driver that explains only one pattern is usually a restatement of
+              that pattern.
+            </p>
+          )}
+        </ConnectBlock>
+
+        <ConnectBlock heading="Confidence">
+          <div className="mb-1.5">
+            <ConfidenceBadge level={driver.confidence} />
+          </div>
+          <p>
+            {explainConfidenceGeneric(driver.confidence, driverEvidenceNote(driver))}
+          </p>
+        </ConnectBlock>
+
+        <ConnectBlock heading="Possible futures — if this force continues">
+          {driver.possibleFutures.length > 0 ? (
+            <>
+              <p className="mb-1.5 text-[12px] text-ink-faint">
+                These are plausible directions, not predictions.
+              </p>
+              <ul className="space-y-2">
                 {driver.possibleFutures.map((f) => (
                   <li key={f} className="flex items-start gap-2.5">
                     <ViewGate min="methodology">
@@ -210,41 +396,45 @@ function OverviewContent({
                         <ProvenanceBadge label="speculative_possibility" />
                       </span>
                     </ViewGate>
-                    <span className="text-[13px] leading-relaxed text-ink-soft">{f}</span>
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-1.5 text-[12px] text-ink-faint">
-                No possible futures articulated yet. A validated driver must
-                produce plausible future scenarios — if none can be stated, the
-                explanation is not yet doing any work.
-              </p>
-            )}
-          </section>
+            </>
+          ) : (
+            <p className="text-[12px] text-ink-faint">
+              No possible futures articulated yet. A validated driver must
+              produce plausible future scenarios — if none can be stated, the
+              explanation is not yet doing any work.
+            </p>
+          )}
+        </ConnectBlock>
 
-          <section>
-            <SectionHeading>Systems affected</SectionHeading>
-            <div className="mt-2">
-              {driver.systemsAffected.length > 0 ? (
-                <SystemTags systems={driver.systemsAffected} />
-              ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  No systems recorded yet. A structural force should touch at
-                  least one named system.
-                </span>
-              )}
-            </div>
-          </section>
-        </div>
-      </ViewGate>
-    </article>
+        <ConnectBlock heading="Systems affected">
+          {driver.systemsAffected.length > 0 ? (
+            <SystemTags systems={driver.systemsAffected} />
+          ) : (
+            <p className="text-[12px] text-ink-faint">
+              No systems recorded yet. A structural force should touch at least
+              one named system.
+            </p>
+          )}
+        </ConnectBlock>
+
+        <ConnectBlock heading="Next step">
+          <p>{driverNextStep(result)}</p>
+        </ConnectBlock>
+
+        <BiasCheckPanel />
+      </div>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Validation tab (analyst) — checklist plus the ten scores read as sentences;
-// methodology adds the thresholds against this driver's actuals.
+// Validation tab (analyst) — the live checks as requirement/current/threshold
+// rows with the reason each requirement exists, then the scores read against
+// the rubric; methodology adds the threshold table.
 // ---------------------------------------------------------------------------
 
 function ThresholdsSection({
@@ -337,21 +527,51 @@ function ValidationTab({
   driver,
   driverSignals,
   result,
+  recomputed,
 }: {
   driver: Driver;
   driverSignals: Signal[];
   result: ValidationResult;
+  recomputed: boolean;
 }) {
+  const missing = driverMissingPhrases(driver, driverSignals, result);
   return (
     <div className="max-w-2xl space-y-8">
-      <ValidationChecklist
-        result={result}
-        title="Driver validation threshold"
-        passedLabel="Validated driver"
-        failedLabel="Driver hypothesis"
-      />
       <section>
-        <SectionHeading>Scores, read</SectionHeading>
+        <SectionHeading>
+          Checks before treating this as a real driver
+        </SectionHeading>
+        <p className="mt-1.5 text-[13.5px]">
+          {result.valid ? (
+            <span className="font-medium text-accent-ink">Validated driver</span>
+          ) : (
+            <span className="font-medium text-ink">Still a hypothesis</span>
+          )}
+          <span className="text-ink-soft">
+            {" "}
+            · {result.passedCount} of {result.totalCount} checks passed
+          </span>
+          {recomputed ? (
+            <>
+              {" "}
+              <RecomputedNote />
+            </>
+          ) : null}
+        </p>
+        <div className="mt-4 border-t border-line pt-3">
+          <ValidationCheckRows
+            checks={driverCheckRows(driver, driverSignals, result)}
+          />
+        </div>
+        {!result.valid && missing.length > 0 ? (
+          <p className="mt-4 text-[12.5px] leading-relaxed text-ink-soft">
+            <span className="text-ink-faint">What is missing — </span>
+            {missing.join("; ")}.
+          </p>
+        ) : null}
+      </section>
+      <section>
+        <SectionHeading>Scores, read against the rubric</SectionHeading>
         <div className="mt-3 space-y-3.5">
           {DRIVER_SCORE_KEYS.map((k) => (
             <div key={k}>
@@ -363,8 +583,8 @@ function ValidationTab({
           ))}
         </div>
         <p className="mt-4 text-[11.5px] text-ink-faint">
-          Scores are analyst judgements against the 1–5 rubric; the checklist
-          above records what the evidence itself supports.
+          Scores are analyst judgements against the 1–5 rubric; the checks
+          above record what the evidence itself supports.
         </p>
       </section>
       <ViewGate min="methodology">
@@ -375,8 +595,8 @@ function ValidationTab({
 }
 
 // ---------------------------------------------------------------------------
-// Systems tab — effect chains as an indented ladder: each further order of
-// effect steps in from a hairline rail and carries less certainty.
+// Systems tab — effect chain as an indented ladder, each level labelled with
+// what it means in plain words. Each further order carries less certainty.
 // ---------------------------------------------------------------------------
 
 function LadderStep({
@@ -399,10 +619,12 @@ function LadderStep({
 }
 
 function SystemsTab({ driver }: { driver: Driver }) {
+  const firstOrder = firstOrderEffectSentence(driver);
+  const systemsLine = systemsTouchedLine(driver);
   return (
     <div className="max-w-2xl space-y-6">
       <p className="text-[11.5px] leading-relaxed text-ink-faint">
-        These effect chains are inferred by the analyst from the driver's
+        These effect chains are inferred by the analyst from the driver&apos;s
         logic — they are interpretation, not sourced facts. Each further order
         of effect carries less certainty than the one before it.
         <ViewGate min="methodology">
@@ -412,17 +634,32 @@ function SystemsTab({ driver }: { driver: Driver }) {
         </ViewGate>
       </p>
 
-      <LadderStep indent={0} label="First order — the force itself">
-        <p className="text-[13px] leading-relaxed text-ink">
-          {driver.driverStatement.trim()
-            ? driver.driverStatement
-            : "No driver statement recorded yet — the chain has nothing to hang from."}
-        </p>
+      <LadderStep
+        indent={0}
+        label="First-order effect — what the driver directly changes"
+      >
+        {firstOrder || systemsLine ? (
+          <>
+            {firstOrder ? (
+              <p className="text-[13px] leading-relaxed text-ink">{firstOrder}</p>
+            ) : null}
+            {systemsLine ? (
+              <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+                {systemsLine}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-[12px] text-ink-faint">
+            Nothing is recorded yet about what this driver directly changes —
+            the chain has nothing to hang from.
+          </p>
+        )}
       </LadderStep>
 
       <LadderStep
         indent={1}
-        label="Second-order effects — what changes because of the first change"
+        label="Second-order effects — what changes because of that"
       >
         {driver.secondOrderEffects.length > 0 ? (
           <ul className="space-y-2">
@@ -442,7 +679,7 @@ function SystemsTab({ driver }: { driver: Driver }) {
 
       <LadderStep
         indent={2}
-        label="Third-order effects — the least certain consequences"
+        label="Third-order effects — what may happen later"
       >
         {driver.thirdOrderEffects.length > 0 ? (
           <ul className="space-y-2">
@@ -464,62 +701,46 @@ function SystemsTab({ driver }: { driver: Driver }) {
 }
 
 // ---------------------------------------------------------------------------
-// Evidence tab
+// Evidence tab — grouped: patterns with their plain meaning, signals behind a
+// show-all control, an honest paragraph on sources, and the indicators.
 // ---------------------------------------------------------------------------
 
 function EvidenceTab({
   driver,
   driverSignals,
   driverPatterns,
+  driverSources,
   driverIndicators,
-  trail,
 }: {
   driver: Driver;
   driverSignals: Signal[];
-  driverPatterns: Array<{ id: string; name: string }>;
+  driverPatterns: Pattern[];
+  driverSources: Source[];
   driverIndicators: MonitoringIndicator[];
-  trail: TrailStep[];
 }) {
-  const [showAllSignals, setShowAllSignals] = useState(false);
   const minSources = DRIVER_THRESHOLDS.minIndependentSources;
-  const collapsed =
-    !showAllSignals && driverSignals.length > EVIDENCE_SIGNAL_COLLAPSE;
-  const visibleSignals = collapsed
-    ? driverSignals.slice(0, EVIDENCE_SIGNAL_COLLAPSE)
-    : driverSignals;
+  const recorded = driver.independentSourceCount;
+  const reachable = driverSources.length;
 
   return (
-    <div className="space-y-8">
-      <section>
-        <SectionHeading>Independent sources</SectionHeading>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
-          Evidence drawn from{" "}
-          <span className="font-mono text-ink">{driver.independentSourceCount}</span>{" "}
-          independent source{driver.independentSourceCount === 1 ? "" : "s"}.{" "}
-          <span
-            className={`text-[11.5px] ${
-              driver.independentSourceCount >= minSources
-                ? "text-accent-ink"
-                : "text-caution"
-            }`}
-          >
-            Validation needs at least {minSources}.
-          </span>
-        </p>
-      </section>
-
+    <div className="max-w-2xl space-y-8">
       <section>
         <SectionHeading>
-          Patterns this driver explains
+          Patterns explained
           <span className="font-normal text-ink-faint">{driverPatterns.length}</span>
         </SectionHeading>
         <div className="mt-2">
           {driverPatterns.length > 0 ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <ul className="space-y-3">
               {driverPatterns.map((p) => (
-                <EntityLink key={p.id} kind="pattern" id={p.id} title={p.name} />
+                <li key={p.id}>
+                  <EntityLink kind="pattern" id={p.id} title={p.name} />
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-ink-soft">
+                    {patternPlainMeaning(p)}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <p className="text-[11.5px] text-ink-faint">
               No patterns connected yet. A driver earns its status by explaining
@@ -536,24 +757,24 @@ function EvidenceTab({
         </SectionHeading>
         <div className="mt-2">
           {driverSignals.length > 0 ? (
-            <>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {visibleSignals.map((s) => (
-                  <EntityLink key={s.id} kind="signal" id={s.id} title={s.title} />
+            <div className="space-y-1.5">
+              <ShowAllList
+                previewCount={EVIDENCE_SIGNAL_PREVIEW}
+                noun="signals"
+                items={driverSignals.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-0.5 py-0.5"
+                  >
+                    <EntityLink kind="signal" id={s.id} title={s.title} />
+                    <span className="flex shrink-0 items-center gap-2">
+                      <SignalStrengthBadge strength={s.signalStrength} />
+                      <span className="text-[11px] text-ink-faint">{s.country}</span>
+                    </span>
+                  </div>
                 ))}
-              </div>
-              {driverSignals.length > EVIDENCE_SIGNAL_COLLAPSE ? (
-                <button
-                  type="button"
-                  className={`mt-3 ${textLink}`}
-                  onClick={() => setShowAllSignals((v) => !v)}
-                >
-                  {collapsed
-                    ? `Show all ${driverSignals.length} signals`
-                    : "Show fewer signals"}
-                </button>
-              ) : null}
-            </>
+              />
+            </div>
           ) : (
             <p className="text-[11.5px] text-ink-faint">
               No signals connected yet. The explanatory claim must trace down to
@@ -563,6 +784,42 @@ function EvidenceTab({
         </div>
       </section>
 
+      <ConnectBlock heading="Independent sources">
+        <p>
+          The record states{" "}
+          <span className="font-mono text-ink">{recorded}</span> independent
+          source{recorded === 1 ? "" : "s"}.{" "}
+          <span
+            className={`text-[11.5px] ${
+              recorded >= minSources ? "text-accent-ink" : "text-caution"
+            }`}
+          >
+            Validation needs at least {minSources}.
+          </span>
+        </p>
+        {reachable > 0 ? (
+          reachable === recorded ? (
+            <p className="mt-1.5">
+              The signals linked here reach the same {reachable} distinct source
+              record{reachable === 1 ? "" : "s"}, so the recorded count matches
+              the evidence that can be checked.
+            </p>
+          ) : (
+            <p className="mt-1.5">
+              The signals linked here currently reach {reachable} distinct
+              source record{reachable === 1 ? "" : "s"} — the recorded count and
+              the reachable records disagree, so check which is out of date
+              before relying on the number.
+            </p>
+          )
+        ) : (
+          <p className="mt-1.5">
+            No source records are reachable through the linked signals yet, so
+            the recorded count cannot be checked against actual records.
+          </p>
+        )}
+      </ConnectBlock>
+
       <section>
         <SectionHeading>
           Leading indicators
@@ -570,14 +827,22 @@ function EvidenceTab({
         </SectionHeading>
         <div className="mt-2">
           {driverIndicators.length > 0 ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <ul className="space-y-2">
               {driverIndicators.map((i) => (
-                <div key={i.id} className="space-y-1">
-                  <EntityLink kind="indicator" id={i.id} title={i.name} />
+                <li
+                  key={i.id}
+                  className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5"
+                >
+                  <Link
+                    href="/monitoring"
+                    className="text-[12.5px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                  >
+                    {i.name}
+                  </Link>
                   <TrendBadge trend={i.trend} />
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <p className="text-[11.5px] text-ink-faint">
               No leading indicators attached yet. Without indicators the driver
@@ -585,16 +850,6 @@ function EvidenceTab({
               is real.
             </p>
           )}
-        </div>
-      </section>
-
-      <section className="max-w-2xl">
-        <SectionHeading>Evidence trail</SectionHeading>
-        <p className="mt-0.5 text-[12px] text-ink-faint">
-          From this conclusion back down to its sources.
-        </p>
-        <div className="mt-3">
-          <EvidenceTrail steps={trail} />
         </div>
       </section>
     </div>
@@ -617,6 +872,10 @@ function ReviewTab({ driver }: { driver: Driver }) {
     <div className="max-w-2xl space-y-8">
       <section>
         <SectionHeading>Human review</SectionHeading>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+          Use this to record analyst judgement. These notes do not overwrite
+          the evidence.
+        </p>
         <div className="mt-3 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
@@ -640,7 +899,7 @@ function ReviewTab({ driver }: { driver: Driver }) {
             </Field>
             <Field
               label="Confidence"
-              hint="How much weight this explanation should carry in territories and scenarios."
+              hint="How much trust to place in this explanation when territories and scenarios build on it."
             >
               <Select
                 value={driver.confidence}
@@ -749,9 +1008,11 @@ export default function DriverDetailPage() {
     );
   }
 
+  const simple = mode === "simple";
   const result = validateDriver(driver, signals);
   const recomputed = statusDisagrees(driver, result);
   const driverSignals = signalsOfDriver(driver, signals);
+  const driverSources = sourcesOfDriver(driverSignals, sources);
   const linkedPatterns = patterns.filter((p) => driver.patternIds.includes(p.id));
   const linkedContradictions = contradictions.filter((c) =>
     driver.contradictionIds.includes(c.id),
@@ -764,32 +1025,9 @@ export default function DriverDetailPage() {
   const linkedTerritories = territories.filter((t) =>
     t.driverIds.includes(driver.id),
   );
+  const mainContradiction = mainContradictionOfDriver(driver, contradictions);
   const trailSignals = driverSignals.slice(0, TRAIL_SIGNAL_CAP);
   const trailSignalOverflow = driverSignals.length - trailSignals.length;
-
-  // Evidence chain, downward from this driver's actual links — steps are
-  // never invented, so a thinly evidenced driver shows a visibly short trail.
-  const trailSteps: TrailStep[] = [{ stage: "driver", title: driver.name }];
-  for (const p of linkedPatterns) {
-    trailSteps.push({ stage: "pattern", title: p.name, href: `/patterns/${p.id}` });
-  }
-  for (const s of driverSignals.slice(0, 3)) {
-    trailSteps.push({
-      stage: signalStage(s),
-      title: s.title,
-      href: `/signals/${s.id}`,
-    });
-  }
-  const firstTrailSource = driverSignals[0]
-    ? sources.find((src) => src.id === driverSignals[0].sourceIds[0])
-    : undefined;
-  if (firstTrailSource) {
-    trailSteps.push({
-      stage: "source",
-      title: firstTrailSource.name,
-      href: `/sources/${firstTrailSource.id}`,
-    });
-  }
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Drivers", href: "/drivers" },
@@ -802,6 +1040,7 @@ export default function DriverDetailPage() {
     });
   }
 
+  // Simple-view relationship trail — unchanged.
   const relatedGroups: RelatedGroup[] = [
     {
       heading: "Patterns explained",
@@ -842,43 +1081,115 @@ export default function DriverDetailPage() {
     },
   ];
 
-  const overview = (
-    <OverviewContent
-      driver={driver}
-      result={result}
-      linkedContradictions={linkedContradictions}
-    />
+  // Advanced-view evidence trail — top links per group by default, the full
+  // trail on request. Steps come only from records this driver links to.
+  const topTrailSignals = [...driverSignals].sort(
+    (a, b) =>
+      b.scores.strategicRelevance - a.scores.strategicRelevance ||
+      b.scores.evidence - a.scores.evidence,
   );
+  const topTrailSources = [...driverSources].sort(
+    (a, b) => b.credibility - a.credibility,
+  );
+  const trailGroups: TrailGroup[] = [
+    {
+      label: `Patterns (${linkedPatterns.length})`,
+      previewCount: SIDEBAR_PREVIEW,
+      steps: linkedPatterns.map((p) => ({
+        stage: "pattern" as const,
+        title: p.name,
+        href: `/patterns/${p.id}`,
+      })),
+    },
+    {
+      label: `Signals (${driverSignals.length})`,
+      previewCount: SIDEBAR_PREVIEW,
+      steps: topTrailSignals.map((s) => ({
+        stage: signalStage(s),
+        title: s.title,
+        href: `/signals/${s.id}`,
+      })),
+    },
+    {
+      label: `Sources (${driverSources.length})`,
+      previewCount: SIDEBAR_PREVIEW,
+      steps: topTrailSources.map((src) => ({
+        stage: "source" as const,
+        title: src.name,
+        href: `/sources/${src.id}`,
+      })),
+    },
+    {
+      label: `Contradictions (${linkedContradictions.length})`,
+      steps: linkedContradictions.map((c) => ({
+        stage: "contradiction" as const,
+        title: c.name,
+        href: `/contradictions/${c.id}`,
+      })),
+    },
+    {
+      label: `Future territories (${linkedTerritories.length})`,
+      steps: linkedTerritories.map((t) => ({
+        stage: "territory" as const,
+        title: t.name,
+        href: `/territories/${t.id}`,
+      })),
+    },
+    {
+      label: `Monitoring indicators (${linkedIndicators.length})`,
+      previewCount: SIDEBAR_PREVIEW,
+      steps: linkedIndicators.map((i) => ({
+        stage: "indicator" as const,
+        title: i.name,
+        href: "/monitoring",
+      })),
+    },
+  ];
+  const trailHasSteps = trailGroups.some((g) => g.steps.length > 0);
+
+  const stripItems = driverStatusStripItems(driver, result);
+  if (recomputed) stripItems.push({ text: "status recomputed from evidence" });
 
   return (
     <>
       <Breadcrumbs items={crumbs} />
       <PageHeader
         title={driver.name}
-        actions={
-          <>
-            <PipelineStageBadge stage="driver" />
-            <ViewGate min="analyst">
-              <div className="flex flex-col items-end gap-1">
-                <DriverStanding result={result} />
-                {recomputed ? <RecomputedNote /> : null}
-              </div>
-            </ViewGate>
-          </>
-        }
+        actions={<PipelineStageBadge stage="driver" />}
       />
+      {simple ? null : (
+        <div className="-mt-5 mb-8">
+          <StatusStrip items={stripItems} />
+        </div>
+      )}
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-10">
         <div>
-          {mode === "simple" ? (
-            overview
+          {simple ? (
+            <OverviewContent
+              driver={driver}
+              result={result}
+              linkedContradictions={linkedContradictions}
+            />
           ) : (
             <Tabs
               tabs={[
                 {
                   id: "overview",
                   label: "Overview",
-                  content: overview,
+                  content: (
+                    <AdvancedOverviewTab
+                      driver={driver}
+                      result={result}
+                      driverSignals={driverSignals}
+                      mainContradiction={mainContradiction}
+                      otherContradictionCount={Math.max(
+                        0,
+                        linkedContradictions.length - 1,
+                      )}
+                      linkedIndicators={linkedIndicators}
+                    />
+                  ),
                 },
                 {
                   id: "validation",
@@ -888,6 +1199,7 @@ export default function DriverDetailPage() {
                       driver={driver}
                       driverSignals={driverSignals}
                       result={result}
+                      recomputed={recomputed}
                     />
                   ),
                 },
@@ -903,12 +1215,9 @@ export default function DriverDetailPage() {
                     <EvidenceTab
                       driver={driver}
                       driverSignals={driverSignals}
-                      driverPatterns={linkedPatterns.map((p) => ({
-                        id: p.id,
-                        name: p.name,
-                      }))}
+                      driverPatterns={linkedPatterns}
+                      driverSources={driverSources}
                       driverIndicators={linkedIndicators}
-                      trail={trailSteps}
                     />
                   ),
                 },
@@ -919,11 +1228,35 @@ export default function DriverDetailPage() {
                     linkedContradictions.length > 0 ? (
                       <div className="max-w-2xl space-y-8">
                         {linkedContradictions.map((c) => (
-                          <ContradictionPanel key={c.id} contradiction={c} />
+                          <TensionBlock
+                            key={c.id}
+                            name={c.name}
+                            href={`/contradictions/${c.id}`}
+                            typeLabel={`Contradiction · ${CONTRADICTION_TYPE_LABELS[c.contradictionType]}`}
+                            sideA={{ claim: c.sideA, support: c.evidenceSideA }}
+                            sideB={{ claim: c.sideB, support: c.evidenceSideB }}
+                            rows={[
+                              {
+                                label: "Why the tension matters",
+                                text: firstSentence(
+                                  c.underlyingTension.trim() ||
+                                    c.strategicImplication,
+                                ),
+                              },
+                              {
+                                label: "What would strengthen each side",
+                                text: strengthenSidesSentence(c),
+                              },
+                            ]}
+                          />
                         ))}
                       </div>
                     ) : (
-                      <NoContradictionNote />
+                      <IncompleteNote
+                        missing="No contradiction linked yet."
+                        whyItMatters="A force nobody has argued against has not been tested."
+                        nextStep="Look for evidence that cuts against this driver before treating it as validated."
+                      />
                     ),
                 },
                 {
@@ -937,10 +1270,25 @@ export default function DriverDetailPage() {
         </div>
 
         <aside className="mt-10 space-y-8 lg:mt-0">
-          <RelatedObjectsPanel groups={relatedGroups} />
-          <ViewGate min="analyst">
-            <BiasCheckPanel />
-          </ViewGate>
+          {simple ? (
+            <RelatedObjectsPanel groups={relatedGroups} />
+          ) : trailHasSteps ? (
+            <section>
+              <h2 className="mb-3 text-[13px] font-medium text-ink">
+                Evidence trail
+              </h2>
+              <RelationshipTrail
+                groups={trailGroups}
+                expandLabel="Show the full evidence trail"
+              />
+            </section>
+          ) : (
+            <IncompleteNote
+              missing="No linked records yet."
+              whyItMatters="A driver only exists through the patterns and signals it explains."
+              nextStep="Link the patterns this force explains, then the signals beneath them."
+            />
+          )}
         </aside>
       </div>
     </>

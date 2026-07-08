@@ -12,7 +12,18 @@
  */
 
 import { Pill } from "@/components/badges";
-import type { Driver, DriverScores, Score, Signal } from "@/lib/types";
+import type { CheckRowData } from "@/components/connect";
+import { firstSentence } from "@/lib/simple";
+import type {
+  ActorType,
+  Contradiction,
+  Driver,
+  DriverScores,
+  Score,
+  Signal,
+  Source,
+} from "@/lib/types";
+import { CONFIDENCE_LABELS, DRIVER_THRESHOLDS, SYSTEM_LABELS } from "@/lib/types";
 import type { ValidationResult } from "@/lib/validation";
 
 /** Calm primary button — the one filled action on a page. */
@@ -33,6 +44,301 @@ export function fmtDate(iso: string): string {
 /** Signals actually resolvable from the driver's linked signal ids. */
 export function signalsOfDriver(driver: Driver, signals: Signal[]): Signal[] {
   return signals.filter((s) => driver.signalIds.includes(s.id));
+}
+
+/** Distinct source records reachable through the driver's linked signals. */
+export function sourcesOfDriver(driverSignals: Signal[], sources: Source[]): Source[] {
+  const ids = new Set(driverSignals.flatMap((s) => s.sourceIds));
+  return sources.filter((src) => ids.has(src.id));
+}
+
+// ---------------------------------------------------------------------------
+// Sentence utilities — everything shown is cut from the record's own text,
+// never invented.
+// ---------------------------------------------------------------------------
+
+export function splitSentences(text: string): string[] {
+  const matched = text.match(/[^.!?]+[.!?]+/g);
+  if (matched) return matched.map((s) => s.trim()).filter(Boolean);
+  const t = text.trim();
+  return t ? [t] : [];
+}
+
+/** Remove parenthetical record references like "(SIG-006)" from prose. */
+export function stripIdRefs(text: string): string {
+  return text.replace(/\s*\([A-Z]{3}-[^)]*\)/g, "");
+}
+
+function joinWords(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/**
+ * The driver statement split for reading: the first two sentences carry the
+ * force in plain words; the rest stays available behind a disclosure.
+ */
+export function statementLead(driver: Driver): { lead: string; rest: string } {
+  const text = driver.driverStatement.trim();
+  if (!text) return { lead: "", rest: "" };
+  const sentences = splitSentences(text);
+  return {
+    lead: sentences.slice(0, 2).join(" "),
+    rest: sentences.slice(2).join(" "),
+  };
+}
+
+/** whatItExplains re-flowed into short paragraphs of at most three sentences. */
+export function whatItExplainsParas(driver: Driver): string[] {
+  const sentences = splitSentences(driver.whatItExplains);
+  const paras: string[] = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    paras.push(sentences.slice(i, i + 3).join(" "));
+  }
+  return paras;
+}
+
+/**
+ * Sentences of whatItExplains with the generic lead-in and record references
+ * removed — the concrete claims, usable on their own.
+ */
+function explainsSentences(driver: Driver): string[] {
+  return splitSentences(stripIdRefs(driver.whatItExplains)).filter(
+    (s) => !/^this driver explains several things[.!?]?$/i.test(s.trim()),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Why it matters — concrete actors from the linked signals' own actor types
+// ---------------------------------------------------------------------------
+
+const ACTOR_PLAIN: Record<ActorType, string> = {
+  government: "governments",
+  sovereign_fund: "sovereign funds",
+  corporation: "companies",
+  startup: "startups",
+  sme: "independent businesses",
+  developer: "developers",
+  brand: "brands",
+  platform: "platforms",
+  cultural_institution: "cultural institutions",
+  creator: "creators",
+  consumer: "consumers",
+  community: "communities",
+  investor: "investors",
+  academic: "researchers",
+  ngo: "civil-society groups",
+  media_outlet: "media outlets",
+};
+
+/** The most frequent actor types across the linked signals, as plain words. */
+export function driverActorWords(driverSignals: Signal[], max = 5): string[] {
+  const counts = new Map<ActorType, number>();
+  for (const s of driverSignals) {
+    for (const a of s.actorTypes) counts.set(a, (counts.get(a) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, max)
+    .map(([a]) => ACTOR_PLAIN[a]);
+}
+
+/**
+ * Why the driver matters, in one or two short paragraphs: the record's own
+ * concrete claims first, then who has to respond — actors taken from the
+ * linked signals, never invented.
+ */
+export function driverWhyItMatters(driver: Driver, driverSignals: Signal[]): string[] {
+  const paras: string[] = [];
+  const claims = explainsSentences(driver);
+  if (claims.length > 0) paras.push(claims.slice(0, 2).join(" "));
+  const actors = driverActorWords(driverSignals);
+  if (actors.length >= 2) {
+    paras.push(
+      `This means ${joinWords(actors)} are responding to one underlying force, not to separate events. Plans that treat these changes as unrelated will miss what connects them.`,
+    );
+  }
+  return paras;
+}
+
+// ---------------------------------------------------------------------------
+// Systems tab — the first-order effect, from the record's own fields
+// ---------------------------------------------------------------------------
+
+/** The first concrete claim of whatItExplains — what the force directly changes. */
+export function firstOrderEffectSentence(driver: Driver): string {
+  return explainsSentences(driver)[0] ?? "";
+}
+
+/** The systems the driver touches, as one quiet sentence. */
+export function systemsTouchedLine(driver: Driver): string {
+  if (driver.systemsAffected.length === 0) return "";
+  const names = driver.systemsAffected.map((s) =>
+    SYSTEM_LABELS[s].replace(/ system$/i, "").toLowerCase(),
+  );
+  return `It directly touches the ${joinWords(names)} system${
+    names.length === 1 ? "" : "s"
+  }.`;
+}
+
+// ---------------------------------------------------------------------------
+// Contradictions — the main tension, and what would strengthen each side
+// ---------------------------------------------------------------------------
+
+/** The strongest linked tension — the first thing that could weaken the driver. */
+export function mainContradictionOfDriver(
+  driver: Driver,
+  contradictions: Contradiction[],
+): Contradiction | null {
+  const linked = contradictions.filter((c) => driver.contradictionIds.includes(c.id));
+  if (linked.length === 0) return null;
+  return [...linked].sort(
+    (a, b) => b.scores.tensionStrength - a.scores.tensionStrength,
+  )[0];
+}
+
+/**
+ * One honest sentence on what would strengthen each side, built from the two
+ * sides' own claims. When a side has no recorded evidence, the sentence says
+ * what evidence to look for instead of pretending balance.
+ */
+export function strengthenSidesSentence(c: Contradiction): string {
+  const a = firstSentence(stripIdRefs(c.sideA)).trim().replace(/[.!?]$/, "");
+  const b = firstSentence(stripIdRefs(c.sideB)).trim().replace(/[.!?]$/, "");
+  if (!a || !b) {
+    return "The two sides are not fully written down yet — record each side's claim, then attach the signals that would support it.";
+  }
+  const base = `One side strengthens if new evidence keeps confirming its claim (“${a}”); the other strengthens if new evidence keeps confirming the counter-claim (“${b}”).`;
+  const missingA = !c.evidenceSideA.trim();
+  const missingB = !c.evidenceSideB.trim();
+  if (missingA && missingB) {
+    return `${base} Neither side has evidence recorded yet, so start by finding signals that test both claims.`;
+  }
+  if (missingA || missingB) {
+    return `${base} One side has no evidence recorded yet — look for signals that test it before trusting the balance.`;
+  }
+  return base;
+}
+
+// ---------------------------------------------------------------------------
+// Live validation, read as rows — requirement, current, threshold, and why
+// the requirement exists. Row order mirrors validateDriver exactly.
+// ---------------------------------------------------------------------------
+
+/** Requirement / current / threshold / why-it-exists rows for the live checks. */
+export function driverCheckRows(
+  driver: Driver,
+  driverSignals: Signal[],
+  result: ValidationResult,
+): CheckRowData[] {
+  const t = DRIVER_THRESHOLDS;
+  const sectorCount = new Set(driverSignals.flatMap((s) => s.sectors)).size;
+  const n = (count: number, noun: string, verb: string) =>
+    `${count} ${noun}${count === 1 ? "" : "s"} ${verb}`;
+  const defs: Array<Omit<CheckRowData, "passed">> = [
+    {
+      requirement: `Explains at least ${t.minPatterns} patterns`,
+      current: n(driver.patternIds.length, "pattern", "connected"),
+      threshold: `≥ ${t.minPatterns}`,
+      explanation: "A driver must explain repeated movements, not just one cluster.",
+    },
+    {
+      requirement: `Rests on at least ${t.minSignals} connected signals`,
+      current: n(driver.signalIds.length, "signal", "connected"),
+      threshold: `≥ ${t.minSignals}`,
+      explanation: "A force claimed from a handful of signals is a guess, not a driver.",
+    },
+    {
+      requirement: `Signals span at least ${t.minSectors} sectors`,
+      current: n(sectorCount, "sector", "represented"),
+      threshold: `≥ ${t.minSectors}`,
+      explanation:
+        "A real driver crosses sectors; a single-sector force is a sector trend.",
+    },
+    {
+      requirement: `Evidence from at least ${t.minIndependentSources} independent sources`,
+      current: n(driver.independentSourceCount, "source", "recorded"),
+      threshold: `≥ ${t.minIndependentSources}`,
+      explanation: "Stops one loud outlet from creating a false force.",
+    },
+    {
+      requirement: `Tested against at least ${t.minContradictions} contradictions`,
+      current: n(driver.contradictionIds.length, "contradiction", "linked"),
+      threshold: `≥ ${t.minContradictions}`,
+      explanation: "A force nobody has argued against has not been tested.",
+    },
+    {
+      requirement: "States at least one possible future",
+      current: n(driver.possibleFutures.length, "possible future", "written"),
+      threshold: "≥ 1",
+      explanation:
+        "An explanation that cannot say what should happen next cannot be checked later.",
+    },
+    {
+      requirement: "Names at least one leading indicator",
+      current: n(driver.leadingIndicatorIds.length, "indicator", "attached"),
+      threshold: "≥ 1",
+      explanation:
+        "Without a named indicator, nobody can tell whether the force is strengthening or fading.",
+    },
+  ];
+  return defs.map((d, i) => ({ ...d, passed: result.checks[i]?.passed ?? false }));
+}
+
+/**
+ * The failing checks phrased plainly, in validateDriver order — e.g.
+ * "at least 30 connected signals (26 so far)". Empty when validated.
+ */
+export function driverMissingPhrases(
+  driver: Driver,
+  driverSignals: Signal[],
+  result: ValidationResult,
+): string[] {
+  const t = DRIVER_THRESHOLDS;
+  const sectorCount = new Set(driverSignals.flatMap((s) => s.sectors)).size;
+  const soFar = (count: number) => (count === 0 ? "none yet" : `${count} so far`);
+  const phrases = [
+    `at least ${t.minPatterns} explained patterns (${soFar(driver.patternIds.length)})`,
+    `at least ${t.minSignals} connected signals (${soFar(driver.signalIds.length)})`,
+    `signals from at least ${t.minSectors} sectors (${soFar(sectorCount)})`,
+    `at least ${t.minIndependentSources} independent sources (${soFar(driver.independentSourceCount)})`,
+    `at least ${t.minContradictions} linked contradictions (${soFar(driver.contradictionIds.length)})`,
+    `at least one written possible future (${soFar(driver.possibleFutures.length)})`,
+    `at least one leading indicator to watch (${soFar(driver.leadingIndicatorIds.length)})`,
+  ];
+  return result.checks
+    .map((c, i) => (c.passed ? null : phrases[i]))
+    .filter((x): x is string => x !== null);
+}
+
+/** How many more linked signals the driver needs to pass the signal check. */
+export function signalsStillNeeded(driver: Driver): number {
+  return Math.max(0, DRIVER_THRESHOLDS.minSignals - driver.signalIds.length);
+}
+
+/** Items for the status strip under a driver detail title. */
+export function driverStatusStripItems(
+  driver: Driver,
+  result: ValidationResult,
+): Array<{ text: string; tone?: "accent" | "caution" | "tension" | "neutral" }> {
+  const items: Array<{
+    text: string;
+    tone?: "accent" | "caution" | "tension" | "neutral";
+  }> = [
+    result.valid
+      ? { text: "Validated driver", tone: "accent" }
+      : { text: "Still a hypothesis" },
+    { text: `${result.passedCount} of ${result.totalCount} checks passed` },
+    { text: CONFIDENCE_LABELS[driver.confidence] },
+  ];
+  const needed = signalsStillNeeded(driver);
+  if (needed > 0) {
+    items.push({
+      text: `Missing: ${needed} more connected signal${needed === 1 ? "" : "s"}`,
+      tone: "caution",
+    });
+  }
+  return items;
 }
 
 /**
@@ -204,9 +510,9 @@ const DRIVER_SCORE_READINGS: Record<keyof DriverScores, Record<ScoreBand, string
     strong: "judged a load-bearing input for scenario work",
   },
   strategicRelevance: {
-    low: "judged to carry little strategic weight for now",
-    moderate: "judged to carry strategic weight within some categories",
-    strong: "judged to carry strategic weight across sectors",
+    low: "judged to matter little for strategy for now",
+    moderate: "judged to matter for strategy within some categories",
+    strong: "judged to matter for strategy across sectors",
   },
 };
 
