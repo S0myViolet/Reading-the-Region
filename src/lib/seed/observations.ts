@@ -13,9 +13,9 @@ export const seedObservations: Observation[] = [
   // --- promoted ------------------------------------------------------------
   {
     id: "OBS-001",
-    title: "Independent Gulf menswear labels re-cutting the thobe for daily wear",
+    title: "Gulf menswear labels are redesigning the thobe for daily wear",
     description:
-      "Across September 2025 the TikTok creator panel repeatedly surfaced small Dubai- and Riyadh-based menswear labels releasing thobes and bishts re-cut in technical fabrics, with shortened hems, hidden plackets and sneaker-first styling. Creators framed the pieces as everyday wear rather than occasion dress, and several drops sold out within days.",
+      "Through September 2025, the TikTok creator panel repeatedly surfaced small menswear labels in Dubai and Riyadh releasing redesigned thobes and bishts. The pieces use technical fabrics, shortened hems, hidden plackets and sneaker-first styling. Creators presented them as everyday wear, not occasion dress. Several drops sold out within days.",
     sourceId: "SRC-006",
     sourceName: "Regional TikTok fashion and lifestyle creators (demo panel)",
     sourceUrl: null,
@@ -29,9 +29,9 @@ export const seedObservations: Observation[] = [
     subsector: "menswear / contemporary heritage design",
     actorInvolved: "Independent regional menswear labels (demo)",
     initialNotes:
-      "Not a costume revival — the design language is contemporary and the price point sits between streetwear and entry luxury. Multiple labels moving at once, and a culture magazine has since profiled two of them.",
+      "This is not a costume revival. The design language is contemporary, and prices sit between streetwear and entry-level luxury. Several labels are moving at once, and a culture magazine has since profiled two of them.",
     potentialFutureRelevance:
-      "If heritage garments become a living design category rather than ceremonial dress, regional identity becomes a commercial design input across fashion, retail and media.",
+      "If heritage garments become everyday design rather than ceremonial dress, regional identity becomes something fashion, retail and media businesses can build on.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -53,7 +53,7 @@ export const seedObservations: Observation[] = [
     id: "OBS-002",
     title: "Gulf resort operator announces in-house longevity clinic with diagnostics",
     description:
-      "A regional hotel and wellness operator announced a longevity clinic inside a flagship Dubai resort: full-body diagnostic screening, biomarker panels and physician-led programmes sold as multi-day packages. The release positions the clinic as a permanent facility, not a seasonal retreat, and names a second property in Riyadh for 2026.",
+      "A regional hotel and wellness operator announced a longevity clinic inside a flagship Dubai resort. It offers full-body diagnostic screening, biomarker panels and physician-led programmes sold as multi-day packages. The release presents the clinic as a permanent facility, not a seasonal retreat, and names a second property in Riyadh for 2026.",
     sourceId: "SRC-009",
     sourceName: "Press releases from a Gulf hotel and wellness operator (demo)",
     sourceUrl: null,
@@ -67,9 +67,9 @@ export const seedObservations: Observation[] = [
     subsector: "wellness & longevity",
     actorInvolved: "Gulf hotel and wellness operator (demo)",
     initialNotes:
-      "Third such announcement logged since November; the trade press reports two more operators scoping clinical partners. PR-heavy source, but the pattern of capital allocation is real.",
+      "This is the third such announcement logged since November. Trade press reports two more operators looking for clinical partners. The source is heavy on PR, but the pattern of real spending is there.",
     potentialFutureRelevance:
-      "Hotels adding clinical infrastructure blur hospitality and healthcare, and give the Gulf a claim on the fly-in longevity market currently served by Switzerland and Southeast Asia.",
+      "Hotels adding clinics blur the line between hospitality and healthcare. They give the Gulf a claim on fly-in longevity customers currently served by Switzerland and Southeast Asia.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -89,9 +89,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-003",
-    title: "School waiting lists lengthening in Dubai family districts amid golden-visa relocations",
+    title: "Golden-visa families are lengthening school waiting lists in Dubai",
     description:
-      "Newspaper reporting, corroborated by school-group statements, describes waiting lists at mid-fee British- and Indian-curriculum schools in Dubai's family districts, attributed to households relocating on 10-year golden visas. Agents report three-bedroom lease renewals rising and families negotiating longer tenancies.",
+      "Newspaper reporting, backed by school-group statements, describes growing waiting lists at mid-fee British- and Indian-curriculum schools in Dubai's family districts. Schools attribute the pressure to households relocating on 10-year golden visas. Letting agents report more three-bedroom renewals and families asking for longer tenancies.",
     sourceId: "SRC-004",
     sourceName: "Gulf economics desk of an international newspaper (demo)",
     sourceUrl: null,
@@ -105,9 +105,9 @@ export const seedObservations: Observation[] = [
     subsector: "long-term residency",
     actorInvolved: "Relocating families on long-term visas (demo)",
     initialNotes:
-      "The interesting unit is the family, not the worker. Schooling and multi-year tenancy decisions are commitments a transient expatriate model does not produce.",
+      "The interesting unit is the family, not the worker. School enrolment and multi-year leases are commitments that a model built around people leaving after a few years does not produce.",
     potentialFutureRelevance:
-      "Residency policy is converting a rotation-based expatriate market into a settlement market — with structural consequences for housing mix, schooling capacity and household finance.",
+      "Residency policy is turning a market of rotating workers into a market of settling families, with structural consequences for housing mix, school capacity and household finance.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -127,9 +127,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-004",
-    title: "Bank equity note flags AI service rollouts — and a spike in verification complaints",
+    title: "Equity note: bank customers want humans to confirm AI decisions",
     description:
-      "A regional investment-bank note on Gulf retail banks highlights aggressive deployment of AI assistants and automated credit decisioning, then flags an unexpected datapoint: rising branch appointment bookings and complaint volumes from customers asking for human confirmation of AI-made decisions, echoed in youth survey verbatims.",
+      "A regional investment-bank note on Gulf retail banks describes fast deployment of AI assistants and automated credit decisions. It then flags an unexpected datapoint: branch appointments and complaints are rising as customers ask for human confirmation of AI-made decisions. Youth survey verbatims echo the same demand.",
     sourceId: "SRC-013",
     sourceName: "Gulf banking sector note from a regional investment bank (demo)",
     sourceUrl: null,
@@ -143,9 +143,9 @@ export const seedObservations: Observation[] = [
     subsector: "retail banking automation",
     actorInvolved: "Gulf retail banks (demo)",
     initialNotes:
-      "The automation is expected; the countercurrent is not. Customers are not rejecting AI — they are demanding a human layer on top of it. That is a product gap, not a resistance story.",
+      "The automation is expected; the countercurrent is not. Customers are not rejecting AI — they want a person layered on top of it. That is a product gap, not a resistance story.",
     potentialFutureRelevance:
-      "If verification demand persists, 'a human will confirm this' becomes a sellable service tier across banking, insurance and government services.",
+      "If the demand persists, 'a person will confirm this' becomes a sellable service tier across banking, insurance and government services.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -165,9 +165,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-005",
-    title: "Field notes: Riyadh specialty coffee houses functioning as evening civic rooms",
+    title: "Field notes: Riyadh coffee houses serve as evening gathering places",
     description:
-      "Across six observation visits in Riyadh and Jeddah, specialty coffee houses were consistently full from 20:00 to past midnight with mixed groups studying, running book clubs, holding small business meetings and hosting informal majlis-style gatherings. Several venues now programme events and reserve tables for recurring groups.",
+      "Across six observation visits in Riyadh and Jeddah, specialty coffee houses were consistently full from 20:00 to past midnight. Groups were studying, running book clubs, holding small-business meetings and gathering informally, majlis-style. Several venues now programme events and reserve tables for regular groups.",
     sourceId: "SRC-012",
     sourceName: "Analyst field notes from Riyadh and Jeddah coffee districts (demo)",
     sourceUrl: null,
@@ -181,9 +181,9 @@ export const seedObservations: Observation[] = [
     subsector: "specialty coffee / third places",
     actorInvolved: "Independent specialty coffee houses (demo)",
     initialNotes:
-      "The venues behave like community infrastructure, not F&B outlets: repeat groups, programming, long dwell times, low table turnover tolerated by operators. Cultural producer interview confirms venues are becoming default meeting infrastructure for young creatives.",
+      "The venues behave like community infrastructure, not food-and-drink outlets: repeat groups, programmed events, long stays and low table turnover that operators accept. A cultural producer interviewed confirms the venues are becoming the default meeting places for young creatives.",
     potentialFutureRelevance:
-      "Youth third places are forming ahead of formal civic infrastructure — whoever hosts them shapes community, taste and spending patterns for a decade.",
+      "Young people are building gathering places before formal civic infrastructure exists. Whoever hosts them shapes community, taste and spending for a decade.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -203,9 +203,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-006",
-    title: "Youth survey shows BNPL as default checkout choice; regulator signals licensing tightening",
+    title: "Youth survey shows buy-now-pay-later habit; regulator signals tighter licensing",
     description:
-      "The quarterly GCC youth survey reports a majority of 18–30 respondents in Saudi Arabia using buy-now-pay-later at least monthly, with a growing share carrying three or more concurrent plans. In the same fortnight, central-bank commentary reported by the financial press signalled tighter licensing and affordability rules for instalment providers.",
+      "The quarterly GCC youth survey reports that most Saudi 18–30 respondents use buy-now-pay-later at least monthly. A growing share carries three or more plans at once. In the same fortnight, the financial press reported central-bank commentary signalling tighter licensing and affordability rules for instalment providers.",
     sourceId: "SRC-011",
     sourceName: "GCC youth financial habits survey by a regional research house (demo)",
     sourceUrl: null,
@@ -219,9 +219,9 @@ export const seedObservations: Observation[] = [
     subsector: "consumer credit / BNPL",
     actorInvolved: "Regional BNPL providers and regulators (demo)",
     initialNotes:
-      "Adoption and regulation are accelerating simultaneously — the interesting question is which arrives at scale first. Survey panel skews digital; treat magnitudes cautiously.",
+      "Use and regulation are accelerating at the same time; the interesting question is which reaches scale first. The survey panel skews digital, so treat the exact numbers cautiously.",
     potentialFutureRelevance:
-      "A regulated instalment layer could become the default credit on-ramp for Gulf youth, displacing cards and reshaping how banks acquire young customers.",
+      "A regulated instalment layer could become the standard first credit product for Gulf youth, displacing cards and changing how banks win young customers.",
     status: "promoted",
     triageRationale: null,
     checklist: {
@@ -243,9 +243,9 @@ export const seedObservations: Observation[] = [
   // --- archived as noise -----------------------------------------------------
   {
     id: "OBS-007",
-    title: "Global celebrity's mall appearance drives one-day social frenzy in Dubai",
+    title: "Celebrity mall visit in Dubai causes one-day social media spike",
     description:
-      "A visiting global celebrity's appearance at a Dubai mall generated a one-day spike of creator content, queues and reposted clips across the TikTok panel, with several accounts framing it as evidence of Dubai's 'new cultural gravity'.",
+      "A visiting global celebrity appeared at a Dubai mall. The TikTok panel showed one day of creator content, queues and reposted clips. Several accounts framed the event as proof of Dubai's 'new cultural gravity'.",
     sourceId: "SRC-006",
     sourceName: "Regional TikTok fashion and lifestyle creators (demo panel)",
     sourceUrl: null,
@@ -260,10 +260,10 @@ export const seedObservations: Observation[] = [
     actorInvolved: "Global celebrity / mall operator (demo)",
     initialNotes: "High volume, zero persistence. Logged in case it recurs as a programming strategy.",
     potentialFutureRelevance:
-      "None identified beyond routine event marketing; celebrity appearances have driven mall footfall spikes in the Gulf for two decades.",
+      "None identified beyond routine event marketing. Celebrity appearances have driven mall footfall spikes in the Gulf for two decades.",
     status: "archived_noise",
     triageRationale:
-      "Attention spike, not behaviour change: the event produced a single day of amplified content with no repeat visitation, no new venue behaviour and no system consequence. The 'cultural gravity' framing came from accounts with a commercial stake in the activation. Fails novelty (celebrity mall appearances are an established Gulf retail tactic) and fails persistence. Archived as event-marketing noise; would only re-enter if appearance-led programming became a repeated repositioning strategy tied to dwell-time data.",
+      "An attention spike, not a behaviour change. The event produced one day of amplified content with no repeat visits, no new venue behaviour and no system consequence. The 'cultural gravity' framing came from accounts with a commercial stake in the event. Celebrity mall appearances are an established Gulf retail tactic, so the observation fails on novelty and fails on persistence. Archived as event-marketing noise. It would re-enter only if appearance-led programming became a repeated repositioning strategy backed by dwell-time data.",
     checklist: {
       behaviourShift: false,
       systemShift: false,
@@ -283,7 +283,7 @@ export const seedObservations: Observation[] = [
     id: "OBS-008",
     title: "Influencer claims camel-milk skincare is 'going global' after single brand launch",
     description:
-      "A wellness influencer on the panel declared camel-milk skincare the Gulf's next global export category after one small UAE brand announced a distribution deal. No sales data, no second brand, and search interest for the category is flat across the trend dashboard.",
+      "A wellness influencer on the panel declared camel-milk skincare the Gulf's next global export after one small UAE brand announced a distribution deal. There is no sales data and no second brand. Search interest in the category is flat on the trend dashboard.",
     sourceId: "SRC-006",
     sourceName: "Regional TikTok fashion and lifestyle creators (demo panel)",
     sourceUrl: null,
@@ -298,10 +298,10 @@ export const seedObservations: Observation[] = [
     actorInvolved: "Wellness influencer / small skincare brand (demo)",
     initialNotes: "Checked SRC-015: no movement in related search terms over 12 weeks.",
     potentialFutureRelevance:
-      "Heritage-ingredient beauty is a plausible long-run theme, but this instance is a single-brand PR moment, not evidence of it.",
+      "Heritage-ingredient beauty is a plausible long-term theme. This instance is a single brand's PR moment, not evidence for it.",
     status: "archived_noise",
     triageRationale:
-      "Single anecdote amplified by a party with promotional interest: one brand, one deal, one influencer, and a flat search-trend line where genuine category formation would show movement. The underlying theme (heritage ingredients in premium beauty) stays on the watchlist, but this observation adds no evidence for it. Classic noise profile — high narrative confidence, zero corroboration. Would reconsider on a second independent brand launch or measurable search/sales momentum.",
+      "A single anecdote amplified by someone with a promotional interest: one brand, one deal, one influencer. Search trends are flat where a real new category would show movement. The underlying theme — heritage ingredients in premium beauty — stays on the watchlist, but this observation adds no evidence for it. It has the classic noise profile: high narrative confidence, zero corroboration. We would reconsider if a second independent brand launched, or if search or sales data moved.",
     checklist: {
       behaviourShift: false,
       systemShift: false,
@@ -321,9 +321,9 @@ export const seedObservations: Observation[] = [
   // --- needs more evidence ---------------------------------------------------
   {
     id: "OBS-009",
-    title: "Trade piece reports Gulf employers piloting 'workcation' contracts for regional staff",
+    title: "Trade article claims Gulf employers are piloting 'workcation' contracts",
     description:
-      "A single trade-publication article claims several Gulf employers are piloting contracts letting regional staff work from resort destinations for part of the year, framed as a retention tool for younger professionals. No employer is named on the record and no scheme details are provided.",
+      "A single trade article claims several Gulf employers are piloting contracts that let regional staff work from resort destinations for part of the year. The framing is staff retention for younger professionals. No employer is named on the record, and no scheme details are given.",
     sourceId: "SRC-003",
     sourceName: "GCC Hospitality Trade Review (demo)",
     sourceUrl: null,
@@ -337,12 +337,12 @@ export const seedObservations: Observation[] = [
     subsector: "flexible work / retention",
     actorInvolved: "Unnamed Gulf employers (demo)",
     initialNotes:
-      "Plausible and consistent with the lifestyle-ecosystem cluster, but currently one anonymous trade story that hotels have an interest in circulating.",
+      "Plausible, and consistent with the lifestyle-ecosystem cluster. But it is one anonymous trade story, and hotels have an interest in circulating it.",
     potentialFutureRelevance:
-      "If real, blends the work and tourism systems and gives resorts a weekday-resident customer base.",
+      "If real, it blends work and tourism and gives resorts a weekday customer base of working residents.",
     status: "needs_more_evidence",
     triageRationale:
-      "Held rather than promoted: a single weak source with unnamed actors and a clear commercial beneficiary (the hospitality trade press). The claimed behaviour would matter, so the observation stays open pending a second independent source — an employer statement, an HR survey datapoint, or booking-pattern evidence from operators. Review at next monthly triage.",
+      "Held rather than promoted. This is a single weak source with unnamed actors, and the hospitality trade press benefits commercially from the story. The claimed behaviour would matter, so the observation stays open. It needs a second independent source: an employer statement, an HR survey datapoint, or booking-pattern evidence from operators. Review at the next monthly triage.",
     checklist: {
       behaviourShift: true,
       systemShift: false,
@@ -364,7 +364,7 @@ export const seedObservations: Observation[] = [
     id: "OBS-010",
     title: "Second operator announces resort longevity clinic in Riyadh",
     description:
-      "Another Gulf operator announced a physician-led longevity and diagnostics clinic within a Riyadh resort property, with packaging and language closely mirroring the January Dubai announcement already captured in this inbox.",
+      "Another Gulf operator announced a physician-led longevity and diagnostics clinic inside a Riyadh resort. The packaging and language closely mirror the January Dubai announcement already captured in this inbox.",
     sourceId: "SRC-009",
     sourceName: "Press releases from a Gulf hotel and wellness operator (demo)",
     sourceUrl: null,
@@ -377,12 +377,12 @@ export const seedObservations: Observation[] = [
     sectors: ["hospitality_tourism", "health_wellness_longevity"],
     subsector: "wellness & longevity",
     actorInvolved: "Gulf resort operator (demo)",
-    initialNotes: "Same underlying move as OBS-002; strengthens that signal rather than starting a new one.",
+    initialNotes: "Same underlying move as OBS-002. It strengthens that signal rather than starting a new one.",
     potentialFutureRelevance:
-      "Adds momentum evidence to the existing hotel-longevity signal; no distinct new behaviour or system.",
+      "Adds momentum evidence to the existing hotel-longevity signal. No distinct new behaviour or system.",
     status: "duplicate",
     triageRationale:
-      "Duplicate of OBS-002: same behaviour (hotels adding clinical longevity infrastructure), same actor type, same framing, six weeks later. Rather than open a parallel entry, the announcement was folded into SIG-002 as corroborating momentum evidence. Kept on record so the momentum score for SIG-002 is traceable to more than one announcement.",
+      "Duplicate of OBS-002: the same behaviour (hotels adding longevity clinics), the same actor type and the same framing, six weeks later. Rather than open a parallel entry, we folded the announcement into SIG-002 as corroborating momentum evidence. It stays on record so SIG-002's momentum score can be traced to more than one announcement.",
     checklist: {
       behaviourShift: true,
       systemShift: true,
@@ -402,9 +402,9 @@ export const seedObservations: Observation[] = [
   // --- unreviewed --------------------------------------------------------------
   {
     id: "OBS-011",
-    title: "Ramadan night economy formalising: extended licences and programmed night markets",
+    title: "Cities are formalising the Ramadan night economy with licences and markets",
     description:
-      "Field notes from Ramadan 2026 record municipalities extending late-night trading licences and staging programmed night markets in Riyadh and Sharjah, with retailers shifting staffing and delivery windows to a post-taraweeh peak that now runs past 02:00.",
+      "Field notes from Ramadan 2026 record municipalities in Riyadh and Sharjah extending late-night trading licences and staging programmed night markets. Retailers are shifting staffing and delivery windows to a peak that starts after taraweeh prayers and now runs past 02:00.",
     sourceId: "SRC-012",
     sourceName: "Analyst field notes from Riyadh and Jeddah coffee districts (demo)",
     sourceUrl: null,
@@ -418,9 +418,9 @@ export const seedObservations: Observation[] = [
     subsector: "night economy",
     actorInvolved: "Municipalities and retailers (demo)",
     initialNotes:
-      "The night economy has always existed in Ramadan; what is new is its formalisation — licences, programming, staffing models. Candidate link to the lifestyle-ecosystem cluster.",
+      "Ramadan has always had a night economy. What is new is the formal structure: licences, programmed events, staffing models. Candidate link to the lifestyle-ecosystem cluster.",
     potentialFutureRelevance:
-      "A formalised seasonal night economy could reshape retail leases, labour scheduling and public-space programming beyond Ramadan itself.",
+      "A formal seasonal night economy could reshape retail leases, work schedules and public-space programming beyond Ramadan itself.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
@@ -440,9 +440,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-012",
-    title: "GCC unified tourist visa discussions reported to be entering implementation planning",
+    title: "GCC unified tourist visa reportedly moving to implementation planning",
     description:
-      "Newspaper coverage of a GCC ministerial meeting reports that the long-discussed unified tourist visa has moved from principle to implementation planning, with officials describing multi-country itineraries as a target product for 2027 seasons.",
+      "Newspaper coverage of a GCC ministerial meeting reports that the long-discussed unified tourist visa has moved from principle to implementation planning. Officials describe multi-country itineraries as a target product for the 2027 seasons.",
     sourceId: "SRC-004",
     sourceName: "Gulf economics desk of an international newspaper (demo)",
     sourceUrl: null,
@@ -456,9 +456,9 @@ export const seedObservations: Observation[] = [
     subsector: "visa policy",
     actorInvolved: "GCC tourism ministries (demo)",
     initialNotes:
-      "Repeated announcements without dates have been the pattern since 2023; implementation-planning language is the new element. Watch for a published timeline.",
+      "Announcements without dates have been the pattern since 2023. The implementation-planning language is the new element. Watch for a published timeline.",
     potentialFutureRelevance:
-      "A single Gulf tourism space would push destination strategies from national competition towards itinerary-based cooperation.",
+      "A shared Gulf tourist visa could make countries plan trips together instead of only competing for visitors separately.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
@@ -478,9 +478,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-013",
-    title: "Padel courts and run clubs multiplying as Riyadh's default social plan",
+    title: "Padel and run clubs are becoming Riyadh's default social plan",
     description:
-      "Panel creators in Riyadh increasingly document padel bookings and early-morning run clubs as the default social plan, with venues reporting booked-out courts weeks ahead and run clubs partnering with coffee houses for post-run gatherings.",
+      "Panel creators in Riyadh increasingly document padel bookings and early-morning run clubs as the default social plan. Venues report courts booked out weeks ahead. Run clubs are partnering with coffee houses for post-run gatherings.",
     sourceId: "SRC-006",
     sourceName: "Regional TikTok fashion and lifestyle creators (demo panel)",
     sourceUrl: null,
@@ -494,9 +494,9 @@ export const seedObservations: Observation[] = [
     subsector: "social sport",
     actorInvolved: "Padel venues, run clubs, coffee houses (demo)",
     initialNotes:
-      "Reads as an extension of the third-places behaviour into active formats. Needs a non-social-media source before promotion.",
+      "This extends the coffee-house gathering behaviour into active formats. It needs a source beyond social media before promotion.",
     potentialFutureRelevance:
-      "Social sport as community infrastructure — relevant to developers, malls and wellness brands programming for young Saudis.",
+      "Social sport is becoming community infrastructure. That matters to developers, malls and wellness brands programming for young Saudis.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
@@ -518,7 +518,7 @@ export const seedObservations: Observation[] = [
     id: "OBS-014",
     title: "Cultural producer reports Saudisation quotas reshaping creative-sector hiring",
     description:
-      "In interview, the Riyadh-based cultural producer described commissioning bodies and production companies restructuring teams to meet Saudisation targets in creative roles, accelerating salaries for experienced Saudi producers and creating a training bottleneck for technical crafts.",
+      "In an interview, a Riyadh-based cultural producer described commissioning bodies and production companies restructuring teams to meet Saudisation targets in creative roles. Salaries for experienced Saudi producers are rising fast, and technical crafts face a training bottleneck.",
     sourceId: "SRC-008",
     sourceName: "Interview with a Riyadh-based cultural producer (demo)",
     sourceUrl: null,
@@ -532,9 +532,9 @@ export const seedObservations: Observation[] = [
     subsector: "creative labour market",
     actorInvolved: "Commissioning bodies and production companies (demo)",
     initialNotes:
-      "Single vantage point but a credible one; consistent with the state-led cultural-investment signal. Check for wage or vacancy data before promotion.",
+      "A single vantage point, but a credible one, and consistent with the state-led cultural-investment signal. Check wage or vacancy data before promotion.",
     potentialFutureRelevance:
-      "Labour policy is deciding who gets to make Saudi culture — with long-run consequences for the creative economy's depth and voice.",
+      "Labour policy is deciding who gets to make Saudi culture, with long-term consequences for the creative economy's depth and voice.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
@@ -554,9 +554,9 @@ export const seedObservations: Observation[] = [
   },
   {
     id: "OBS-015",
-    title: "Mall operators converting car-park levels to EV charging and last-mile logistics hubs",
+    title: "Mall operators are converting car parks to EV charging and delivery hubs",
     description:
-      "Trade coverage describes two regional mall operators converting lower car-park levels into EV charging plazas and quick-commerce fulfilment space, citing falling private-car dwell times near new transit stations and rising delivery volumes.",
+      "Trade coverage describes two regional mall operators converting lower car-park levels into EV charging plazas and quick-commerce fulfilment space. They cite shorter private-car stays near new transit stations and rising delivery volumes.",
     sourceId: "SRC-003",
     sourceName: "GCC Hospitality Trade Review (demo)",
     sourceUrl: null,
@@ -570,9 +570,9 @@ export const seedObservations: Observation[] = [
     subsector: "mall infrastructure",
     actorInvolved: "Regional mall operators (demo)",
     initialNotes:
-      "Interesting second-order echo of both the transit signal and the mall-repositioning signal — parking as the first asset class disrupted by both.",
+      "An interesting second-order echo of both the transit signal and the mall-repositioning signal. Parking is the first asset both disrupt.",
     potentialFutureRelevance:
-      "Car-park conversion is a leading indicator of how seriously operators take the post-car-dependence scenario.",
+      "Car-park conversion shows how seriously operators take a future with less car dependence.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
@@ -594,7 +594,7 @@ export const seedObservations: Observation[] = [
     id: "OBS-016",
     title: "Telecom operator launches Arabic voice assistant tuned to Gulf dialects",
     description:
-      "A regional telecom operator announced a consumer voice assistant trained on Gulf Arabic dialects, marketed explicitly on the promise that customers 'should not have to speak like a machine — or in English — to be understood', with early deployment in customer service lines.",
+      "A regional telecom operator announced a consumer voice assistant trained on Gulf Arabic dialects. Marketing leads with the promise that customers 'should not have to speak like a machine — or in English — to be understood'. Early deployment is in customer service lines.",
     sourceId: null,
     sourceName: "Regional telecom operator product announcement (demo)",
     sourceUrl: null,
@@ -608,9 +608,9 @@ export const seedObservations: Observation[] = [
     subsector: "Arabic language technology",
     actorInvolved: "Regional telecom operator (demo)",
     initialNotes:
-      "Dialect-first positioning is the notable part — language identity used as a trust and differentiation claim in AI products. Possible link to both the AI-trust signal and the regional-identity cluster.",
+      "The dialect-first positioning is the notable part: language identity used as a trust and differentiation claim in an AI product. Possible link to both the AI-trust signal and the regional-identity cluster.",
     potentialFutureRelevance:
-      "If dialect competence becomes a baseline expectation, global AI products face a localisation bar that regional players can weaponise.",
+      "If dialect competence becomes a baseline expectation, global AI products face a localisation bar that regional players can use against them.",
     status: "unreviewed",
     triageRationale: null,
     checklist: {
