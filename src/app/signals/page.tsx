@@ -4,9 +4,14 @@
  * Signal Library — the core evidence base of the platform. Every signal is
  * present-day evidence suggesting a future possibility; nothing here is a
  * trend. Layout has exactly four layers: header, one control bar, the signal
- * list, and the collapsed page guide. Search, sector, confidence and sort are
- * always visible; every other filter waits behind "More filters". Analyst
- * view adds a quiet list/table toggle.
+ * list, and the collapsed page guide.
+ *
+ * Simple view (the default product) renders insight cards: title, a
+ * one-sentence summary, why it matters, one quiet meta line in words, and a
+ * quiet action row (Open / Save / Dismiss). Filters shrink to search, sector,
+ * country and a Saved toggle, and dismissed signals drop out of the list.
+ * Analyst view keeps the full filter set, sort, and the list/table toggle;
+ * methodology adds nothing extra here.
  */
 
 import Link from "next/link";
@@ -24,6 +29,7 @@ import { ConfidenceBadge, ReviewStatusBadge, SignalStrengthBadge } from "@/compo
 import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { zoomComplete } from "@/lib/validation";
+import { evidenceWords, firstSentence } from "@/lib/simple";
 import { DEFINITIONS } from "@/lib/copy";
 import type {
   ActorType,
@@ -70,6 +76,8 @@ interface Filters {
   unclustered: boolean;
   /** Signals whose zooming ladder is incomplete. */
   zoomIncomplete: boolean;
+  /** Simple view only: signals the user saved to their watchlist. */
+  savedOnly: boolean;
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -89,7 +97,11 @@ const DEFAULT_FILTERS: Filters = {
   attentionNovelty: false,
   unclustered: false,
   zoomIncomplete: false,
+  savedOnly: false,
 };
+
+/** Simple view hides what the user (or an analyst) has already dismissed. */
+const DISMISSED_STATUSES: ReviewStatus[] = ["archived_noise", "rejected"];
 
 function isSector(v: string | null): v is Sector {
   return v !== null && v in SECTOR_LABELS;
@@ -229,6 +241,71 @@ function SignalRow({ signal }: { signal: Signal }) {
   );
 }
 
+/**
+ * Simple-view insight card: what it is, why it matters, how solid it is —
+ * in words — and three quiet actions. No ids, no scores, no badges.
+ */
+function SimpleSignalCard({ signal }: { signal: Signal }) {
+  const savedSignalIds = useIntelligenceStore((s) => s.savedSignalIds);
+  const toggleSavedSignal = useIntelligenceStore((s) => s.toggleSavedSignal);
+  const updateSignal = useIntelligenceStore((s) => s.updateSignal);
+  const saved = savedSignalIds.includes(signal.id);
+
+  function handleDismiss() {
+    if (window.confirm("Dismiss this signal as noise?")) {
+      updateSignal(signal.id, { reviewStatus: "archived_noise" });
+    }
+  }
+
+  return (
+    <article className="list-row py-6">
+      <Link
+        href={`/signals/${signal.id}`}
+        className="text-[14.5px] font-medium leading-snug text-ink hover:text-accent-ink"
+      >
+        {signal.title}
+      </Link>
+      <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+        {firstSentence(signal.description)}
+      </p>
+      <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+        <span className="font-medium text-ink">Why it matters</span>
+        {" — "}
+        {firstSentence(signal.whyItMatters)}
+      </p>
+      <p className="mt-2 text-[12px] text-ink-faint">
+        {[
+          CONFIDENCE_LABELS[signal.confidence],
+          evidenceWords(signal, signal.sourceIds.length),
+          signal.country,
+        ].join(" · ")}
+      </p>
+      <p className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px]">
+        <Link
+          href={`/signals/${signal.id}`}
+          className="text-accent-ink underline-offset-2 hover:underline"
+        >
+          Open
+        </Link>
+        <button
+          type="button"
+          onClick={() => toggleSavedSignal(signal.id)}
+          className={saved ? "text-accent-ink" : "text-ink-soft hover:text-ink"}
+        >
+          {saved ? "Saved" : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-ink-soft hover:text-ink"
+        >
+          Dismiss
+        </button>
+      </p>
+    </article>
+  );
+}
+
 function SignalsTable({ signals }: { signals: Signal[] }) {
   return (
     <section className="card">
@@ -286,8 +363,10 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
 function SignalsContent() {
   const hydrated = useHydrated();
   const mode = useViewMode();
+  const simple = mode === "simple";
   const searchParams = useSearchParams();
   const signals = useIntelligenceStore((s) => s.signals);
+  const savedSignalIds = useIntelligenceStore((s) => s.savedSignalIds);
 
   const [filters, setFilters] = useState<Filters>(() => {
     const sectorParam = searchParams.get("sector");
@@ -332,6 +411,13 @@ function SignalsContent() {
         return false;
       if (f.country && s.country !== f.country) return false;
       if (f.sector && !s.sectors.includes(f.sector)) return false;
+      if (simple) {
+        // Simple view: dismissed signals drop out, and only the quiet
+        // filters (search, sector, country, saved) apply.
+        if (DISMISSED_STATUSES.includes(s.reviewStatus)) return false;
+        if (f.savedOnly && !savedSignalIds.includes(s.id)) return false;
+        return true;
+      }
       if (f.strength && s.signalStrength !== f.strength) return false;
       if (f.confidence && s.confidence !== f.confidence) return false;
       if (f.horizon && s.timeHorizon !== f.horizon) return false;
@@ -349,9 +435,12 @@ function SignalsContent() {
       if (f.zoomIncomplete && zoomComplete(s).valid) return false;
       return true;
     });
-  }, [signals, filters, query]);
+  }, [signals, filters, query, simple, savedSignalIds]);
 
-  const sorted = useMemo(() => sortSignals(filtered, sortKey), [filtered, sortKey]);
+  const sorted = useMemo(
+    () => sortSignals(filtered, simple ? "recent" : sortKey),
+    [filtered, sortKey, simple],
+  );
 
   if (!hydrated) {
     return (
@@ -362,9 +451,13 @@ function SignalsContent() {
     );
   }
 
-  const simple = mode === "simple";
   const activeCount = countActiveFilters(filters);
-  const isFiltered = activeCount > 0 || query.trim().length > 0;
+  const isFiltered = simple
+    ? query.trim().length > 0 ||
+      filters.sector !== "" ||
+      filters.country !== "" ||
+      filters.savedOnly
+    : activeCount > 0 || query.trim().length > 0;
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((f) => ({ ...f, [key]: value }));
 
@@ -395,6 +488,52 @@ function SignalsContent() {
       <SignalsHeader />
       <WalkthroughPanel pageId="signals" />
 
+      {simple ? (
+        <ControlBar
+          right={
+            isFiltered ? (
+              <>
+                <span className="text-[12px] text-ink-faint">
+                  {sorted.length} {sorted.length === 1 ? "matches" : "match"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters({ ...DEFAULT_FILTERS });
+                    setQuery("");
+                  }}
+                  className="text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+                >
+                  Reset
+                </button>
+              </>
+            ) : null
+          }
+        >
+          <ControlSearch value={query} onChange={setQuery} placeholder="Search signals…" />
+          <ControlSelect
+            label="Sector"
+            value={filters.sector}
+            onChange={(v) => set("sector", v as Filters["sector"])}
+            options={withAny("All sectors", optionsFrom(SECTOR_LABELS))}
+          />
+          <ControlSelect
+            label="Country"
+            value={filters.country}
+            onChange={(v) => set("country", v)}
+            options={countryOptions}
+          />
+          <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-ink-faint hover:text-ink-soft">
+            <input
+              type="checkbox"
+              className="accent-[#29513f]"
+              checked={filters.savedOnly}
+              onChange={() => set("savedOnly", !filters.savedOnly)}
+            />
+            Saved
+          </label>
+        </ControlBar>
+      ) : (
       <ControlBar
         more={
           <>
@@ -500,28 +639,26 @@ function SignalsContent() {
                 </button>
               </>
             ) : null}
-            {!simple ? (
-              <span className="flex items-center gap-2 text-[12px]">
-                {(
-                  [
-                    { key: "list", label: "List" },
-                    { key: "table", label: "Table" },
-                  ] as const
-                ).map((v) => (
-                  <button
-                    key={v.key}
-                    type="button"
-                    aria-pressed={view === v.key}
-                    onClick={() => setView(v.key)}
-                    className={
-                      view === v.key ? "text-ink" : "text-ink-faint hover:text-ink-soft"
-                    }
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </span>
-            ) : null}
+            <span className="flex items-center gap-2 text-[12px]">
+              {(
+                [
+                  { key: "list", label: "List" },
+                  { key: "table", label: "Table" },
+                ] as const
+              ).map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  aria-pressed={view === v.key}
+                  onClick={() => setView(v.key)}
+                  className={
+                    view === v.key ? "text-ink" : "text-ink-faint hover:text-ink-soft"
+                  }
+                >
+                  {v.label}
+                </button>
+              ))}
+            </span>
           </>
         }
       >
@@ -545,17 +682,34 @@ function SignalsContent() {
           options={SORT_OPTIONS}
         />
       </ControlBar>
+      )}
 
       {signals.length === 0 ? (
         <EmptyState
-          message="The Signal Library is empty. Signals are present-day evidence suggesting future possibilities — they enter the library either by promoting observations that pass the promotion checklist in the Scan Inbox, or through the guided capture form, which walks through sourcing, classification, scoring, and the mandatory zooming ladder."
+          message={
+            simple
+              ? "There are no signals yet. A signal is present-day evidence that suggests a future possibility — add one with the capture form, or keep promising finds in New Finds so they can be developed."
+              : "The Signal Library is empty. Signals are present-day evidence suggesting future possibilities — they enter the library either by promoting observations that pass the promotion checklist in the Scan Inbox, or through the guided capture form, which walks through sourcing, classification, scoring, and the mandatory zooming ladder."
+          }
           actionLabel="Add the first signal"
           actionHref="/signals/new"
         />
       ) : sorted.length === 0 ? (
-        <EmptyState message="No signals match the current filters. The library holds signals outside this slice — relax one filter at a time (score minimums narrow results fastest), or reset the filters to see the full evidence base." />
+        <EmptyState
+          message={
+            simple
+              ? "No signals match. Clear the search, turn off Saved, or choose a different sector or country."
+              : "No signals match the current filters. The library holds signals outside this slice — relax one filter at a time (score minimums narrow results fastest), or reset the filters to see the full evidence base."
+          }
+        />
       ) : !simple && view === "table" ? (
         <SignalsTable signals={sorted} />
+      ) : simple ? (
+        <section aria-label="Signals">
+          {sorted.map((s) => (
+            <SimpleSignalCard key={s.id} signal={s} />
+          ))}
+        </section>
       ) : (
         <section aria-label="Signals">
           {sorted.map((s) => (

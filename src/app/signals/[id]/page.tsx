@@ -2,14 +2,16 @@
 
 /**
  * Signal detail — the full evidence record for one signal, disclosed through
- * visibility layers. Simple view reads as a plain article: what happened, why
- * it matters, how confident, the evidence, what could contradict it, and the
- * next step — headings and whitespace, no boxes. Analyst view opens the tabs:
- * overview, evidence, scoring, the mandatory zooming ladder, systems
- * analysis, contradictions, and human review. Methodology view adds rubric
- * anchors, provenance labels, the audit trail, and the zoom-completeness
- * checklist. The right column holds the quiet reading guide (Guided Mode)
- * and the relationship trail in every mode.
+ * visibility layers. Simple view is built for a 10-second read: hero line in
+ * words, "Why this matters" bullets, "What this could mean" possibilities,
+ * a compact "What it connects to" row, a "What you can do" action row
+ * (save / explore / dismiss / note), and a collapsed "More detail"
+ * disclosure that opens the full analyst tabs inline. Analyst view opens the
+ * tabs directly: overview, evidence, scoring, the mandatory zooming ladder,
+ * systems analysis, contradictions, and human review. Methodology view adds
+ * rubric anchors, provenance labels, the audit trail, and the
+ * zoom-completeness checklist. The right column holds the quiet reading
+ * guide (Guided Mode) and the relationship trail in every mode.
  */
 
 import Link from "next/link";
@@ -34,19 +36,18 @@ import { SignalScorePanel } from "@/components/ScorePanel";
 import { ZoomingPanel } from "@/components/ZoomingPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
-import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
-import { ExplainedConfidence, ExplainedScore } from "@/components/Explained";
+import { ViewGate, useViewMode } from "@/components/ViewMode";
+import { ExplainedScore } from "@/components/Explained";
 import { Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { zoomComplete } from "@/lib/validation";
-import {
-  evidenceQualityLine,
-  explainContradiction,
-  nextStepForSignal,
-} from "@/lib/explain";
+import { explainContradiction } from "@/lib/explain";
+import { evidenceWords, firstSentence, importanceWords } from "@/lib/simple";
 import type {
+  Cluster,
   ConfidenceLevel,
   Contradiction,
+  FutureTerritory,
   ReviewStatus,
   Score,
   Signal,
