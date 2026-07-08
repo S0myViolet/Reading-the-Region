@@ -45,16 +45,58 @@ export {
   seedIndicators,
 };
 
+import {
+  clusterTopUps,
+  generatedClusters,
+  generatedDrivers,
+  generatedImplications,
+  generatedIndicators,
+  generatedObservations,
+  generatedPatterns,
+  generatedScenarios,
+  generatedSignals,
+  generatedSources,
+  generatedTerritories,
+  territoryTopUps,
+} from "./generated";
+
+/**
+ * The full evidence base = hand-authored anchors + the generated scan-scale
+ * corpus. Top-ups wire generated evidence into the anchor clusters and
+ * territories so every link stays bidirectional (verified by
+ * scripts/check-seed.ts).
+ */
 export const seedData = {
-  observations: seedObservations,
-  sources: seedSources,
-  signals: seedSignals,
-  clusters: seedClusters,
-  patterns: seedPatterns,
+  observations: [...seedObservations, ...generatedObservations],
+  sources: [...seedSources, ...generatedSources],
+  signals: [...seedSignals, ...generatedSignals],
+  clusters: [
+    ...seedClusters.map((c) =>
+      clusterTopUps[c.id]
+        ? { ...c, signalIds: [...c.signalIds, ...clusterTopUps[c.id]] }
+        : c,
+    ),
+    ...generatedClusters,
+  ],
+  patterns: [...seedPatterns, ...generatedPatterns],
   contradictions: seedContradictions,
-  drivers: seedDrivers,
-  territories: seedTerritories,
-  scenarios: seedScenarios,
-  implications: seedImplications,
-  indicators: seedIndicators,
+  drivers: [...seedDrivers, ...generatedDrivers],
+  territories: [
+    ...seedTerritories.map((t) => {
+      const up = territoryTopUps[t.id];
+      return up
+        ? {
+            ...t,
+            scenarioIds: [...t.scenarioIds, ...up.scenarioIds],
+            leadingIndicatorIds: [...t.leadingIndicatorIds, ...up.leadingIndicatorIds],
+            driverIds: [...t.driverIds, ...up.driverIds],
+            patternIds: [...t.patternIds, ...up.patternIds],
+          }
+        : t;
+    }),
+    ...generatedTerritories,
+  ],
+  scenarios: [...seedScenarios, ...generatedScenarios],
+  implications: [...seedImplications, ...generatedImplications],
+  indicators: [...seedIndicators, ...generatedIndicators],
 };

@@ -67,7 +67,7 @@ const ADVANCED_NAV: NavGroup[] = [
   {
     heading: "Connect",
     items: [
-      { href: "/clusters", label: "Signal Clusters" },
+      { href: "/clusters", label: "Cluster Maps" },
       { href: "/patterns", label: "Patterns" },
       { href: "/contradictions", label: "Contradictions" },
     ],
@@ -75,7 +75,7 @@ const ADVANCED_NAV: NavGroup[] = [
   {
     heading: "Interpret",
     items: [
-      { href: "/drivers", label: "Drivers" },
+      { href: "/drivers", label: "Macro Forces / Drivers" },
       { href: "/territories", label: "Future Territories" },
       { href: "/scenarios", label: "Scenarios" },
     ],

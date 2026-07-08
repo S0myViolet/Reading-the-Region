@@ -231,7 +231,19 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
     }),
     {
       name: "reading-the-region-v1",
-      version: 1,
+      version: 2,
+      // v2 ships the scan-scale evidence base. Refresh the data collections
+      // on upgrade while keeping the user's UI preferences and progress.
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<IntelligenceStore>;
+        if (version < 2) {
+          return {
+            ...state,
+            ...seedData,
+          } as IntelligenceStore;
+        }
+        return state as IntelligenceStore;
+      },
     },
   ),
 );
