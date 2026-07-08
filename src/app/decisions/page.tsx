@@ -49,6 +49,23 @@ function joinWords(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
+/**
+ * Simple Mode never shows entity ids. Analyst-written prose sometimes cites
+ * them inline ("(SIG-003)"); strip them here — the evidence disclosure links
+ * to the same objects by name.
+ */
+const ID_TOKEN = /(?:OBS|SRC|SIG|CLU|PAT|CON|DRV|TER|SCN|IMP|IND)-\d+(?:['’]s)?/g;
+
+function stripIds(text: string): string {
+  return text
+    .replace(ID_TOKEN, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s+([,.;:)])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function audienceWords(imp: StrategicImplication): string {
   if (imp.audiences.length === 0) return "For anyone acting in the region";
   const words = imp.audiences.map((a) =>
@@ -83,15 +100,17 @@ function TakeawayEntry({
   return (
     <div className="list-row py-6">
       <p className="max-w-2xl text-[14px] font-medium leading-snug text-ink">
-        {firstSentence(imp.implication)}
+        {firstSentence(stripIds(imp.implication))}
       </p>
       <p className="mt-2 line-clamp-2 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-        {imp.whyItMatters}
+        {stripIds(imp.whyItMatters)}
       </p>
       <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-ink">
         <span className="font-medium text-accent-ink">Do now</span>
         <span className="text-ink-faint"> — </span>
-        <span className="font-medium">{firstSentence(imp.recommendedAction)}</span>
+        <span className="font-medium">
+          {firstSentence(stripIds(imp.recommendedAction))}
+        </span>
       </p>
       <p className="mt-2 text-[11.5px] text-ink-faint">
         {audienceWords(imp)} · {HORIZON_WORDS[imp.timeHorizon]} ·{" "}
@@ -181,10 +200,10 @@ export default function DecisionsPage() {
   const takeaways = implications.filter(isLive);
   const opportunities = takeaways
     .filter((i) => i.opportunity.trim().length > 0)
-    .map((i) => ({ id: i.id, text: firstSentence(i.opportunity) }));
+    .map((i) => ({ id: i.id, text: firstSentence(stripIds(i.opportunity)) }));
   const risks = takeaways
     .filter((i) => i.risk.trim().length > 0)
-    .map((i) => ({ id: i.id, text: firstSentence(i.risk) }));
+    .map((i) => ({ id: i.id, text: firstSentence(stripIds(i.risk)) }));
   const questions = scenarios
     .filter((sc) => !["rejected", "archived_noise", "duplicate"].includes(sc.reviewStatus))
     .flatMap((sc) =>
