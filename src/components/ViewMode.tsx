@@ -9,6 +9,7 @@
  *   <DepthHint>Scoring and source detail</DepthHint>  (simple mode only)
  */
 
+import { usePathname, useRouter } from "next/navigation";
 import { useHydrated } from "@/lib/store";
 import {
   APP_MODE_DESCRIPTIONS,
@@ -20,6 +21,40 @@ import {
   type AppMode,
   type ViewMode,
 } from "@/lib/viewMode";
+
+/**
+ * Context-preserving route mapping for the mode toggle. Only list routes
+ * move — detail pages render mode-appropriately in place. Simple New Finds
+ * maps to the Scan Inbox, Futures to the interpretation layers, Decisions
+ * to Strategic Implications, Watchlist to Monitoring.
+ */
+const SIMPLE_TO_ADVANCED: Record<string, string> = {
+  "/finds": "/inbox",
+  "/futures": "/territories",
+  "/decisions": "/implications",
+  "/watchlist": "/monitoring",
+};
+
+const ADVANCED_TO_SIMPLE: Record<string, string> = {
+  "/overview": "/",
+  "/inbox": "/finds",
+  "/observations": "/finds",
+  "/sources": "/explore",
+  "/clusters": "/futures",
+  "/patterns": "/futures",
+  "/contradictions": "/futures",
+  "/drivers": "/futures",
+  "/territories": "/futures",
+  "/scenarios": "/futures",
+  "/implications": "/decisions",
+  "/monitoring": "/watchlist",
+};
+
+function mappedRoute(pathname: string, next: AppMode): string | null {
+  const table = next === "advanced" ? SIMPLE_TO_ADVANCED : ADVANCED_TO_SIMPLE;
+  // Exact list-route matches only; deeper paths (detail pages) stay put.
+  return table[pathname] ?? null;
+}
 
 /** Current app mode, hydration-safe: "simple" until the client store loads. */
 export function useAppMode(): AppMode {
@@ -75,12 +110,26 @@ export function DepthHint({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Simple / Advanced product toggle for the shell sidebar and settings. */
+/**
+ * Simple / Advanced product toggle for the shell sidebar and settings.
+ * Preserves page context: switching modes maps the current list route to
+ * its counterpart (New Finds ↔ Scan Inbox, Decisions ↔ Implications, …).
+ */
 export function AppModeSwitch() {
   const hydrated = useHydrated();
   const appMode = useViewModeStore((s) => s.appMode);
   const setAppMode = useViewModeStore((s) => s.setAppMode);
+  const pathname = usePathname();
+  const router = useRouter();
   const current = hydrated ? appMode : "simple";
+
+  const switchTo = (m: AppMode) => {
+    setAppMode(m);
+    if (m !== current) {
+      const target = mappedRoute(pathname, m);
+      if (target) router.push(target);
+    }
+  };
 
   return (
     <div
@@ -94,7 +143,7 @@ export function AppModeSwitch() {
           role="radio"
           aria-checked={current === m}
           title={APP_MODE_DESCRIPTIONS[m]}
-          onClick={() => setAppMode(m)}
+          onClick={() => switchTo(m)}
           className={`flex-1 rounded-[4px] px-1 py-[3px] text-[10.5px] capitalize transition-colors ${
             current === m
               ? "bg-surface font-medium text-ink"

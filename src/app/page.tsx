@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Today — the daily briefing. Three picks (strongest signal, strongest
- * tension, future to watch), a short review queue, and three quiet exits.
- * A briefing, not a dashboard: no stats, no pipeline, no tables.
+ * The entry point changes meaning by mode. Simple: Today — a daily
+ * briefing (three picks, review queue, quiet exits). Advanced: the
+ * Intelligence Overview command center, rendered in place so the toggle
+ * preserves context.
  */
 
 import Link from "next/link";
@@ -11,7 +12,9 @@ import { useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { ConfidenceBadge, TerritoryStatusBadge } from "@/components/badges";
+import { useAppMode } from "@/components/ViewMode";
 import { explainContradiction } from "@/lib/explain";
+import OverviewCommandCenter from "./overview/page";
 import {
   firstSentence,
   todayPicks,
@@ -104,6 +107,7 @@ function QueueRow({ item }: { item: QueueItem }) {
 
 export default function TodayPage() {
   const hydrated = useHydrated();
+  const appMode = useAppMode();
 
   const observations = useIntelligenceStore((s) => s.observations);
   const sources = useIntelligenceStore((s) => s.sources);
@@ -157,6 +161,11 @@ export default function TodayPage() {
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
+  }
+
+  // Advanced mode: the same entry point is the intelligence command center.
+  if (appMode === "advanced") {
+    return <OverviewCommandCenter />;
   }
 
   return (

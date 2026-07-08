@@ -53,14 +53,15 @@ const SIMPLE_NAV: NavGroup[] = [
 const ADVANCED_NAV: NavGroup[] = [
   {
     heading: null,
-    items: [{ href: "/overview", label: "Overview" }],
+    items: [{ href: "/", label: "Overview" }],
   },
   {
     heading: "Scan",
     items: [
       { href: "/inbox", label: "Scan Inbox", badge: (c) => c.unreviewedObservations },
-      { href: "/signals", label: "Signal Library", badge: (c) => c.signalsNeedingReview },
       { href: "/sources", label: "Source Library" },
+      { href: "/observations", label: "Observation Library" },
+      { href: "/signals", label: "Signal Library", badge: (c) => c.signalsNeedingReview },
     ],
   },
   {
@@ -87,7 +88,7 @@ const ADVANCED_NAV: NavGroup[] = [
     ],
   },
   {
-    heading: null,
+    heading: "Admin",
     items: [
       { href: "/methodology", label: "Methodology" },
       { href: "/settings", label: "Settings" },

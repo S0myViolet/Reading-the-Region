@@ -210,3 +210,25 @@ paragraphs above the work area.
 **Linking downward:** simple cards link to existing detail routes (/signals/[id],
 /contradictions/[id], /territories/[id], /scenarios/[id]…). Those pages already render a
 calm simple view in simple mode. Do not rebuild them.
+
+## Evidence pipeline stages (Phase 1 architecture)
+
+Every major record belongs to a pipeline stage: Source → Observation → Signal Candidate →
+Valid Signal → Cluster → Pattern → Contradiction → Driver → Future Territory → Scenario →
+Strategic Implication → Monitoring Indicator.
+
+- `@/lib/pipeline.ts`: `PipelineStage`, `STAGE_LABELS` (advanced register), `STAGE_LABELS_SIMPLE`
+  (friendly register), `signalStage(signal)` (candidate vs valid via review status),
+  `suggestedStage(obs)` + `TRIAGE_LABELS` (the Scan Inbox triage question: probably noise /
+  keep as observation / promote to signal candidate).
+- `<PipelineStageBadge stage={…}/>` (`@/components/PipelineStageBadge`): renders friendly text
+  in simple mode, "Stage: X" chip in advanced. Add to detail-page headers and advanced list rows.
+- `<EvidenceTrail steps={[{stage, title, href}]}/>` (`@/components/EvidenceTrail`): the quiet
+  vertical chain from a conclusion back to its sources. Never invent steps — a short trail
+  must stay visibly short.
+- The mode toggle preserves context: /finds↔/inbox, /futures↔/territories, /decisions↔/implications,
+  /watchlist↔/monitoring; interpretation list pages map back to /futures; "/" renders the Today
+  briefing in simple mode and the Overview command center in advanced mode.
+- Observations carry NO numeric scores by design — scoring happens at signal promotion. Inbox
+  triage surfaces the promotion checklist, source credibility/bias/role, and the suggested
+  stage instead. Do not fabricate scores for observations.
