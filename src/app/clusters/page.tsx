@@ -61,7 +61,7 @@ interface ClusterRowData {
 function ClustersHeader() {
   return (
     <PageHeader
-      title="Signal Clusters"
+      title="Cluster Maps"
       description={DEFINITIONS.cluster}
       actions={
         <Link href="/clusters/new" className={btnPrimary}>
