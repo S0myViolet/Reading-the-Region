@@ -30,12 +30,14 @@ import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { ScoreBar } from "@/components/ScorePanel";
 import { ConfidenceBadge, ProvenanceBadge, TrendBadge } from "@/components/badges";
 import { SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import { validateDriver, type ValidationResult } from "@/lib/validation";
 import {
   explainConfidenceGeneric,
@@ -470,11 +472,13 @@ function EvidenceTab({
   driverSignals,
   driverPatterns,
   driverIndicators,
+  trail,
 }: {
   driver: Driver;
   driverSignals: Signal[];
   driverPatterns: Array<{ id: string; name: string }>;
   driverIndicators: MonitoringIndicator[];
+  trail: TrailStep[];
 }) {
   const [showAllSignals, setShowAllSignals] = useState(false);
   const minSources = DRIVER_THRESHOLDS.minIndependentSources;
@@ -581,6 +585,16 @@ function EvidenceTab({
               is real.
             </p>
           )}
+        </div>
+      </section>
+
+      <section className="max-w-2xl">
+        <SectionHeading>Evidence trail</SectionHeading>
+        <p className="mt-0.5 text-[12px] text-ink-faint">
+          From this conclusion back down to its sources.
+        </p>
+        <div className="mt-3">
+          <EvidenceTrail steps={trail} />
         </div>
       </section>
     </div>
@@ -700,6 +714,7 @@ export default function DriverDetailPage() {
   const mode = useViewMode();
   const drivers = useIntelligenceStore((s) => s.drivers);
   const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
   const patterns = useIntelligenceStore((s) => s.patterns);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
   const indicators = useIntelligenceStore((s) => s.indicators);
@@ -751,6 +766,30 @@ export default function DriverDetailPage() {
   );
   const trailSignals = driverSignals.slice(0, TRAIL_SIGNAL_CAP);
   const trailSignalOverflow = driverSignals.length - trailSignals.length;
+
+  // Evidence chain, downward from this driver's actual links — steps are
+  // never invented, so a thinly evidenced driver shows a visibly short trail.
+  const trailSteps: TrailStep[] = [{ stage: "driver", title: driver.name }];
+  for (const p of linkedPatterns) {
+    trailSteps.push({ stage: "pattern", title: p.name, href: `/patterns/${p.id}` });
+  }
+  for (const s of driverSignals.slice(0, 3)) {
+    trailSteps.push({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    });
+  }
+  const firstTrailSource = driverSignals[0]
+    ? sources.find((src) => src.id === driverSignals[0].sourceIds[0])
+    : undefined;
+  if (firstTrailSource) {
+    trailSteps.push({
+      stage: "source",
+      title: firstTrailSource.name,
+      href: `/sources/${firstTrailSource.id}`,
+    });
+  }
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Drivers", href: "/drivers" },
@@ -869,6 +908,7 @@ export default function DriverDetailPage() {
                         name: p.name,
                       }))}
                       driverIndicators={linkedIndicators}
+                      trail={trailSteps}
                     />
                   ),
                 },

@@ -36,6 +36,8 @@ import {
   RelatedObjectsPanel,
   type RelatedGroup,
 } from "@/components/EntityLink";
+import { EvidenceBackingLine } from "@/components/EvidenceCompression";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { ScoreBar } from "@/components/ScorePanel";
 import {
   IdChip,
@@ -45,6 +47,7 @@ import {
 } from "@/components/badges";
 import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import { explainContradiction, explainTerritoryStatus } from "@/lib/explain";
 import { validateTerritory, type ValidationResult } from "@/lib/validation";
 import type {
@@ -57,6 +60,8 @@ import type {
   PatternValidationStatus,
   ReviewStatus,
   Scenario,
+  Signal,
+  Source,
 } from "@/lib/types";
 import {
   CADENCE_LABELS,
@@ -162,9 +167,13 @@ function ContradictionSentences({ items }: { items: Contradiction[] }) {
 function SimpleReading({
   territory,
   linkedContradictions,
+  representativeSignals,
+  sources,
 }: {
   territory: FutureTerritory;
   linkedContradictions: Contradiction[];
+  representativeSignals: Signal[];
+  sources: Source[];
 }) {
   return (
     <div className="max-w-2xl space-y-8">
@@ -205,6 +214,9 @@ function SimpleReading({
           <TerritoryStatusBadge status={territory.monitoringStatus} />{" "}
           {explainTerritoryStatus(territory)}
         </Prose>
+        <div className="mt-1.5">
+          <EvidenceBackingLine signals={representativeSignals} sources={sources} />
+        </div>
       </Section>
 
       <Section title="What it changes">
@@ -403,6 +415,7 @@ function EvidenceTab({
   linkedPatterns,
   linkedClusters,
   representativeSignals,
+  trail,
 }: {
   territory: FutureTerritory;
   result: ValidationResult;
@@ -410,6 +423,7 @@ function EvidenceTab({
   linkedPatterns: Pattern[];
   linkedClusters: Array<{ id: string; title: string }>;
   representativeSignals: Array<{ id: string; title: string }>;
+  trail: TrailStep[];
 }) {
   return (
     <div className="space-y-7">
@@ -440,6 +454,13 @@ function EvidenceTab({
         items={representativeSignals}
         emptyNote="No representative signals attached. Pick the present-day evidence that best shows this direction already forming."
       />
+      <section className="max-w-2xl">
+        <h3 className="mb-1 text-[13px] font-medium text-ink">Evidence trail</h3>
+        <p className="mb-3 text-[12px] text-ink-faint">
+          From this conclusion back down to its sources.
+        </p>
+        <EvidenceTrail steps={trail} />
+      </section>
     </div>
   );
 }
@@ -805,6 +826,7 @@ export default function TerritoryDetailPage() {
   const patterns = useIntelligenceStore((s) => s.patterns);
   const clusters = useIntelligenceStore((s) => s.clusters);
   const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
   const scenarios = useIntelligenceStore((s) => s.scenarios);
   const implications = useIntelligenceStore((s) => s.implications);
@@ -867,6 +889,36 @@ export default function TerritoryDetailPage() {
       territory.leadingIndicatorIds.includes(i.id) || i.territoryId === territory.id,
   );
 
+  // Evidence chain, downward from this territory's actual links — steps are
+  // never invented, so a thinly evidenced territory shows a visibly short trail.
+  const trailSteps: TrailStep[] = [{ stage: "territory", title: territory.name }];
+  for (const d of linkedDrivers) {
+    trailSteps.push({ stage: "driver", title: d.name, href: `/drivers/${d.id}` });
+  }
+  for (const p of linkedPatterns.slice(0, 2)) {
+    trailSteps.push({ stage: "pattern", title: p.name, href: `/patterns/${p.id}` });
+  }
+  for (const c of linkedClusters.slice(0, 2)) {
+    trailSteps.push({ stage: "cluster", title: c.name, href: `/clusters/${c.id}` });
+  }
+  for (const s of representativeSignals.slice(0, 2)) {
+    trailSteps.push({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    });
+  }
+  const firstTrailSource = representativeSignals[0]
+    ? sources.find((src) => src.id === representativeSignals[0].sourceIds[0])
+    : undefined;
+  if (firstTrailSource) {
+    trailSteps.push({
+      stage: "source",
+      title: firstTrailSource.name,
+      href: `/sources/${firstTrailSource.id}`,
+    });
+  }
+
   const relatedGroups: RelatedGroup[] = [
     {
       heading: "Drivers",
@@ -925,7 +977,12 @@ export default function TerritoryDetailPage() {
   ];
 
   const simpleReading = (
-    <SimpleReading territory={territory} linkedContradictions={linkedContradictions} />
+    <SimpleReading
+      territory={territory}
+      linkedContradictions={linkedContradictions}
+      representativeSignals={representativeSignals}
+      sources={sources}
+    />
   );
 
   const analystTabs = [
@@ -951,6 +1008,7 @@ export default function TerritoryDetailPage() {
             id: s.id,
             title: s.title,
           }))}
+          trail={trailSteps}
         />
       ),
     },

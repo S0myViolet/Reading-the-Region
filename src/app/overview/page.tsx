@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { ConfidenceBadge, TerritoryStatusBadge, TrendBadge } from "@/components/badges";
 import { ContradictionPanel } from "@/components/ContradictionPanel";
 import { EmptyState } from "@/components/EmptyState";
+import { EvidenceCompressionSummary } from "@/components/EvidenceCompression";
 import { IntelligencePipeline } from "@/components/IntelligencePipeline";
 import { PageHeader } from "@/components/PageHeader";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
@@ -255,12 +256,19 @@ export default function OverviewPage() {
 
       {/* 1 · Pipeline movement ---------------------------------------------- */}
       <Section title="Pipeline movement">
+        <EvidenceCompressionSummary data={data} />
+        <p className="mb-8 mt-1.5 text-[12px] text-ink-faint">
+          Every layer reduces noise while increasing meaning — each count is a link into its
+          library.
+        </p>
         <div className="mb-8 flex flex-wrap gap-x-10 gap-y-6">
           {figures.map((f) => (
             <StageFigure key={f.label} label={f.label} value={f.value} href={f.href} />
           ))}
         </div>
-        <IntelligencePipeline counts={derived.pipeline} />
+        {/* compact: the caption above already carries the compression message,
+            so the pipeline's own caption would double it. */}
+        <IntelligencePipeline counts={derived.pipeline} compact />
       </Section>
 
       {/* 2 · Evidence triage -------------------------------------------------- */}

@@ -10,6 +10,7 @@
 
 import { ProvenanceBadge } from "@/components/badges";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
+import { EvidenceCompressionSummary } from "@/components/EvidenceCompression";
 import { IntelligencePipeline } from "@/components/IntelligencePipeline";
 import { PageHeader } from "@/components/PageHeader";
 import { DEFINITIONS, PHILOSOPHY, RECOMMENDED_WORKFLOW } from "@/lib/copy";
@@ -506,7 +507,16 @@ export default function MethodologyPage() {
             objects. Current counts:
           </P>
           {hydrated ? (
-            <IntelligencePipeline counts={pipelineCounts(store)} compact />
+            <>
+              <IntelligencePipeline counts={pipelineCounts(store)} compact />
+              <div>
+                <EvidenceCompressionSummary data={store} />
+                <p className="mt-1.5 max-w-2xl text-[11.5px] text-ink-faint">
+                  These counts are live from the demonstration evidence base — the funnel
+                  recomputes as records are promoted, validated, or archived.
+                </p>
+              </div>
+            </>
           ) : (
             <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
           )}

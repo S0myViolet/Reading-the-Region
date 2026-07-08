@@ -27,6 +27,7 @@ import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import {
@@ -38,6 +39,7 @@ import {
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import {
   monthsBetween,
   patternStrongThreshold,
@@ -374,10 +376,12 @@ function EvidenceTab({
   pattern,
   patternSignals,
   patternClusters,
+  trail,
 }: {
   pattern: Pattern;
   patternSignals: Signal[];
   patternClusters: LinkedClusterStatus[];
+  trail: TrailStep[];
 }) {
   const minSources = PATTERN_THRESHOLDS.minIndependentSources;
   return (
@@ -471,6 +475,14 @@ function EvidenceTab({
             the same movement repeats across several of them.
           </p>
         )}
+      </section>
+
+      <section className="max-w-2xl">
+        <h3 className="mb-1 text-[13px] font-medium text-ink">Evidence trail</h3>
+        <p className="mb-3 text-[12px] text-ink-faint">
+          From this conclusion back down to its sources.
+        </p>
+        <EvidenceTrail steps={trail} />
       </section>
     </div>
   );
@@ -787,6 +799,30 @@ export default function PatternDetailPage() {
   const recomputed = statusDisagrees(pattern, result);
   const simple = mode === "simple";
 
+  // Evidence chain, downward from this pattern's actual links — steps are
+  // never invented, so a thinly evidenced pattern shows a visibly short trail.
+  const trailSteps: TrailStep[] = [{ stage: "pattern", title: pattern.name }];
+  for (const c of linkedClusters.slice(0, 3)) {
+    trailSteps.push({ stage: "cluster", title: c.name, href: `/clusters/${c.id}` });
+  }
+  for (const s of patternSignals.slice(0, 3)) {
+    trailSteps.push({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    });
+  }
+  const firstTrailSource = patternSignals[0]
+    ? sources.find((src) => src.id === patternSignals[0].sourceIds[0])
+    : undefined;
+  if (firstTrailSource) {
+    trailSteps.push({
+      stage: "source",
+      title: firstTrailSource.name,
+      href: `/sources/${firstTrailSource.id}`,
+    });
+  }
+
   const clusterStatuses: LinkedClusterStatus[] = linkedClusters.map((c) => {
     const clusterResult = validateCluster(c, signals, sources);
     return {
@@ -863,6 +899,7 @@ export default function PatternDetailPage() {
           pattern={pattern}
           patternSignals={patternSignals}
           patternClusters={clusterStatuses}
+          trail={trailSteps}
         />
       ),
     },

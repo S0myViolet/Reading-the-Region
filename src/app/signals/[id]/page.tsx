@@ -33,6 +33,7 @@ import {
 import { PlainTags, SectorTags, SourceBiasTags, SystemTags } from "@/components/tags";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { SignalScorePanel } from "@/components/ScorePanel";
 import { ZoomingPanel } from "@/components/ZoomingPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
@@ -50,6 +51,7 @@ import type {
   ConfidenceLevel,
   Contradiction,
   FutureTerritory,
+  Observation,
   ReviewStatus,
   Score,
   Signal,
@@ -477,8 +479,36 @@ function OverviewTab({ signal }: { signal: Signal }) {
   );
 }
 
-function EvidenceTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
+function EvidenceTab({
+  signal,
+  sources,
+  observation,
+}: {
+  signal: Signal;
+  sources: Source[];
+  observation: Observation | null;
+}) {
   const linked = linkedSources(signal, sources);
+
+  // Evidence chain, downward from this signal's actual links — steps are
+  // never invented, so a thinly evidenced signal shows a visibly short trail.
+  const trailSteps: TrailStep[] = [
+    { stage: signalStage(signal), title: signal.title },
+  ];
+  if (observation) {
+    trailSteps.push({
+      stage: "observation",
+      title: observation.title,
+      href: `/inbox/${observation.id}`,
+    });
+  }
+  for (const src of linked.slice(0, 2)) {
+    trailSteps.push({
+      stage: "source",
+      title: src.name,
+      href: `/sources/${src.id}`,
+    });
+  }
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -518,6 +548,15 @@ function EvidenceTab({ signal, sources }: { signal: Signal; sources: Source[] })
             much weight the signal can carry.
           </p>
         )}
+      </Section>
+
+      <Section title="Evidence trail">
+        <p className="text-[11.5px] text-ink-faint">
+          From this conclusion back down to its sources.
+        </p>
+        <div className="mt-2.5">
+          <EvidenceTrail steps={trailSteps} />
+        </div>
       </Section>
 
       <Section title="Dates">
@@ -1006,7 +1045,9 @@ export default function SignalDetailPage() {
         {
           id: "evidence",
           label: "Evidence",
-          content: <EvidenceTab signal={signal} sources={sources} />,
+          content: (
+            <EvidenceTab signal={signal} sources={sources} observation={observation} />
+          ),
         },
         {
           id: "scoring",

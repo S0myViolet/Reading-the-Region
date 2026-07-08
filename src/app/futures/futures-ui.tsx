@@ -19,6 +19,7 @@
 
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
+import { evidenceBackingLine } from "@/components/EvidenceCompression";
 import { TerritoryStatusBadge } from "@/components/badges";
 import {
   explainContradiction,
@@ -36,6 +37,8 @@ import type {
   Scenario,
   ScenarioHorizon,
   ScenarioType,
+  Signal,
+  Source,
 } from "@/lib/types";
 import { CONFIDENCE_LABELS } from "@/lib/types";
 
@@ -50,6 +53,12 @@ function plainCounts(text: string): string {
 
 function signalCountWords(n: number): string {
   return `${numberWord(n)} signal${n === 1 ? "" : "s"}`;
+}
+
+/** Resolve member-signal ids against the live signal library. */
+function resolveSignals(ids: string[], signals: Signal[]): Signal[] {
+  const wanted = new Set(ids);
+  return signals.filter((s) => wanted.has(s.id));
 }
 
 /**
@@ -109,6 +118,7 @@ interface Story {
   href: string;
   name: string;
   whyItMatters: string;
+  signalIds: string[];
   signalCount: number;
   confidence: ConfidenceLevel;
   established: boolean;
@@ -119,10 +129,14 @@ export function StoriesSection({
   clusters,
   patterns,
   contradictions,
+  signals,
+  sources,
 }: {
   clusters: Cluster[];
   patterns: Pattern[];
   contradictions: Contradiction[];
+  signals: Signal[];
+  sources: Source[];
 }) {
   const firstTensionName = (ids: string[]): string | null => {
     for (const id of ids) {
@@ -140,6 +154,7 @@ export function StoriesSection({
         href: `/clusters/${c.id}`,
         name: c.name,
         whyItMatters: firstSentence(c.clusterStatement),
+        signalIds: c.signalIds,
         signalCount: c.signalIds.length,
         confidence: c.confidence,
         established: c.status === "valid",
@@ -152,6 +167,7 @@ export function StoriesSection({
         href: `/patterns/${p.id}`,
         name: p.name,
         whyItMatters: firstSentence(p.strategicMeaning),
+        signalIds: p.keySignalIds,
         signalCount: p.keySignalIds.length,
         confidence: p.confidence,
         established: true,
@@ -185,6 +201,9 @@ export function StoriesSection({
             Built on {signalCountWords(story.signalCount)} ·{" "}
             {CONFIDENCE_LABELS[story.confidence]}
             {story.tensionName ? <> · Main tension: {story.tensionName}</> : null}
+          </p>
+          <p className="mt-1 max-w-2xl text-[12px] text-ink-faint">
+            {evidenceBackingLine(resolveSignals(story.signalIds, signals), sources)}
           </p>
           <p className="mt-2.5">
             <Link href={story.href} className={exploreLink}>
@@ -258,9 +277,13 @@ export function TensionsSection({
 export function PossibilitiesSection({
   territories,
   drivers,
+  signals,
+  sources,
 }: {
   territories: FutureTerritory[];
   drivers: Driver[];
+  signals: Signal[];
+  sources: Source[];
 }) {
   const rank = (t: FutureTerritory) =>
     (t.monitoringStatus === "strengthening" ? 2 : t.monitoringStatus === "mutating" ? 1 : 0) +
@@ -301,6 +324,9 @@ export function PossibilitiesSection({
               <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
                 <TerritoryStatusBadge status={t.monitoringStatus} />{" "}
                 {directionStatusSentence(t)}
+              </p>
+              <p className="mt-1 max-w-2xl text-[12px] text-ink-faint">
+                {evidenceBackingLine(resolveSignals(t.representativeSignalIds, signals), sources)}
               </p>
               <p className="mt-2.5">
                 <Link href={`/territories/${t.id}`} className={exploreLink}>

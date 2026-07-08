@@ -36,10 +36,12 @@ import {
   RelatedObjectsPanel,
   type RelatedGroup,
 } from "@/components/EntityLink";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { IdChip, Pill, ProvenanceBadge } from "@/components/badges";
 import { PlainTags } from "@/components/tags";
 import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import { explainContradiction, explainScenarioEvidence } from "@/lib/explain";
 import {
   scenarioAssumptionHeavy,
@@ -575,11 +577,13 @@ function EvidenceTab({
   supportingPatterns,
   supportingDrivers,
   shapingContradictions,
+  trail,
 }: {
   supportingSignals: Signal[];
   supportingPatterns: Pattern[];
   supportingDrivers: Driver[];
   shapingContradictions: Contradiction[];
+  trail: TrailStep[];
 }) {
   return (
     <div className="space-y-7">
@@ -605,6 +609,14 @@ function EvidenceTab({
         ) : (
           <NoContradictionNote />
         )}
+      </section>
+
+      <section className="max-w-2xl">
+        <h3 className="mb-1 text-[13px] font-medium text-ink">Evidence trail</h3>
+        <p className="mb-3 text-[12px] text-ink-faint">
+          From this conclusion back down to its sources.
+        </p>
+        <EvidenceTrail steps={trail} />
       </section>
     </div>
   );
@@ -850,6 +862,30 @@ export default function ScenarioDetailPage() {
     (i) => i.scenarioId === scenario.id,
   );
 
+  // Evidence chain, downward from this scenario's actual links — steps are
+  // never invented, so a thinly evidenced scenario shows a visibly short trail.
+  const trailSteps: TrailStep[] = [{ stage: "scenario", title: scenario.title }];
+  if (territory) {
+    trailSteps.push({
+      stage: "territory",
+      title: territory.name,
+      href: `/territories/${territory.id}`,
+    });
+  }
+  for (const d of supportingDrivers) {
+    trailSteps.push({ stage: "driver", title: d.name, href: `/drivers/${d.id}` });
+  }
+  for (const p of supportingPatterns.slice(0, 2)) {
+    trailSteps.push({ stage: "pattern", title: p.name, href: `/patterns/${p.id}` });
+  }
+  for (const s of supportingSignals.slice(0, 2)) {
+    trailSteps.push({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    });
+  }
+
   const relatedGroups: RelatedGroup[] = [
     {
       heading: "Future territory",
@@ -928,6 +964,7 @@ export default function ScenarioDetailPage() {
           supportingPatterns={supportingPatterns}
           supportingDrivers={supportingDrivers}
           shapingContradictions={shapingContradictions}
+          trail={trailSteps}
         />
       ),
     },

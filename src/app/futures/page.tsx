@@ -48,6 +48,8 @@ function FuturesHeader() {
 export default function FuturesPage() {
   const hydrated = useHydrated();
   const mode = useViewMode();
+  const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
   const clusters = useIntelligenceStore((s) => s.clusters);
   const patterns = useIntelligenceStore((s) => s.patterns);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
@@ -96,6 +98,8 @@ export default function FuturesPage() {
                 clusters={clusters}
                 patterns={patterns}
                 contradictions={contradictions}
+                signals={signals}
+                sources={sources}
               />
             ),
           },
@@ -113,7 +117,14 @@ export default function FuturesPage() {
           {
             id: "possibilities",
             label: "Possibilities",
-            content: <PossibilitiesSection territories={territories} drivers={drivers} />,
+            content: (
+              <PossibilitiesSection
+                territories={territories}
+                drivers={drivers}
+                signals={signals}
+                sources={sources}
+              />
+            ),
           },
           {
             id: "scenarios",
