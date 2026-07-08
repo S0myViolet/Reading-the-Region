@@ -7,34 +7,43 @@
  * after drivers, patterns, clusters, signals, and contradictions exist
  * beneath it.
  *
- * Calm layout: territories are few and important, so each renders as a
- * generous editorial entry — display name, one-line definition, then one
- * faint status line (badge + plain sentence, with analyst extras folded in
- * as words). The naming discipline sits quietly below the list, analyst-only.
+ * Two registers, one dataset. The simple row is the calm editorial entry:
+ * display name, one-line definition, one faint status line. The advanced row
+ * answers the reader's five questions at a glance — what future this is, why
+ * it is visible now (live counts), which way it is moving, what still
+ * challenges it, and where to go deeper. The naming discipline folds into a
+ * collapsed reference at the bottom, advanced view only.
  */
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
-import { ViewGate } from "@/components/ViewMode";
+import { useViewMode, ViewGate } from "@/components/ViewMode";
 import { TerritoryStatusBadge } from "@/components/badges";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { DEFINITIONS } from "@/lib/copy";
-import type { FutureTerritory } from "@/lib/types";
+import type { Contradiction, FutureTerritory } from "@/lib/types";
+import { TERRITORY_MONITORING_LABELS } from "@/lib/types";
 import {
+  backedByLine,
   countInWords,
   evidenceStrengthWords,
   READINESS_TITLES,
   READINESS_WORDS,
+  statusToneClass,
   territoryStatusSentence,
 } from "./territory-ui";
 
-function TerritoriesHeader() {
+function TerritoriesHeader({ advanced }: { advanced: boolean }) {
   return (
     <PageHeader
       title="Future Territories"
-      description={DEFINITIONS.territory}
+      description={
+        advanced
+          ? "Larger directions of change created by converging drivers."
+          : DEFINITIONS.territory
+      }
     />
   );
 }
@@ -75,62 +84,67 @@ const NAME_WARNINGS: Array<{ label: string; detail: string }> = [
   {
     label: "Consultancy language",
     detail:
-      "“Leveraging synergies”, “holistic ecosystem plays” — language built to impress rather than to explain undermines the evidence beneath it.",
+      "Language built to impress rather than to explain undermines the evidence beneath it.",
   },
 ];
 
 /**
- * Naming discipline for this layer — a quiet reference section beneath the
- * list, analyst view only. Boxless: headings and faint text carry it.
+ * Naming discipline for this layer — collapsed by default so the list stays
+ * about the territories themselves. Advanced view only.
  */
 function NamingDiscipline() {
   return (
-    <section className="mt-14 max-w-2xl">
-      <h2 className="text-[13px] font-medium text-ink">
-        Naming a territory — the name must carry the meaning
-      </h2>
+    <details className="mt-14 max-w-2xl">
+      <summary className="cursor-pointer list-none text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft">
+        How territories are named
+      </summary>
 
-      <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
-        A strong name is{" "}
-        {NAME_QUALITIES.map((q, i) => (
-          <span key={q.quality}>
-            {i > 0 ? "; " : ""}
-            <span className="font-medium text-ink">{q.quality.toLowerCase()}</span>
-            <span className="text-ink-faint"> ({q.detail})</span>
-          </span>
-        ))}
-        .
-      </p>
+      <div className="mt-3">
+        <h2 className="text-[13px] font-medium text-ink">
+          Naming a territory — the name must carry the meaning
+        </h2>
 
-      <ul className="mt-4 space-y-2">
-        {NAME_WARNINGS.map((w) => (
-          <li key={w.label} className="text-[12px] leading-relaxed text-ink-faint">
-            <span className="text-[12.5px] font-medium text-ink-soft">
-              Avoid {w.label.toLowerCase()}.
-            </span>{" "}
-            {w.detail}
-          </li>
-        ))}
-      </ul>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
+          A strong name is{" "}
+          {NAME_QUALITIES.map((q, i) => (
+            <span key={q.quality}>
+              {i > 0 ? "; " : ""}
+              <span className="font-medium text-ink">{q.quality.toLowerCase()}</span>
+              <span className="text-ink-faint"> ({q.detail})</span>
+            </span>
+          ))}
+          .
+        </p>
 
-      <p className="mt-4 text-[12px] text-ink-faint">
-        Reference names that pass the test:{" "}
-        {EXAMPLE_NAMES.map((n, i) => (
-          <span key={n}>
-            {i > 0 ? " · " : ""}
-            <span className="font-display text-[13px] italic text-ink-soft">{n}</span>
-          </span>
-        ))}
-      </p>
-    </section>
+        <ul className="mt-4 space-y-2">
+          {NAME_WARNINGS.map((w) => (
+            <li key={w.label} className="text-[12px] leading-relaxed text-ink-faint">
+              <span className="text-[12.5px] font-medium text-ink-soft">
+                Avoid {w.label.toLowerCase()}.
+              </span>{" "}
+              {w.detail}
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-4 text-[12px] text-ink-faint">
+          Reference names that pass the test:{" "}
+          {EXAMPLE_NAMES.map((n, i) => (
+            <span key={n}>
+              {i > 0 ? " · " : ""}
+              <span className="font-display text-[13px] italic text-ink-soft">{n}</span>
+            </span>
+          ))}
+        </p>
+      </div>
+    </details>
   );
 }
 
 /**
- * One generous editorial entry per territory: display heading, one-line
- * definition, then a single faint line with the status badge, its plain
- * sentence, what the territory rests on, and — in analyst view — evidence
- * strength and scenario readiness as words.
+ * Simple-register entry, unchanged from the calm redesign: display heading,
+ * one-line definition, then a single faint line with the status badge, its
+ * plain sentence, and what the territory rests on.
  */
 function TerritoryEntry({ territory }: { territory: FutureTerritory }) {
   return (
@@ -174,14 +188,71 @@ function TerritoryEntry({ territory }: { territory: FutureTerritory }) {
   );
 }
 
+/**
+ * Advanced entry: the one-line future, why it is visible now (live counts),
+ * which way it is moving (accent tone earned by strengthening evidence only),
+ * and the first contradiction still standing against it.
+ */
+function AdvancedTerritoryEntry({
+  territory,
+  challengedBy,
+}: {
+  territory: FutureTerritory;
+  challengedBy: Contradiction | null;
+}) {
+  return (
+    <Link href={`/territories/${territory.id}`} className="list-row group">
+      <div className="flex items-baseline justify-between gap-6">
+        <h2 className="min-w-0 truncate font-display text-[16px] leading-snug text-ink group-hover:text-accent-ink">
+          {territory.name}
+        </h2>
+        <span
+          className={`shrink-0 text-[11.5px] ${statusToneClass(territory.monitoringStatus)}`}
+        >
+          {TERRITORY_MONITORING_LABELS[territory.monitoringStatus]}
+        </span>
+      </div>
+
+      <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+        {territory.oneLineDefinition.trim() ? (
+          territory.oneLineDefinition
+        ) : (
+          <span className="text-[12px] text-ink-faint">
+            No one-line definition recorded yet — a territory that cannot be
+            defined in a sentence is not yet a territory.
+          </span>
+        )}
+      </p>
+
+      <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
+        {backedByLine(territory)}{" "}
+        {challengedBy ? (
+          <>Still challenged by {challengedBy.name}.</>
+        ) : territory.contradictionIds.length === 0 ? (
+          <>No contradiction acknowledged yet.</>
+        ) : null}
+      </p>
+
+      <p className="mt-2 text-[11.5px] text-ink-faint">
+        <span className="underline decoration-line-strong underline-offset-2 group-hover:text-ink-soft">
+          Explore territory
+        </span>
+      </p>
+    </Link>
+  );
+}
+
 export default function TerritoriesPage() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
   const territories = useIntelligenceStore((s) => s.territories);
+  const contradictions = useIntelligenceStore((s) => s.contradictions);
+  const advanced = mode !== "simple";
 
   if (!hydrated) {
     return (
       <>
-        <TerritoriesHeader />
+        <TerritoriesHeader advanced={advanced} />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
@@ -191,9 +262,24 @@ export default function TerritoriesPage() {
     b.updatedAt.localeCompare(a.updatedAt),
   );
 
+  /** First linked contradiction that resolves to a real record — never invented. */
+  const firstChallenge = (t: FutureTerritory): Contradiction | null => {
+    for (const id of t.contradictionIds) {
+      const found = contradictions.find((c) => c.id === id);
+      if (found) return found;
+    }
+    return null;
+  };
+
   return (
     <>
-      <TerritoriesHeader />
+      <TerritoriesHeader advanced={advanced} />
+      {advanced ? (
+        <p className="-mt-5 mb-8 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+          A future territory is not a prediction. It is a possible direction the
+          region could move toward if today&rsquo;s drivers keep strengthening.
+        </p>
+      ) : null}
       <WalkthroughPanel pageId="territories" />
 
       {ordered.length === 0 ? (
@@ -205,13 +291,19 @@ export default function TerritoriesPage() {
       ) : (
         <>
           <section aria-label="Future territories">
-            {ordered.map((t) => (
-              <TerritoryEntry key={t.id} territory={t} />
-            ))}
+            {ordered.map((t) =>
+              advanced ? (
+                <AdvancedTerritoryEntry
+                  key={t.id}
+                  territory={t}
+                  challengedBy={firstChallenge(t)}
+                />
+              ) : (
+                <TerritoryEntry key={t.id} territory={t} />
+              ),
+            )}
           </section>
-          <ViewGate min="analyst">
-            <NamingDiscipline />
-          </ViewGate>
+          {advanced ? <NamingDiscipline /> : null}
         </>
       )}
     </>

@@ -3,18 +3,15 @@
 /**
  * Future territory detail — one strategic direction of change.
  *
- * Visibility layers: the simple reading gives the definition, why it is
- * emerging, its status in plain language (badge never alone), what it changes
- * and who it affects, opportunities and risks, what could contradict it, and
- * a next step — with the relationship trail visible in every mode. Analyst
- * view adds the linkage checklist, evidence-strength reading, sector
- * implication notes, per-driver and per-pattern statuses, scenarios,
- * monitoring and review controls. Methodology view adds the convergence rule
- * spelled out and the audit trail. Territories always require human review —
+ * Every register answers the same five questions: what is happening, why it
+ * matters, what future it points to, what could prove it wrong, and what to
+ * watch next. The simple reading answers them as one article. The advanced
+ * tabs answer them with full depth — plain English first, then the linkage
+ * checks, evidence strength, sector implications, structured tensions,
+ * scenario cards, monitoring and review controls — with the evidence trail
+ * kept compact in the right rail. Methodology view adds the convergence
+ * rulebook and the audit trail. Territories always require human review —
  * the layer sits too close to strategy to be trusted unreviewed.
- *
- * Calm layout: the left column reads as an article — small headings, prose,
- * whitespace instead of stacked cards. Cards survive only around tables.
  */
 
 import Link from "next/link";
@@ -24,33 +21,45 @@ import { PageHeader } from "@/components/PageHeader";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
-import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { DepthHint, useViewMode, ViewGate } from "@/components/ViewMode";
+import { NoContradictionNote } from "@/components/ContradictionPanel";
 import {
-  ContradictionPanel,
-  NoContradictionNote,
-} from "@/components/ContradictionPanel";
-import {
-  EntityLink,
   RelatedObjectsPanel,
   type RelatedGroup,
 } from "@/components/EntityLink";
 import { EvidenceBackingLine } from "@/components/EvidenceCompression";
-import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
-import { ScoreBar } from "@/components/ScorePanel";
+import {
+  ConnectBlock,
+  IncompleteNote,
+  RelationshipTrail,
+  ScoreExplanationRow,
+  ShowAllList,
+  StatusStrip,
+  TensionBlock,
+  ValidationCheckRows,
+  type TrailGroup,
+} from "@/components/connect";
 import {
   IdChip,
   ProvenanceBadge,
+  SignalStrengthBadge,
   TerritoryStatusBadge,
   TrendBadge,
 } from "@/components/badges";
 import { Field, Select } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { signalStage } from "@/lib/pipeline";
-import { explainContradiction, explainTerritoryStatus } from "@/lib/explain";
+import {
+  clusterPlainMeaning,
+  explainContradiction,
+  explainTerritoryStatus,
+  patternPlainMeaning,
+} from "@/lib/explain";
+import { firstSentence } from "@/lib/simple";
 import { validateTerritory, type ValidationResult } from "@/lib/validation";
 import type {
+  Cluster,
   ConfidenceLevel,
   Contradiction,
   Driver,
@@ -66,17 +75,26 @@ import type {
 import {
   CADENCE_LABELS,
   CONFIDENCE_LABELS,
+  CONTRADICTION_TYPE_LABELS,
   INDICATOR_TYPE_LABELS,
   REVIEW_STATUS_LABELS,
+  SCENARIO_TYPE_LABELS,
   SECTOR_LABELS,
   TERRITORY_MONITORING_LABELS,
 } from "@/lib/types";
 import {
+  couldChangeIfLine,
   countInWords,
-  EVIDENCE_STRENGTH_WORDS,
-  MONITORING_STATUS_EXPLANATIONS,
-  territoryNextStep,
+  evidenceStrengthReading,
   fmtDate,
+  HORIZON_PLAIN,
+  MONITORING_STATUS_EXPLANATIONS,
+  scenarioQualityLine,
+  splitSentences,
+  STATUS_TONES,
+  stripIdParens,
+  territoryCheckRows,
+  territoryNextStep,
 } from "../territory-ui";
 
 // ---------------------------------------------------------------------------
@@ -139,8 +157,44 @@ function PlainList({
   );
 }
 
+/** Faint-labelled sentence: "Label — text." */
+function LabelledLine({ label, text }: { label: string; text: string }) {
+  return (
+    <p className="text-[12.5px] leading-relaxed text-ink-soft">
+      <span className="text-ink-faint">{label} — </span>
+      {text}
+    </p>
+  );
+}
+
+/**
+ * Linked record names as a quiet mid-dot list. Driver and pattern names are
+ * sentence-shaped, so they are listed rather than folded into a sentence.
+ */
+function NameLinks({
+  items,
+}: {
+  items: Array<{ id: string; name: string; href: string }>;
+}) {
+  return (
+    <>
+      {items.map((it, i) => (
+        <span key={it.id}>
+          {i > 0 ? " · " : null}
+          <Link
+            href={it.href}
+            className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+          >
+            {it.name}
+          </Link>
+        </span>
+      ))}
+    </>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Simple reading — the default view, and the Overview tab in deeper views
+// Simple reading — the default view, byte-for-byte the calm article
 // ---------------------------------------------------------------------------
 
 /** Linked contradictions as readable sentences; the absence is explicit. */
@@ -272,37 +326,214 @@ function SimpleReading({
 }
 
 // ---------------------------------------------------------------------------
-// Evidence & linkage tab (analyst)
+// Overview tab (advanced) — plain English first, uncertainty explicit
 // ---------------------------------------------------------------------------
 
-function LinkGrid({
-  heading,
-  kind,
-  items,
-  emptyNote,
+function AdvancedOverview({
+  territory,
+  linkedDrivers,
+  linkedPatterns,
+  linkedContradictions,
+  linkedIndicators,
 }: {
-  heading: string;
-  kind: RelatedGroup["kind"];
-  items: Array<{ id: string; title: string }>;
-  emptyNote: string;
+  territory: FutureTerritory;
+  linkedDrivers: Driver[];
+  linkedPatterns: Pattern[];
+  linkedContradictions: Contradiction[];
+  linkedIndicators: MonitoringIndicator[];
 }) {
+  // whyEmerging tightened to one short paragraph: the first two sentences
+  // (record-id parentheticals removed) plus the drivers and patterns named
+  // as links. The full reasoning stays behind a quiet disclosure.
+  const whySentences = splitSentences(stripIdParens(territory.whyEmerging));
+  const whyLead = whySentences.slice(0, 2).join(" ");
+  const whyRest = whySentences.slice(2).join(" ");
+  const changeBullets = splitSentences(territory.whatItChanges);
+  const watchIndicators = linkedIndicators.slice(0, 5);
+
   return (
-    <section>
-      <h3 className="mb-2 text-[13px] font-medium text-ink">
-        {heading} ({items.length})
-      </h3>
-      {items.length > 0 ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {items.map((item) => (
-            <EntityLink key={item.id} kind={kind} id={item.id} title={item.title} />
-          ))}
+    <div className="max-w-2xl space-y-8">
+      <section>
+        {territory.oneLineDefinition.trim() ? (
+          <p className="font-display text-[17px] italic leading-relaxed text-ink">
+            {territory.oneLineDefinition}
+          </p>
+        ) : (
+          <FaintNote>
+            No one-line definition recorded yet. A territory that cannot be
+            stated in a single sentence is not yet a territory — it is a pile
+            of adjacent observations.
+          </FaintNote>
+        )}
+        <p className="mt-1.5 text-[12px] leading-relaxed text-ink-faint">
+          A direction the region could move toward — plausible, not proven.
+        </p>
+      </section>
+
+      <ConnectBlock heading="Why this future is becoming visible">
+        {territory.whyEmerging.trim() ? (
+          <>
+            <p>{whyLead}</p>
+            {linkedDrivers.length > 0 ? (
+              <p className="mt-1.5 text-[12.5px] leading-relaxed">
+                <span className="text-ink-faint">The forces behind it — </span>
+                <NameLinks
+                  items={linkedDrivers.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    href: `/drivers/${d.id}`,
+                  }))}
+                />
+              </p>
+            ) : null}
+            {linkedPatterns.length > 0 ? (
+              <p className="mt-1 text-[12.5px] leading-relaxed">
+                <span className="text-ink-faint">Seen through the patterns — </span>
+                <NameLinks
+                  items={linkedPatterns.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    href: `/patterns/${p.id}`,
+                  }))}
+                />
+              </p>
+            ) : null}
+            {whyRest ? (
+              <details className="mt-1.5">
+                <summary className="cursor-pointer list-none text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft">
+                  Show the full reasoning
+                </summary>
+                <p className="mt-1.5">{whyRest}</p>
+              </details>
+            ) : null}
+          </>
+        ) : (
+          <FaintNote>
+            Not recorded yet. State which drivers converge here and why their
+            convergence produces this direction rather than another.
+          </FaintNote>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What changes if this future grows">
+        {changeBullets.length > 0 ? (
+          <ul className="space-y-1.5">
+            {changeBullets.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        ) : (
+          <FaintNote>
+            Not recorded yet. Name the systems, behaviours, and markets this
+            direction of change restructures.
+          </FaintNote>
+        )}
+        {territory.whoItAffects.length > 0 ? (
+          <div className="mt-4">
+            <p className="mb-1.5 text-[11.5px] text-ink-faint">Who feels it first</p>
+            <div className="space-y-1.5">
+              <ShowAllList
+                previewCount={4}
+                noun="groups"
+                items={territory.whoItAffects.map((w) => (
+                  <p key={w} className="text-[13px] leading-relaxed text-ink-soft">
+                    {w}
+                  </p>
+                ))}
+              />
+            </div>
+          </div>
+        ) : null}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What could challenge it">
+        {linkedContradictions.length > 0 ? (
+          <div className="space-y-4">
+            {linkedContradictions.map((c) => {
+              const changeLine = couldChangeIfLine(c);
+              return (
+                <div key={c.id}>
+                  <p>
+                    <Link
+                      href={`/contradictions/${c.id}`}
+                      className="font-medium text-ink hover:text-accent-ink hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                    {" — "}
+                    {firstSentence(c.underlyingTension.trim() || c.sideA)}
+                  </p>
+                  {changeLine ? (
+                    <p className="mt-1 text-[12px] leading-relaxed">{changeLine}</p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <IncompleteNote
+            missing="No contradiction linked to this territory yet."
+            whyItMatters="A direction with nothing pulling against it has not been tested — it reads as a prediction."
+            nextStep="Record the strongest evidence that cuts against this future and link it here."
+          />
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What to watch">
+        {watchIndicators.length > 0 ? (
+          <>
+            <ul className="space-y-1.5">
+              {watchIndicators.map((ind) => (
+                <li key={ind.id}>
+                  <Link
+                    href="/monitoring"
+                    className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                  >
+                    {ind.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {linkedIndicators.length > watchIndicators.length ? (
+              <p className="mt-1.5 text-[12px] text-ink-faint">
+                And {linkedIndicators.length - watchIndicators.length} more on
+                the Monitoring tab.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p>
+            No leading indicators attached yet. Until they exist, this future
+            can only be asserted, not tracked.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="If this future strengthens">
+        <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          <PlainList
+            label="Opportunities"
+            items={territory.opportunities}
+            emptyNote="No opportunities recorded yet. Trace what becomes possible or valuable if this direction continues."
+          />
+          <PlainList
+            label="Risks"
+            items={territory.risks}
+            emptyNote="No risks recorded yet. Every meaningful direction of change puts something at risk — if nothing comes to mind, the territory is under-examined."
+          />
         </div>
-      ) : (
-        <p className="text-[11.5px] text-ink-faint">{emptyNote}</p>
-      )}
-    </section>
+      </ConnectBlock>
+
+      <ConnectBlock heading="Next step">
+        <p>{territoryNextStep(territory)}</p>
+      </ConnectBlock>
+    </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Evidence & linkage tab (advanced) — why this territory is grounded
+// ---------------------------------------------------------------------------
 
 const PATTERN_STATUS_WORDS: Record<PatternValidationStatus, string> = {
   hypothesis: "Hypothesis",
@@ -310,101 +541,34 @@ const PATTERN_STATUS_WORDS: Record<PatternValidationStatus, string> = {
   validated: "Validated",
 };
 
-function DriverLinkTable({ drivers }: { drivers: Driver[] }) {
+/** One linked record as name + quiet metadata + one plain sentence. */
+function LinkedRecordRow({
+  href,
+  id,
+  name,
+  meta,
+  sentence,
+}: {
+  href: string;
+  id: string;
+  name: string;
+  meta?: string;
+  sentence: string;
+}) {
   return (
-    <section>
-      <h3 className="mb-2 text-[13px] font-medium text-ink">
-        Drivers behind it ({drivers.length})
-      </h3>
-      {drivers.length > 0 ? (
-        <div className="card overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Driver</th>
-                <th>Status</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {drivers.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <Link
-                      href={`/drivers/${d.id}`}
-                      className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
-                    >
-                      {d.name}
-                    </Link>{" "}
-                    <IdChip id={d.id} />
-                  </td>
-                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
-                    {d.status === "validated" ? "Validated driver" : "Driver hypothesis"}
-                  </td>
-                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
-                    {CONFIDENCE_LABELS[d.confidence]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-[11.5px] text-ink-faint">
-          No drivers connected. A territory must rest on at least two converging
-          drivers — without them it is a theme, not a territory.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function PatternLinkTable({ patterns }: { patterns: Pattern[] }) {
-  return (
-    <section>
-      <h3 className="mb-2 text-[13px] font-medium text-ink">
-        Patterns behind it ({patterns.length})
-      </h3>
-      {patterns.length > 0 ? (
-        <div className="card overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Pattern</th>
-                <th>Validation status</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patterns.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <Link
-                      href={`/patterns/${p.id}`}
-                      className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
-                    >
-                      {p.name}
-                    </Link>{" "}
-                    <IdChip id={p.id} />
-                  </td>
-                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
-                    {PATTERN_STATUS_WORDS[p.validationStatus]}
-                  </td>
-                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
-                    {CONFIDENCE_LABELS[p.confidence]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-[11.5px] text-ink-faint">
-          No patterns connected. The repeated movements that the territory&rsquo;s
-          drivers explain should be linked here.
-        </p>
-      )}
-    </section>
+    <div className="py-2.5 first:pt-0 last:pb-0">
+      <p className="flex flex-wrap items-baseline gap-x-2 text-[12.5px]">
+        <Link
+          href={href}
+          className="font-medium text-ink hover:text-accent-ink hover:underline"
+        >
+          {name}
+        </Link>
+        <IdChip id={id} />
+        {meta ? <span className="text-[11px] text-ink-faint">{meta}</span> : null}
+      </p>
+      <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">{sentence}</p>
+    </div>
   );
 }
 
@@ -415,91 +579,199 @@ function EvidenceTab({
   linkedPatterns,
   linkedClusters,
   representativeSignals,
-  trail,
 }: {
   territory: FutureTerritory;
   result: ValidationResult;
   linkedDrivers: Driver[];
   linkedPatterns: Pattern[];
-  linkedClusters: Array<{ id: string; title: string }>;
-  representativeSignals: Array<{ id: string; title: string }>;
-  trail: TrailStep[];
+  linkedClusters: Cluster[];
+  representativeSignals: Signal[];
 }) {
   return (
-    <div className="space-y-7">
-      <ValidationChecklist
-        result={result}
-        title="Territory linkage requirements"
-        passedLabel="Grounded"
-        failedLabel="Insufficiently grounded"
-      />
+    <div className="max-w-2xl space-y-8">
+      <p className="text-[12px] leading-relaxed text-ink-faint">
+        Why this territory is grounded: the records beneath it, and the checks
+        it must pass before anyone treats it as more than an idea.
+      </p>
+
       <section>
-        <h3 className="mb-2 text-[13px] font-medium text-ink">Evidence strength</h3>
-        <ScoreBar value={territory.evidenceStrength} label="Evidence strength" />
-        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
-          {EVIDENCE_STRENGTH_WORDS[territory.evidenceStrength]}.
-        </p>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Drivers behind this ({linkedDrivers.length})
+        </h3>
+        {linkedDrivers.length > 0 ? (
+          <div className="divide-y divide-line">
+            {linkedDrivers.map((d) => (
+              <LinkedRecordRow
+                key={d.id}
+                href={`/drivers/${d.id}`}
+                id={d.id}
+                name={d.name}
+                meta={`${d.status === "validated" ? "Validated driver" : "Driver hypothesis"} · ${CONFIDENCE_LABELS[d.confidence]}`}
+                sentence={firstSentence(d.driverStatement)}
+              />
+            ))}
+          </div>
+        ) : (
+          <FaintNote>
+            No drivers connected. A territory must rest on at least two
+            converging drivers — without them it is a theme, not a territory.
+          </FaintNote>
+        )}
       </section>
-      <DriverLinkTable drivers={linkedDrivers} />
-      <PatternLinkTable patterns={linkedPatterns} />
-      <LinkGrid
-        heading="Key signal clusters"
-        kind="cluster"
-        items={linkedClusters}
-        emptyNote="No clusters linked. Clusters show where the territory's evidence groups by shared logic."
-      />
-      <LinkGrid
-        heading="Representative signals"
-        kind="signal"
-        items={representativeSignals}
-        emptyNote="No representative signals attached. Pick the present-day evidence that best shows this direction already forming."
-      />
-      <section className="max-w-2xl">
-        <h3 className="mb-1 text-[13px] font-medium text-ink">Evidence trail</h3>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Patterns behind this ({linkedPatterns.length})
+        </h3>
+        {linkedPatterns.length > 0 ? (
+          <div className="divide-y divide-line">
+            {linkedPatterns.map((p) => (
+              <LinkedRecordRow
+                key={p.id}
+                href={`/patterns/${p.id}`}
+                id={p.id}
+                name={p.name}
+                meta={`${PATTERN_STATUS_WORDS[p.validationStatus]} · ${CONFIDENCE_LABELS[p.confidence]}`}
+                sentence={patternPlainMeaning(p)}
+              />
+            ))}
+          </div>
+        ) : (
+          <FaintNote>
+            No patterns connected. The repeated movements that the
+            territory&rsquo;s drivers explain should be linked here.
+          </FaintNote>
+        )}
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Key clusters ({linkedClusters.length})
+        </h3>
+        {linkedClusters.length > 0 ? (
+          <div className="divide-y divide-line">
+            <ShowAllList
+              previewCount={6}
+              noun="clusters"
+              items={linkedClusters.map((c) => (
+                <LinkedRecordRow
+                  key={c.id}
+                  href={`/clusters/${c.id}`}
+                  id={c.id}
+                  name={c.name}
+                  sentence={clusterPlainMeaning(c)}
+                />
+              ))}
+            />
+          </div>
+        ) : (
+          <FaintNote>
+            No clusters linked. Clusters show where the territory&rsquo;s
+            evidence groups by shared logic.
+          </FaintNote>
+        )}
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Representative signals ({representativeSignals.length})
+        </h3>
+        {representativeSignals.length > 0 ? (
+          <div className="divide-y divide-line">
+            <ShowAllList
+              previewCount={6}
+              noun="signals"
+              items={representativeSignals.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-2.5 first:pt-0"
+                >
+                  <Link
+                    href={`/signals/${s.id}`}
+                    className="min-w-0 text-[12.5px] leading-snug text-ink hover:text-accent-ink hover:underline"
+                  >
+                    {s.title}
+                  </Link>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <SignalStrengthBadge strength={s.signalStrength} />
+                    <span className="text-[11px] text-ink-faint">{s.country}</span>
+                  </span>
+                </div>
+              ))}
+            />
+          </div>
+        ) : (
+          <FaintNote>
+            No representative signals attached. Pick the present-day evidence
+            that best shows this direction already forming.
+          </FaintNote>
+        )}
+      </section>
+
+      <section>
+        <ScoreExplanationRow
+          label="Evidence strength"
+          score={territory.evidenceStrength}
+          explanation={evidenceStrengthReading(territory)}
+        />
+      </section>
+
+      <section>
+        <h3 className="mb-1 text-[13px] font-medium text-ink">
+          Checks before treating this as a grounded future territory
+        </h3>
         <p className="mb-3 text-[12px] text-ink-faint">
-          From this conclusion back down to its sources.
+          {result.passedCount} of {result.totalCount} checks currently pass.
+          Each check keeps this layer tied to evidence rather than conviction.
         </p>
-        <EvidenceTrail steps={trail} />
+        <ValidationCheckRows checks={territoryCheckRows(territory, result)} />
       </section>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Sector implications tab (analyst)
+// Sector implications tab (advanced)
 // ---------------------------------------------------------------------------
 
 function SectorImplicationsTab({ territory }: { territory: FutureTerritory }) {
   if (territory.sectorImplications.length === 0) {
     return (
-      <p className="text-[12px] text-ink-faint">
-        No sector implications recorded yet. A territory earns its multi-sector
-        claim by stating what it means for each sector it touches — add notes
-        per sector as the evidence allows.
-      </p>
+      <IncompleteNote
+        missing="No sector implications recorded yet."
+        whyItMatters="A territory earns its multi-sector claim by saying what it changes for each sector it touches."
+        nextStep="Add a note per sector as the evidence allows — what changes, why it matters, and one concrete example decision."
+      />
     );
   }
   return (
-    <div className="space-y-3">
-      <div className="card overflow-x-auto">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Sector</th>
-              <th>Implication note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {territory.sectorImplications.map((si) => (
-              <tr key={si.sector}>
-                <td className="whitespace-nowrap text-[12.5px] text-ink">
-                  {SECTOR_LABELS[si.sector]}
-                </td>
-                <td className="text-[12.5px] leading-relaxed text-ink-soft">{si.note}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="max-w-2xl space-y-3">
+      <div className="divide-y divide-line">
+        {territory.sectorImplications.map((si) => (
+          <div key={si.sector} className="py-4 first:pt-0 last:pb-0">
+            <p className="text-[13px] font-medium text-ink">
+              {SECTOR_LABELS[si.sector]}
+            </p>
+            <div className="mt-1.5 space-y-1.5">
+              <LabelledLine label="What changes" text={si.note} />
+              {si.whyItMatters?.trim() ? (
+                <LabelledLine label="Why it matters" text={si.whyItMatters} />
+              ) : (
+                <p className="text-[12px] leading-relaxed text-ink-faint">
+                  Why it matters — not recorded yet for this sector.
+                </p>
+              )}
+              {si.exampleDecision?.trim() ? (
+                <LabelledLine label="Example decision" text={si.exampleDecision} />
+              ) : (
+                <p className="text-[12px] leading-relaxed text-ink-faint">
+                  Example decision — not recorded yet. Add one concrete decision
+                  this note suggests.
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
       <p className="text-[11.5px] text-ink-faint">
         Sector notes are interpretations of the territory, not validated
@@ -511,7 +783,7 @@ function SectorImplicationsTab({ territory }: { territory: FutureTerritory }) {
 }
 
 // ---------------------------------------------------------------------------
-// Scenarios tab (analyst)
+// Scenarios tab (advanced)
 // ---------------------------------------------------------------------------
 
 function ScenariosTab({
@@ -522,16 +794,42 @@ function ScenariosTab({
   linkedScenarios: Scenario[];
 }) {
   return (
-    <div className="space-y-5">
+    <div className="max-w-2xl space-y-5">
       <p className="text-[11.5px] text-ink-faint">
         Scenarios explore how this territory evolves under different conditions.
         They are structured possibilities anchored to this territory&rsquo;s evidence
         — not forecasts of it.
       </p>
       {linkedScenarios.length > 0 ? (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-6">
           {linkedScenarios.map((s) => (
-            <EntityLink key={s.id} kind="scenario" id={s.id} title={s.title} />
+            <section
+              key={s.id}
+              className="border-b border-line pb-6 last:border-b-0 last:pb-0"
+            >
+              <h3 className="font-display text-[15px] text-ink">
+                <Link href={`/scenarios/${s.id}`} className="hover:text-accent-ink">
+                  {s.title}
+                </Link>
+              </h3>
+              <p className="mt-0.5 text-[11.5px] text-ink-faint">
+                {SCENARIO_TYPE_LABELS[s.scenarioType]} scenario,{" "}
+                {HORIZON_PLAIN[s.horizon]} · {scenarioQualityLine(s)}
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
+                {firstSentence(s.corePremise)}
+              </p>
+              {s.differentiator?.trim() ? (
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+                  <span className="text-ink-faint">How it differs — </span>
+                  {s.differentiator}
+                </p>
+              ) : (
+                <p className="mt-1 text-[12px] text-ink-faint">
+                  How it differs from its sibling scenarios is not recorded yet.
+                </p>
+              )}
+            </section>
           ))}
         </div>
       ) : result.valid ? (
@@ -559,10 +857,10 @@ function ScenariosTab({
           </h3>
           <p className="text-[13px] leading-relaxed text-ink-soft">
             This territory meets {result.passedCount} of {result.totalCount}{" "}
-            linkage requirements. Scenarios built on an insufficiently grounded
-            territory inherit its weakness — strengthen the driver, pattern,
-            signal, contradiction, and indicator links on the Evidence &amp;
-            linkage tab first.
+            linkage requirements. Scenarios built on a weakly grounded territory
+            repeat its gaps — strengthen the driver, pattern, signal,
+            contradiction, and indicator links on the Evidence &amp; linkage tab
+            first.
           </p>
         </section>
       )}
@@ -571,7 +869,7 @@ function ScenariosTab({
 }
 
 // ---------------------------------------------------------------------------
-// Monitoring tab (analyst)
+// Monitoring tab (advanced)
 // ---------------------------------------------------------------------------
 
 function MonitoringTab({
@@ -583,6 +881,11 @@ function MonitoringTab({
 }) {
   return (
     <div className="space-y-5">
+      <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+        These indicators tell us whether this future territory is getting
+        stronger, weaker, or more complicated.
+      </p>
+
       <section>
         <h3 className="mb-1.5 text-[13px] font-medium text-ink">Monitoring status</h3>
         <p className="text-[13px] leading-relaxed text-ink-soft">
@@ -642,7 +945,10 @@ function MonitoringTab({
 
       <p className="text-[11.5px] text-ink-faint">
         Indicators are managed on the{" "}
-        <Link href="/monitoring" className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink">
+        <Link
+          href="/monitoring"
+          className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+        >
           Monitoring
         </Link>{" "}
         page. A territory without checked indicators drifts into assertion.
@@ -652,7 +958,7 @@ function MonitoringTab({
 }
 
 // ---------------------------------------------------------------------------
-// Review tab (analyst)
+// Review tab (advanced)
 // ---------------------------------------------------------------------------
 
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
@@ -664,10 +970,9 @@ function ReviewTab({ territory }: { territory: FutureTerritory }) {
   return (
     <div className="max-w-2xl space-y-5">
       <p className="text-[12px] leading-relaxed text-ink-faint">
-        Territories always require human review. This layer sits directly
-        beneath scenarios and strategy — no territory should anchor decisions
-        on stored status alone, and none should be treated as settled without
-        a named reviewer&rsquo;s judgement.
+        Use this to record analyst judgement. These notes do not overwrite the
+        evidence. Territories always require human review — this layer sits too
+        close to strategy to be trusted unreviewed.
       </p>
       <section>
         <h3 className="mb-3 text-[13px] font-medium text-ink">Human review</h3>
@@ -693,7 +998,7 @@ function ReviewTab({ territory }: { territory: FutureTerritory }) {
           </Field>
           <Field
             label="Confidence"
-            hint="How much weight this territory should carry in scenarios and implications."
+            hint="How much trust to place in this territory when scenarios and implications build on it."
           >
             <Select
               value={territory.confidence}
@@ -723,58 +1028,98 @@ function ReviewTab({ territory }: { territory: FutureTerritory }) {
 }
 
 // ---------------------------------------------------------------------------
-// Methodology tab (methodology only)
+// Methodology tab (methodology only) — the convergence rulebook
 // ---------------------------------------------------------------------------
 
-function MethodologyTab({ territory }: { territory: FutureTerritory }) {
-  const rules: Array<{ rule: string; now: string; why: string }> = [
-    {
-      rule: "At least two converging drivers",
-      now: `${countInWords(territory.driverIds.length, "driver")} linked`,
-      why: "A territory emerges from the convergence of multiple forces — a single driver is a driver, not a territory.",
-    },
-    {
-      rule: "At least one pattern",
-      now: `${countInWords(territory.patternIds.length, "pattern")} linked`,
-      why: "The repeated movements that the drivers explain must be visible beneath the territory.",
-    },
-    {
-      rule: "Contradiction-awareness — at least one linked contradiction",
-      now: `${countInWords(territory.contradictionIds.length, "contradiction")} acknowledged`,
-      why: "A territory that ignores its tensions becomes a prediction.",
-    },
-    {
-      rule: "At least three representative signals",
-      now: `${countInWords(territory.representativeSignalIds.length, "representative signal")} attached`,
-      why: "Present-day evidence must show the direction already forming.",
-    },
-    {
-      rule: "At least one leading indicator",
-      now: `${countInWords(territory.leadingIndicatorIds.length, "leading indicator")} attached`,
-      why: "Without indicators the territory cannot be tracked, only asserted.",
-    },
-  ];
+function MethodologyTab({
+  territory,
+  result,
+}: {
+  territory: FutureTerritory;
+  result: ValidationResult;
+}) {
+  const rows = territoryCheckRows(territory, result);
 
   return (
-    <div className="max-w-2xl space-y-7">
+    <div className="max-w-2xl space-y-8">
       <section>
-        <h3 className="mb-1.5 text-[13px] font-medium text-ink">The convergence rule</h3>
+        <h3 className="mb-1.5 text-[13px] font-medium text-ink">
+          The convergence rule
+        </h3>
         <p className="text-[13px] leading-relaxed text-ink-soft">
-          A future territory is only treated as grounded when every one of
-          these requirements holds. The requirements are thresholds, not
-          judgements — the Evidence &amp; linkage checklist computes them from
-          the record&rsquo;s actual links.
+          A territory is treated as grounded only while every rule below holds.
+          The rules are thresholds computed from the record&rsquo;s actual
+          links, not judgements.
         </p>
-        <ul className="mt-3 space-y-2.5 border-l border-line pl-4">
-          {rules.map((r) => (
-            <li key={r.rule}>
-              <p className="text-[12.5px] font-medium text-ink">
-                {r.rule}
-                <span className="ml-2 font-normal text-ink-faint">— currently {r.now}.</span>
-              </p>
-              <p className="text-[11.5px] leading-relaxed text-ink-faint">{r.why}</p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>Threshold</th>
+                <th>Currently</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.requirement}>
+                  <td className="text-[12px]">{r.requirement}</td>
+                  <td className="whitespace-nowrap font-mono text-[11.5px]">
+                    {r.threshold}
+                  </td>
+                  <td className="whitespace-nowrap text-[12px] text-ink-soft">
+                    {r.current}
+                  </td>
+                  <td
+                    className={`whitespace-nowrap text-[11.5px] ${
+                      r.passed ? "text-accent-ink" : "text-caution"
+                    }`}
+                  >
+                    {r.passed ? "Met" : "Not met"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Why each rule exists
+        </h3>
+        <ul className="space-y-2">
+          {rows.map((r) => (
+            <li key={r.requirement} className="text-[12px] leading-relaxed text-ink-soft">
+              <span className="font-medium text-ink">{r.requirement}.</span>{" "}
+              {r.explanation}
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">
+          Standing rules of this layer
+        </h3>
+        <ul className="space-y-2 text-[12px] leading-relaxed text-ink-soft">
+          <li>
+            <span className="font-medium text-ink">Not a prediction.</span> A
+            territory is a possible direction, held only while its evidence
+            holds.
+          </li>
+          <li>
+            <span className="font-medium text-ink">Human review is mandatory.</span>{" "}
+            This layer sits directly beneath scenarios and strategy — no
+            territory is treated as settled without a named reviewer&rsquo;s
+            judgement.
+          </li>
+          <li>
+            <span className="font-medium text-ink">The name must carry the meaning.</span>{" "}
+            Simple, memorable, explanatory, grounded, multi-sector — see the
+            naming reference on the territory list.
+          </li>
         </ul>
       </section>
 
@@ -889,36 +1234,6 @@ export default function TerritoryDetailPage() {
       territory.leadingIndicatorIds.includes(i.id) || i.territoryId === territory.id,
   );
 
-  // Evidence chain, downward from this territory's actual links — steps are
-  // never invented, so a thinly evidenced territory shows a visibly short trail.
-  const trailSteps: TrailStep[] = [{ stage: "territory", title: territory.name }];
-  for (const d of linkedDrivers) {
-    trailSteps.push({ stage: "driver", title: d.name, href: `/drivers/${d.id}` });
-  }
-  for (const p of linkedPatterns.slice(0, 2)) {
-    trailSteps.push({ stage: "pattern", title: p.name, href: `/patterns/${p.id}` });
-  }
-  for (const c of linkedClusters.slice(0, 2)) {
-    trailSteps.push({ stage: "cluster", title: c.name, href: `/clusters/${c.id}` });
-  }
-  for (const s of representativeSignals.slice(0, 2)) {
-    trailSteps.push({
-      stage: signalStage(s),
-      title: s.title,
-      href: `/signals/${s.id}`,
-    });
-  }
-  const firstTrailSource = representativeSignals[0]
-    ? sources.find((src) => src.id === representativeSignals[0].sourceIds[0])
-    : undefined;
-  if (firstTrailSource) {
-    trailSteps.push({
-      stage: "source",
-      title: firstTrailSource.name,
-      href: `/sources/${firstTrailSource.id}`,
-    });
-  }
-
   const relatedGroups: RelatedGroup[] = [
     {
       heading: "Drivers",
@@ -976,6 +1291,80 @@ export default function TerritoryDetailPage() {
     },
   ];
 
+  // Right-rail evidence trail (advanced): every linked record grouped by
+  // layer with live counts in the labels, compact by default. Steps come only
+  // from records this territory actually links to — never invented.
+  const trailGroups: TrailGroup[] = [
+    {
+      label: `Drivers (${linkedDrivers.length})`,
+      steps: linkedDrivers.map((d) => ({
+        stage: "driver" as const,
+        title: d.name,
+        href: `/drivers/${d.id}`,
+      })),
+    },
+    {
+      label: `Patterns (${linkedPatterns.length})`,
+      steps: linkedPatterns.map((p) => ({
+        stage: "pattern" as const,
+        title: p.name,
+        href: `/patterns/${p.id}`,
+      })),
+    },
+    {
+      label: `Clusters (${linkedClusters.length})`,
+      previewCount: 5,
+      steps: linkedClusters.map((c) => ({
+        stage: "cluster" as const,
+        title: c.name,
+        href: `/clusters/${c.id}`,
+      })),
+    },
+    {
+      label: `Signals (${representativeSignals.length})`,
+      previewCount: 5,
+      steps: representativeSignals.map((s) => ({
+        stage: signalStage(s),
+        title: s.title,
+        href: `/signals/${s.id}`,
+      })),
+    },
+    {
+      label: `Contradictions (${linkedContradictions.length})`,
+      steps: linkedContradictions.map((c) => ({
+        stage: "contradiction" as const,
+        title: c.name,
+        href: `/contradictions/${c.id}`,
+      })),
+    },
+    {
+      label: `Scenarios (${linkedScenarios.length})`,
+      steps: linkedScenarios.map((s) => ({
+        stage: "scenario" as const,
+        title: s.title,
+        href: `/scenarios/${s.id}`,
+      })),
+    },
+    {
+      label: `Implications (${linkedImplications.length})`,
+      steps: linkedImplications.map((i) => ({
+        stage: "implication" as const,
+        title: i.implication.length > 80 ? `${i.implication.slice(0, 80)}…` : i.implication,
+        href: "/implications",
+      })),
+    },
+    {
+      label: `Monitoring indicators (${linkedIndicators.length})`,
+      previewCount: 5,
+      steps: linkedIndicators.map((i) => ({
+        stage: "indicator" as const,
+        title: i.name,
+        href: "/monitoring",
+      })),
+    },
+  ];
+  const trailHasSteps = trailGroups.some((g) => g.steps.length > 0);
+
   const simpleReading = (
     <SimpleReading
       territory={territory}
@@ -989,7 +1378,15 @@ export default function TerritoryDetailPage() {
     {
       id: "overview",
       label: "Overview",
-      content: simpleReading,
+      content: (
+        <AdvancedOverview
+          territory={territory}
+          linkedDrivers={linkedDrivers}
+          linkedPatterns={linkedPatterns}
+          linkedContradictions={linkedContradictions}
+          linkedIndicators={linkedIndicators}
+        />
+      ),
     },
     {
       id: "evidence",
@@ -1000,15 +1397,8 @@ export default function TerritoryDetailPage() {
           result={result}
           linkedDrivers={linkedDrivers}
           linkedPatterns={linkedPatterns}
-          linkedClusters={linkedClusters.map((c) => ({
-            id: c.id,
-            title: c.name,
-          }))}
-          representativeSignals={representativeSignals.map((s) => ({
-            id: s.id,
-            title: s.title,
-          }))}
-          trail={trailSteps}
+          linkedClusters={linkedClusters}
+          representativeSignals={representativeSignals}
         />
       ),
     },
@@ -1020,20 +1410,44 @@ export default function TerritoryDetailPage() {
     {
       id: "contradictions",
       label: `Contradictions (${linkedContradictions.length})`,
-      content: (
-        <div className="space-y-6">
-          {linkedContradictions.length > 0 ? (
-            linkedContradictions.map((c) => (
-              <ContradictionPanel key={c.id} contradiction={c} />
-            ))
-          ) : (
-            <NoContradictionNote />
-          )}
-          <p className="text-[11.5px] text-ink-faint">
-            A territory that ignores its contradictions becomes a prediction.
-          </p>
-        </div>
-      ),
+      content:
+        linkedContradictions.length > 0 ? (
+          <div className="space-y-8">
+            {linkedContradictions.map((c) => (
+              <TensionBlock
+                key={c.id}
+                name={c.name}
+                href={`/contradictions/${c.id}`}
+                typeLabel={`Contradiction · ${CONTRADICTION_TYPE_LABELS[c.contradictionType]}`}
+                sideA={{ claim: c.sideA, support: c.evidenceSideA }}
+                sideB={{ claim: c.sideB, support: c.evidenceSideB }}
+                rows={[
+                  {
+                    label: "Why this tension matters",
+                    text: firstSentence(
+                      c.underlyingTension.trim() || c.strategicImplication,
+                    ),
+                  },
+                  {
+                    label: "What to watch",
+                    text: firstSentence(
+                      c.possibleEscalation.trim() || c.scenarioRelevance,
+                    ),
+                  },
+                ].filter((r) => r.text.trim())}
+              />
+            ))}
+            <p className="text-[11.5px] text-ink-faint">
+              A territory that ignores its contradictions becomes a prediction.
+            </p>
+          </div>
+        ) : (
+          <IncompleteNote
+            missing="No contradiction linked to this territory yet."
+            whyItMatters="A territory without acknowledged tension reads as a prediction."
+            nextStep="Find the strongest evidence that cuts against this direction and record it as a contradiction."
+          />
+        ),
     },
     {
       id: "scenarios",
@@ -1061,7 +1475,7 @@ export default function TerritoryDetailPage() {
           {
             id: "methodology",
             label: "Methodology",
-            content: <MethodologyTab territory={territory} />,
+            content: <MethodologyTab territory={territory} result={result} />,
           },
         ]
       : analystTabs;
@@ -1075,20 +1489,62 @@ export default function TerritoryDetailPage() {
         ]}
       />
       <PageHeader title={territory.name} actions={<PipelineStageBadge stage="territory" />} />
+      {mode !== "simple" ? (
+        <div className="-mt-5 mb-8">
+          <StatusStrip
+            items={[
+              { text: "Future Territory" },
+              {
+                text: TERRITORY_MONITORING_LABELS[territory.monitoringStatus],
+                tone: STATUS_TONES[territory.monitoringStatus],
+              },
+              { text: CONFIDENCE_LABELS[territory.confidence] },
+              linkedContradictions.length > 0
+                ? {
+                    text: `${countInWords(linkedContradictions.length, "contradiction")} acknowledged`,
+                  }
+                : {
+                    text: "No contradiction acknowledged yet",
+                    tone: "caution" as const,
+                  },
+            ]}
+          />
+        </div>
+      ) : null}
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>{mode === "simple" ? simpleReading : <Tabs tabs={tabs} />}</div>
 
         <aside className="mt-10 space-y-8 lg:mt-0">
-          <RelatedObjectsPanel groups={relatedGroups} />
-          <ViewGate min="analyst">
-            <BiasCheckPanel
-              extraQuestions={[
-                "Is this territory broad enough to hold multiple sectors, and specific enough to be meaningful?",
-                "Would this name survive a client meeting without a slide of caveats?",
-              ]}
-            />
-          </ViewGate>
+          {mode === "simple" ? (
+            <RelatedObjectsPanel groups={relatedGroups} />
+          ) : (
+            <>
+              {trailHasSteps ? (
+                <section>
+                  <h2 className="mb-3 text-[13px] font-medium text-ink">
+                    Evidence trail
+                  </h2>
+                  <RelationshipTrail
+                    groups={trailGroups}
+                    expandLabel="Show the full evidence trail"
+                  />
+                </section>
+              ) : (
+                <IncompleteNote
+                  missing="No linked records yet."
+                  whyItMatters="A territory only exists through the drivers, patterns and signals beneath it."
+                  nextStep="Link the converging drivers first, then the patterns and signals that show them."
+                />
+              )}
+              <BiasCheckPanel
+                extraQuestions={[
+                  "Is this territory broad enough to hold multiple sectors, and specific enough to be meaningful?",
+                  "Would this name survive a client meeting without a slide of caveats?",
+                ]}
+              />
+            </>
+          )}
         </aside>
       </div>
     </>
