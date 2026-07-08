@@ -3,9 +3,9 @@
 /**
  * Source detail — the full record of one source, read as an article: what the
  * source is good for first, then a calm definition block (type, URL,
- * credibility in words with a reason, roles), then the analyst weighting
- * guidance and methodology reference. The relationship trail sits in the
- * right rail.
+ * credibility in words with a reason, roles, bias tags, linked evidence),
+ * then the analyst "How to use this source" guidance and the methodology
+ * reference. The relationship trail sits in the right rail.
  */
 
 import { useParams } from "next/navigation";
@@ -156,7 +156,7 @@ function GuidanceSection({
   const linkedCount = observationCount + signalCount;
   return (
     <section>
-      <h2 className="text-[13px] font-medium text-ink">How to weigh this source</h2>
+      <h2 className="text-[13px] font-medium text-ink">How to use this source</h2>
       <ul className="mt-2 max-w-2xl space-y-2">
         {lines.map((line) => (
           <li key={line} className="text-[12.5px] leading-relaxed text-ink-soft">
@@ -200,10 +200,9 @@ function MethodologySection({ src }: { src: Source }) {
         ))}
       </dl>
       <p className="mt-3 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-        Credibility says how far the source&apos;s claims can be trusted on their
-        own; role says what job it performs in the workflow. The two are recorded
-        independently, because a source can be excellent at one job and unsafe for
-        another — a social platform is often strong discovery but weak validation,
+        Credibility says how much to trust a source. Role says what job it does.
+        Judge them separately — a source can be great for discovery and weak for
+        proof. A social platform is often strong discovery but weak validation,
         while a government report is strong validation but slow discovery. Sources
         scoring 2 or below are safe for discovery, unsafe for validation.
       </p>

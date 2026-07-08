@@ -4,8 +4,8 @@
  * Overview — the advanced command center.
  *
  * An intelligence control room ordered by daily movement: the pipeline and
- * its headline figures, evidence triage (what is unsafe to rely on and why),
- * task guidance, recent movement between stages, contradictions, monitoring
+ * its headline figures, needs-attention triage (what is unsafe to rely on and
+ * why), suggested tasks, recent movement between stages, contradictions, monitoring
  * movement, strengthening territories, then the analyst-gated noise filter
  * and system health queues. All data is derived client-side from the
  * persisted store, so the page is hydration-gated.
@@ -227,7 +227,7 @@ export default function OverviewPage() {
       <>
         <PageHeader
           title="Overview"
-          description="Daily movement through the Reading the Region intelligence pipeline."
+          description="A clear view of what moved through the intelligence pipeline today."
         />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
@@ -235,7 +235,8 @@ export default function OverviewPage() {
   }
 
   const figures: Array<{ label: string; value: number; href: string }> = [
-    { label: "Sources", value: data.sources.length, href: "/sources" },
+    { label: "Sources scanned", value: data.sources.length, href: "/sources" },
+    { label: "Observations captured", value: data.observations.length, href: "/observations" },
     { label: "Signal candidates", value: derived.signalCandidates, href: "/signals" },
     { label: "Valid signals", value: derived.validSignals, href: "/signals?review=validated" },
     {
@@ -250,7 +251,7 @@ export default function OverviewPage() {
     <>
       <PageHeader
         title="Overview"
-        description="Daily movement through the Reading the Region intelligence pipeline."
+        description="A clear view of what moved through the intelligence pipeline today."
       />
       <WalkthroughPanel pageId="overview" />
 
@@ -261,15 +262,18 @@ export default function OverviewPage() {
             <StageFigure key={f.label} label={f.label} value={f.value} href={f.href} />
           ))}
         </div>
-        {/* compact: the caption above already carries the compression message,
-            so the pipeline's own caption would double it. */}
+        {/* compact: the ribbon carries no caption of its own; the helper line
+            below states the compression message once. */}
         <IntelligencePipeline counts={derived.pipeline} compact />
+        <p className="mt-2 text-[11px] text-ink-faint">
+          Each step reduces noise and increases meaning.
+        </p>
       </Section>
 
       {/* 1b · Evidence base scale -------------------------------------------- */}
       <Section
         title="Evidence base scale"
-        caption="Every layer reduces noise while increasing meaning — each count is a link into its library."
+        caption="Each count is a link into its library."
       >
         <EvidenceCompressionSummary data={data} />
         <p className="mt-2 text-[11px] text-ink-faint">
@@ -277,9 +281,9 @@ export default function OverviewPage() {
         </p>
       </Section>
 
-      {/* 2 · Evidence triage -------------------------------------------------- */}
+      {/* 2 · Needs attention --------------------------------------------------- */}
       <Section
-        title="Evidence triage"
+        title="Needs attention"
         caption="Signals it is not yet safe to rely on, grouped by the reason. A signal can appear under more than one lens."
         href="/signals"
         linkLabel="Open the Signal Library"
@@ -324,16 +328,15 @@ export default function OverviewPage() {
           </div>
         ) : (
           <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-            Nothing is flagged for triage: no live signal currently combines thin evidence with
-            high novelty, lags its evidence base, leans on bias-tagged sourcing, carries an
-            unresolved contradiction, or awaits human review.
+            Nothing needs attention right now. No live signal is thin, out of date, weakly
+            sourced, contradicted, or awaiting human review.
           </p>
         )}
       </Section>
 
-      {/* 3 · What needs attention today ---------------------------------------- */}
+      {/* 3 · Suggested tasks ---------------------------------------------------- */}
       <Section
-        title="What needs attention today"
+        title="Suggested tasks"
         caption="Task-based guidance derived from the current state of the base."
       >
         {derived.tasks.length > 0 ? (
@@ -349,9 +352,8 @@ export default function OverviewPage() {
         ) : (
           <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
             The system is current: no unreviewed observations, no items awaiting review, and no
-            overdue indicators. Keep to the re-scanning cadence — weekly for the Scan Inbox and
-            weak signals, monthly for clusters and patterns, quarterly for drivers and
-            territories.
+            overdue indicators. Keep to the re-scanning cadence — inbox weekly, clusters and
+            patterns monthly, drivers and territories quarterly.
           </p>
         )}
       </Section>
@@ -412,7 +414,7 @@ export default function OverviewPage() {
           </div>
         ) : (
           <EmptyState
-            message="No contradictions have been logged yet. Foresight without opposing evidence is under-scanned — when two valid forces pull in different directions across your signals, record the tension as a contradiction."
+            message="No contradictions have been logged yet. When two valid forces pull in different directions across your signals, record the tension as a contradiction."
             actionLabel="Open Contradictions"
             actionHref="/contradictions"
           />
@@ -487,7 +489,7 @@ export default function OverviewPage() {
           </div>
         ) : (
           <EmptyState
-            message="No territory is currently strengthening. A territory appears here when its leading monitoring indicators trend upward — check and update indicators on the Monitoring page to keep territory status honest."
+            message="No territory is currently strengthening. A territory appears here when its leading indicators trend upward — keep indicators current on the Monitoring page."
             actionLabel="Open Monitoring"
             actionHref="/monitoring"
           />
@@ -531,7 +533,7 @@ export default function OverviewPage() {
             </div>
           ) : (
             <EmptyState
-              message="Nothing has been archived as noise yet. When you archive an observation or mark it as a duplicate in the Scan Inbox, it is kept here with its triage rationale so the filtering decision can be audited later."
+              message="Nothing has been archived as noise yet. Observations archived or marked duplicate in the Scan Inbox are kept here with their triage rationale."
               actionLabel="Open the Scan Inbox"
               actionHref="/inbox"
             />

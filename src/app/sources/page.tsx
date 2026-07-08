@@ -66,7 +66,7 @@ function SourcesHeader({ onAdd }: { onAdd?: () => void }) {
   return (
     <PageHeader
       title="Source Library"
-      description="Where evidence comes from and how much weight it can carry. Credibility and role are assessed separately — a source can be strong at one job and unsafe for another."
+      description="Credibility says how much to trust a source. Role says what job it does. Judge them separately — a source can be great for discovery and weak for proof."
       actions={
         onAdd ? (
           <button type="button" onClick={onAdd} className={btnPrimary}>
@@ -313,7 +313,15 @@ function SourceTableRow({
         {rolesLine(src.roles)}
       </td>
       <td>
-        <SourceBiasTags tags={src.biasTags} />
+        <SourceBiasTags tags={src.biasTags.slice(0, 2)} />
+        {src.biasTags.length > 2 ? (
+          <span
+            className="ml-1 text-[11px] text-ink-faint"
+            title={src.biasTags.map((t) => BIAS_TAG_LABELS[t]).join(", ")}
+          >
+            +{src.biasTags.length - 2} more
+          </span>
+        ) : null}
       </td>
       <td
         className="whitespace-nowrap text-right font-mono text-[12px] text-ink-soft"
@@ -593,14 +601,13 @@ function SourcesContent() {
           <div>
             <h2 className="text-[13px] font-medium text-ink">Credibility is not role</h2>
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
-              A source&apos;s credibility says how far its claims can be trusted; its
-              role says what job it does for the workflow. The two are recorded
-              independently, because a source can be excellent at one job and unsafe
-              for another. Social platforms are typically strong discovery but weak
-              validation — they surface early behaviour before stronger sources
+              Credibility says how much to trust a source. Role says what job it
+              does. Judge them separately — a source can be great for discovery and
+              weak for proof. Social platforms are typically strong discovery but
+              weak validation: they surface early behaviour before stronger sources
               notice it, yet rarely confirm scale. Government reports are the
-              reverse: strong validation but slow discovery, and their claims should
-              still be read against a government-agenda bias tag.
+              reverse — strong validation but slow discovery, and their claims
+              should still be read against a government-agenda bias tag.
             </p>
           </div>
           <div>

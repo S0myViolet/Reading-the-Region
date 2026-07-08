@@ -2,9 +2,9 @@
 
 /**
  * Route-local UI helpers for the Source Library. Credibility and role are
- * deliberately separate judgements: credibility scores how far a source can
- * be trusted, role records the job it performs in the workflow. The helpers
- * here keep that distinction visible everywhere a source is rendered.
+ * deliberately separate judgements: credibility says how much to trust a
+ * source, role says what job it does. The helpers here keep that distinction
+ * visible everywhere a source is rendered.
  */
 
 import { Pill } from "@/components/badges";
@@ -33,18 +33,18 @@ export function fmtDate(iso: string): string {
 /** What each role means for how evidence from the source should be weighted. */
 export const ROLE_WEIGHT_NOTES: Record<SourceRole, string> = {
   discovery:
-    "Surfaces early material before stronger sources notice it; findings need independent validation before they carry weight in conclusions.",
+    "Use this source to spot early behaviour. Do not use it to prove a conclusion until another source confirms it.",
   validation:
-    "Can confirm scale or substance; evidence from it may support clusters, patterns, and drivers when credibility is high.",
+    "Use this source to confirm findings. It is strong proof, but often slow to catch new behaviour.",
   context:
-    "Frames other evidence with background; it should not be counted as an independent source in validation thresholds.",
+    "Use this source to understand the background. It explains the setting, not the change itself.",
   contradiction:
-    "Used deliberately to find opposing evidence; weigh it when testing a conclusion, not when building one.",
-  data: "Supplies quantitative evidence; check methodology, sample size, and recency before weighting its numbers.",
+    "Use this source to find the opposing case. It keeps conclusions honest.",
+  data: "Use this source for numbers and scale. Check the method behind the figures before quoting them.",
   interpretation:
-    "Offers analysis, not fact; label material from it as sourced interpretation, never as sourced fact.",
+    "Use this source for expert readings of what evidence means. Weigh who is speaking and why.",
   monitoring:
-    "Checked on a regular cadence for indicator updates; more useful for trend direction than for one-off claims.",
+    "Use this source to track change over time. It shows movement, not causes.",
 };
 
 /**
@@ -110,60 +110,60 @@ export function weighingGuidance(src: Source): string[] {
 
   if (credibility <= 2 && roles.includes("discovery")) {
     lines.push(
-      "Use for discovery only; require independent validation before this evidence supports a cluster or pattern.",
+      "Use this source for discovery only. Do not let its evidence support a cluster or pattern until an independent source confirms it.",
     );
   } else if (credibility <= 2) {
     lines.push(
-      "Credibility is low: treat material from this source as provisional and never let it carry a conclusion on its own.",
+      "Credibility is low. Use this source for leads only. Do not let it carry a conclusion on its own.",
     );
   } else if (credibility === 3) {
     lines.push(
-      "Medium credibility: evidence from this source can support a signal, but conclusions should also rest on at least one stronger, independent source.",
+      "Credibility is medium. Use this source to support a signal. Do not rest a conclusion on it without at least one stronger, independent source.",
     );
   } else {
     lines.push(
-      "High credibility: evidence from this source can bear weight in validation, provided each claim is read against its bias tags.",
+      "Credibility is high. Use this source to bear weight in validation. Read each claim against its bias tags first.",
     );
   }
 
   if (roles.includes("validation") && credibility <= 2) {
     lines.push(
-      "It is marked as a validation source but its credibility is low — reassess the role, or raise the credibility bar before it confirms anything.",
+      "It is marked as a validation source but its credibility is low. Do not let it confirm anything until the role is reassessed or the credibility rises.",
     );
   }
   if (roles.includes("validation") && credibility >= 4) {
     lines.push(
-      "Suitable for validating clusters and patterns — cite it when moving evidence up the pyramid.",
+      "Use this source to validate clusters and patterns. Cite it when moving evidence up the pyramid.",
     );
   }
   if (roles.includes("discovery") && !roles.includes("validation")) {
     lines.push(
-      "A discovery role without a validation role: it can reveal early behaviour, but scale and substance must be confirmed elsewhere.",
+      "Use this source to reveal early behaviour. Do not use it to confirm scale or substance — confirm those elsewhere.",
     );
   }
   if (roles.includes("data")) {
     lines.push(
-      "As a data source, check methodology, sample size, and recency before weighting its numbers.",
+      "Use this source for numbers and scale. Check the method, sample size, and recency behind the figures before quoting them.",
     );
   }
   if (roles.includes("interpretation")) {
     lines.push(
-      "Interpretation from this source is analysis, not fact — record it as sourced interpretation.",
+      "Use this source for expert readings of what evidence means. Do not record its analysis as fact — label it as sourced interpretation.",
     );
   }
   if (roles.includes("contradiction")) {
     lines.push(
-      "Use it when searching for opposing evidence: contradictions sharpen conclusions rather than weaken them.",
+      "Use this source to find the opposing case. It keeps conclusions honest — weigh it when testing a conclusion, not when building one.",
     );
   }
   if (roles.includes("context")) {
     lines.push(
-      "Context material frames other evidence; do not count it as an independent source when checking validation thresholds.",
+      "Use this source to understand the background. Do not count it as an independent source when checking validation thresholds.",
     );
   }
   if (roles.includes("monitoring")) {
     lines.push(
-      "Check it on its monitoring cadence for indicator updates rather than treating single items as standalone evidence.",
+      "Use this source to track change over time. Do not treat single items from it as standalone evidence — check it on its cadence.",
     );
   }
   if (roles.length === 0) {
