@@ -164,7 +164,8 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   },
   implications: {
     pageId: "implications",
-    purpose: "This page turns foresight into present-day decisions.",
+    purpose:
+      "Use this page to turn future signals into practical decisions. Each implication shows who it is for, what to do, why it matters, and what evidence supports it.",
     recommendedAction:
       "Use implications to define what brands, governments, investors, institutions, or organizations should do differently.",
     commonMistake:
@@ -174,9 +175,10 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   },
   monitoring: {
     pageId: "monitoring",
-    purpose: "Monitoring keeps the intelligence system alive.",
+    purpose:
+      "Use this page to check whether a future territory is still moving in the direction suggested by the evidence. Overdue items need a new check before they should be trusted.",
     recommendedAction:
-      "Track whether future territories are strengthening, weakening, mutating, being contradicted, or becoming dormant.",
+      "Track whether future territories are strengthening, weakening, stable, or being contradicted.",
     commonMistake:
       "Do not assume a future territory remains relevant forever. It must be checked through leading indicators.",
     nextStep:
@@ -197,9 +199,10 @@ export const DEFINITIONS: Record<string, string> = {
   driver: "A bigger force causing several patterns to appear at the same time.",
   territory: "A larger direction of change created by converging drivers.",
   scenario: "A plausible future world, not a prediction.",
-  implication: "What should be done differently now.",
+  implication:
+    "What this intelligence suggests organisations should do differently now.",
   indicator:
-    "Evidence that shows whether a future territory is strengthening, weakening, mutating, or being contradicted.",
+    "Evidence that shows whether a future territory is strengthening, weakening, stable, or being contradicted.",
   source:
     "Where evidence comes from. Credibility and role are assessed separately.",
 };
