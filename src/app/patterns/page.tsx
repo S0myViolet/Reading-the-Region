@@ -8,9 +8,10 @@
  * is never trusted on its own.
  *
  * Layout has exactly four layers: header, one control bar, the pattern
- * list, and the collapsed page guide. Each row is one primary line (the
- * pattern name) and one plain-language status line; accent appears only on
- * patterns that have earned validation.
+ * list, and the collapsed page guide. The simple view keeps each row to one
+ * primary line and one plain status line. The advanced view adds the plain
+ * meaning, the evidence base (live counts from the linked records), and the
+ * main tension; accent appears only on patterns that have earned validation.
  */
 
 import Link from "next/link";
@@ -27,11 +28,14 @@ import {
 import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validatePattern, type ValidationResult } from "@/lib/validation";
+import { patternPlainMeaning } from "@/lib/explain";
 import { DEFINITIONS } from "@/lib/copy";
 import type { Pattern, PatternType, Signal } from "@/lib/types";
 import { PATTERN_TYPE_LABELS } from "@/lib/types";
 import {
   countInWords,
+  independentSourceFigure,
+  mainTensionOfPattern,
   shortPatternStatus,
   signalsOfPattern,
 } from "./pattern-ui";
@@ -52,12 +56,51 @@ function PatternRow({
   pattern,
   result,
   linkedSignals,
+  advanced,
+  plainMeaning,
+  sourceCount,
+  mainTensionName,
 }: {
   pattern: Pattern;
   result: ValidationResult;
   linkedSignals: Signal[];
+  advanced: boolean;
+  plainMeaning: string;
+  sourceCount: number;
+  mainTensionName: string | null;
 }) {
   const clusterCount = pattern.clusterIds.length;
+
+  if (!advanced) {
+    return (
+      <Link href={`/patterns/${pattern.id}`} className="list-row group">
+        <div className="flex items-baseline justify-between gap-6">
+          <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+            {pattern.name}
+          </p>
+          {result.valid ? (
+            <span className="shrink-0">
+              <Pill
+                tone="accent"
+                title={`${result.passedCount} of ${result.totalCount} pattern tests passed`}
+              >
+                Validated
+              </Pill>
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-[12px] text-ink-faint">
+          {PATTERN_TYPE_LABELS[pattern.patternType]} · {shortPatternStatus(result)}{" "}
+          Draws on {countInWords(clusterCount)} cluster
+          {clusterCount === 1 ? "" : "s"} and {countInWords(linkedSignals.length)} key
+          signal{linkedSignals.length === 1 ? "" : "s"}.
+        </p>
+      </Link>
+    );
+  }
+
+  // Advanced row: name, plain meaning, type + earned status, then the
+  // evidence base counted from the linked records and the main tension.
   return (
     <Link href={`/patterns/${pattern.id}`} className="list-row group">
       <div className="flex items-baseline justify-between gap-6">
@@ -75,12 +118,28 @@ function PatternRow({
           </span>
         ) : null}
       </div>
-      <p className="mt-1 text-[12px] text-ink-faint">
-        {PATTERN_TYPE_LABELS[pattern.patternType]} · {shortPatternStatus(result)}{" "}
-        Draws on {countInWords(clusterCount)} cluster
-        {clusterCount === 1 ? "" : "s"} and {countInWords(linkedSignals.length)} key
-        signal{linkedSignals.length === 1 ? "" : "s"}.
+      <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
+        {plainMeaning}
       </p>
+      <p className="mt-1.5 text-[12px] text-ink-faint">
+        {PATTERN_TYPE_LABELS[pattern.patternType]}
+        {result.valid ? null : <> · {shortPatternStatus(result)}</>}
+      </p>
+      <div className="mt-1 flex items-baseline justify-between gap-6">
+        <p className="font-mono text-[11px] text-ink-faint">
+          {clusterCount} cluster{clusterCount === 1 ? "" : "s"} ·{" "}
+          {linkedSignals.length} key signal{linkedSignals.length === 1 ? "" : "s"} ·{" "}
+          {sourceCount} independent source{sourceCount === 1 ? "" : "s"}
+        </p>
+        <span className="shrink-0 text-[11px] text-ink-faint underline-offset-2 group-hover:text-accent-ink group-hover:underline">
+          Open pattern
+        </span>
+      </div>
+      {mainTensionName ? (
+        <p className="mt-1 text-[12px] text-ink-faint">
+          Main tension: {mainTensionName}
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -90,6 +149,8 @@ export default function PatternsPage() {
   const mode = useViewMode();
   const patterns = useIntelligenceStore((s) => s.patterns);
   const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
+  const contradictions = useIntelligenceStore((s) => s.contradictions);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -98,12 +159,19 @@ export default function PatternsPage() {
     () =>
       [...patterns]
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((pattern) => ({
-          pattern,
-          result: validatePattern(pattern, signals),
-          linkedSignals: signalsOfPattern(pattern, signals),
-        })),
-    [patterns, signals],
+        .map((pattern) => {
+          const linkedSignals = signalsOfPattern(pattern, signals);
+          return {
+            pattern,
+            result: validatePattern(pattern, signals),
+            linkedSignals,
+            plainMeaning: patternPlainMeaning(pattern),
+            sourceCount: independentSourceFigure(pattern, linkedSignals, sources),
+            mainTensionName:
+              mainTensionOfPattern(pattern, contradictions)?.name ?? null,
+          };
+        }),
+    [patterns, signals, sources, contradictions],
   );
 
   if (!hydrated) {
@@ -200,6 +268,10 @@ export default function PatternsPage() {
               pattern={r.pattern}
               result={r.result}
               linkedSignals={r.linkedSignals}
+              advanced={mode !== "simple"}
+              plainMeaning={r.plainMeaning}
+              sourceCount={r.sourceCount}
+              mainTensionName={r.mainTensionName}
             />
           ))}
         </section>

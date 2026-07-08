@@ -10,10 +10,12 @@
  * Visibility layers: the simple view reads as one article — statement,
  * validation status in plain language, strategic meaning, what could
  * contradict it, next step — separated by whitespace, not boxes. Analyst
- * view opens the full tabs (four tests in detail, strong threshold,
- * key-signal table, cluster statuses, review controls); Methodology view
- * adds the threshold table, the persistence arithmetic and the audit trail
- * as plain definition lines.
+ * view opens the full tabs: an at-a-glance overview that says what supports
+ * the pattern and what could weaken it, the four tests as
+ * requirement/current/threshold rows, the evidence base with per-signal
+ * reasons, structured tensions, and review controls. Methodology view adds
+ * the threshold table, the persistence arithmetic and the audit trail as
+ * plain definition lines.
  */
 
 import Link from "next/link";
@@ -24,11 +26,18 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
-import { BiasCheckPanel } from "@/components/BiasCheckPanel";
-import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
-import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { NoContradictionNote } from "@/components/ContradictionPanel";
+import { EntityLink } from "@/components/EntityLink";
 import { evidenceBackingLine } from "@/components/EvidenceCompression";
-import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
+import {
+  AtAGlance,
+  ConnectBlock,
+  IncompleteNote,
+  RelationshipTrail,
+  TensionBlock,
+  ValidationCheckRows,
+  type TrailGroup,
+} from "@/components/connect";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import {
@@ -37,7 +46,6 @@ import {
   ProvenanceBadge,
   SignalStrengthBadge,
 } from "@/components/badges";
-import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { signalStage } from "@/lib/pipeline";
@@ -48,67 +56,63 @@ import {
   validatePattern,
   type ValidationResult,
 } from "@/lib/validation";
-import { explainContradiction, explainPatternStatus } from "@/lib/explain";
+import {
+  clusterPlainMeaning,
+  explainContradiction,
+  explainPatternStatus,
+  patternPlainMeaning,
+} from "@/lib/explain";
 import { firstSentence } from "@/lib/simple";
 import type {
+  Cluster,
   ConfidenceLevel,
   Contradiction,
+  Driver,
   Pattern,
   ReviewStatus,
   Signal,
   Source,
 } from "@/lib/types";
 import {
-  ACTOR_TYPE_LABELS,
   CONFIDENCE_LABELS,
+  CONTRADICTION_TYPE_LABELS,
   PATTERN_THRESHOLDS,
   PATTERN_TYPE_LABELS,
   REVIEW_STATUS_LABELS,
+  SECTOR_LABELS,
 } from "@/lib/types";
 import {
   PatternValidationPill,
   RecomputedNote,
+  advancedNextStep,
+  biasNotesInRecord,
+  biasTagNote,
   btnPrimary,
+  contradictionEffectOnPattern,
   derivePatternFacts,
+  evidenceLeadInSentence,
+  evidenceWindowLabel,
+  failingTestSentences,
   findCheck,
   fmtDate,
+  geographyConcentrationNote,
+  independentSourceFigure,
+  linkedSourcesOfPattern,
+  mainTensionOfPattern,
   nextStepForPattern,
+  patternCheckRows,
+  patternWeaknesses,
   signalsOfPattern,
+  sourceMixSummary,
+  splitSentences,
   statusDisagrees,
+  whySignalBelongs,
 } from "../pattern-ui";
 
-/** Cluster link plus its own live validity, for the Evidence tab. */
-interface LinkedClusterStatus {
-  id: string;
-  name: string;
-  valid: boolean;
-  passedCount: number;
-  totalCount: number;
-}
-
-/** Article-style section: small heading, prose underneath, no box. */
-function Section({
-  heading,
-  meta,
-  children,
-}: {
-  heading: string;
-  meta?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="max-w-2xl">
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h2 className="text-[13px] font-medium text-ink">{heading}</h2>
-        {meta}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Prose({ children }: { children: React.ReactNode }) {
-  return <p className="text-[13px] leading-relaxed text-ink-soft">{children}</p>;
+/** Cluster record plus its own live validation result, for the Evidence tab. */
+interface ClusterEntry {
+  cluster: Cluster;
+  result: ValidationResult;
 }
 
 function MissingNote({ children }: { children: React.ReactNode }) {
@@ -284,102 +288,206 @@ function SimpleView({
 
 function OverviewTab({
   pattern,
+  result,
   patternSignals,
+  linkedSources,
+  linkedClusters,
+  linkedDrivers,
+  mainTension,
 }: {
   pattern: Pattern;
+  result: ValidationResult;
   patternSignals: Signal[];
+  linkedSources: Source[];
+  linkedClusters: Cluster[];
+  linkedDrivers: Driver[];
+  mainTension: Contradiction | null;
 }) {
   const facts = derivePatternFacts(patternSignals);
+  const sourceFigure = independentSourceFigure(pattern, patternSignals, linkedSources);
+  const weaknesses = patternWeaknesses(pattern, result, patternSignals, linkedSources);
+
+  // Strategic meaning trimmed to its essentials: the first sentences carry
+  // the reading; the rest stays available behind a quiet disclosure.
+  const meaningSentences = splitSentences(pattern.strategicMeaning);
+  const meaningLead = meaningSentences.slice(0, 3).join(" ");
+  const meaningRest = meaningSentences.slice(3).join(" ");
+
   return (
     <div className="space-y-8">
-      <Section heading="Pattern statement">
-        <PatternStatement pattern={pattern} />
-      </Section>
+      <section className="max-w-2xl">
+        <h2 className="mb-3 text-[13px] font-medium text-ink">Pattern at a glance</h2>
+        <AtAGlance
+          items={[
+            {
+              label: "Status",
+              value: result.valid ? (
+                <span className="text-accent-ink">Validated</span>
+              ) : (
+                `Hypothesis — passes ${result.passedCount} of ${result.totalCount} tests`
+              ),
+            },
+            { label: "Type", value: PATTERN_TYPE_LABELS[pattern.patternType] },
+            {
+              label: "Clusters",
+              value: <span className="font-mono">{linkedClusters.length}</span>,
+            },
+            {
+              label: "Key signals",
+              value: <span className="font-mono">{patternSignals.length}</span>,
+            },
+            {
+              label: "Independent sources",
+              value: <span className="font-mono">{sourceFigure}</span>,
+            },
+            { label: "Evidence window", value: evidenceWindowLabel(pattern) },
+            { label: "Confidence", value: CONFIDENCE_LABELS[pattern.confidence] },
+            {
+              label: "Main tension",
+              value: mainTension ? (
+                <Link
+                  href={`/contradictions/${mainTension.id}`}
+                  className="hover:text-accent-ink"
+                >
+                  {mainTension.name}
+                </Link>
+              ) : (
+                "None linked yet"
+              ),
+            },
+          ]}
+        />
+      </section>
 
-      <Section
-        heading="Strategic meaning"
-        meta={<ProvenanceBadge label="human_interpretation" />}
-      >
+      <ConnectBlock heading="Pattern statement">
+        <PatternStatement pattern={pattern} />
+      </ConnectBlock>
+
+      <ConnectBlock heading="Plain meaning">
+        <p>{patternPlainMeaning(pattern)}</p>
+      </ConnectBlock>
+
+      <ConnectBlock heading="Strategic meaning">
         {pattern.strategicMeaning.trim() ? (
-          <Prose>{pattern.strategicMeaning}</Prose>
+          <>
+            <p className="mb-1.5">
+              <ProvenanceBadge label="human_interpretation" />
+            </p>
+            <p>{meaningLead}</p>
+            {meaningRest ? (
+              <details className="mt-1.5">
+                <summary className="cursor-pointer list-none text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft">
+                  Show the full reading
+                </summary>
+                <p className="mt-1.5">{meaningRest}</p>
+              </details>
+            ) : null}
+          </>
         ) : (
           <MissingNote>
             No strategic meaning recorded yet. State what this movement means
             for decisions — interpretation, clearly labelled as such.
           </MissingNote>
         )}
-      </Section>
+      </ConnectBlock>
 
-      <Section heading="Evidence summary">
+      <ConnectBlock heading="Evidence summary">
         {pattern.evidenceSummary.trim() ? (
-          <Prose>{pattern.evidenceSummary}</Prose>
+          <p>{pattern.evidenceSummary}</p>
         ) : (
           <MissingNote>
             No evidence summary recorded yet. Summarise what the key signals
             and clusters show — and where they disagree.
           </MissingNote>
         )}
-      </Section>
+      </ConnectBlock>
 
-      <section className="max-w-2xl">
-        <h2 className="text-[13px] font-medium text-ink">Derived from key signals</h2>
-        <p className="mt-0.5 text-[12px] text-ink-faint">
-          Sectors, geographies, actor types and systems come from the evidence —
-          they are never asserted.
-        </p>
-        <dl className="mt-3 space-y-3.5">
-          <div>
-            <dt className="mb-1 text-[11px] text-ink-faint">Sectors involved</dt>
-            <dd>
-              {facts.sectors.length > 0 ? (
-                <SectorTags sectors={facts.sectors} />
+      <ConnectBlock heading="Where it appears">
+        {patternSignals.length === 0 && linkedClusters.length === 0 ? (
+          <MissingNote>
+            No key signals or clusters linked yet, so the pattern cannot be
+            placed anywhere. Link the evidence that shows the movement.
+          </MissingNote>
+        ) : (
+          <div className="space-y-1">
+            <p>
+              <span className="text-ink-faint">Sectors — </span>
+              {facts.sectors.length > 0
+                ? facts.sectors.map((s) => SECTOR_LABELS[s]).join(" · ")
+                : "none yet; link key signals to place the movement"}
+            </p>
+            <p>
+              <span className="text-ink-faint">Countries — </span>
+              {facts.countries.length > 0
+                ? facts.countries.join(" · ")
+                : "none yet; link key signals to place the movement"}
+            </p>
+            <p>
+              <span className="text-ink-faint">Clusters — </span>
+              {linkedClusters.length > 0 ? (
+                linkedClusters.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 ? " · " : null}
+                    <Link
+                      href={`/clusters/${c.id}`}
+                      className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                    >
+                      {c.name}
+                    </Link>
+                  </span>
+                ))
               ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  No sectors yet — link key signals to derive them.
-                </span>
+                <span>none linked yet</span>
               )}
-            </dd>
+            </p>
           </div>
-          <div>
-            <dt className="mb-1 text-[11px] text-ink-faint">Geographies</dt>
-            <dd>
-              {facts.countries.length > 0 ? (
-                <PlainTags tags={facts.countries} />
-              ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  No geographies yet — link key signals to derive them.
-                </span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="mb-1 text-[11px] text-ink-faint">Actor types</dt>
-            <dd>
-              {facts.actorTypes.length > 0 ? (
-                <PlainTags tags={facts.actorTypes.map((a) => ACTOR_TYPE_LABELS[a])} />
-              ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  No actor types yet — link key signals to derive them.
-                </span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="mb-1 text-[11px] text-ink-faint">Systems affected</dt>
-            <dd>
-              {facts.systems.length > 0 ? (
-                <SystemTags systems={facts.systems} />
-              ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  No systems yet — link key signals to derive them.
-                </span>
-              )}
-            </dd>
-          </div>
-        </dl>
-      </section>
+        )}
+      </ConnectBlock>
 
-      <BiasCheckPanel />
+      <ConnectBlock heading="What could weaken it">
+        {weaknesses.length > 0 ? (
+          <ul className="space-y-1.5">
+            {weaknesses.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            No test is failing and no concentration stands out in the linked
+            evidence. That is not proof — keep looking for cases that cut
+            against the movement.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="Possible driver">
+        {linkedDrivers.length > 0 ? (
+          <p>
+            A deeper force may explain this movement:{" "}
+            {linkedDrivers.map((d, i) => (
+              <span key={d.id}>
+                {i > 0 ? (i === linkedDrivers.length - 1 ? " and " : ", ") : null}
+                <Link
+                  href={`/drivers/${d.id}`}
+                  className="underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                >
+                  {d.name}
+                </Link>
+              </span>
+            ))}
+            .
+          </p>
+        ) : (
+          <p>
+            No driver linked yet — the movement has not been traced to a
+            deeper force.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="Next step">
+        <p>{advancedNextStep(pattern, result, patternSignals)}</p>
+      </ConnectBlock>
     </div>
   );
 }
@@ -392,21 +500,41 @@ function ValidationTab({
   pattern,
   result,
   strongResult,
+  patternSignals,
+  recomputed,
 }: {
   pattern: Pattern;
   result: ValidationResult;
   strongResult: ValidationResult;
+  patternSignals: Signal[];
+  recomputed: boolean;
 }) {
   const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
   const minMonths = PATTERN_THRESHOLDS.minMonthsPersistence;
   return (
     <div className="max-w-2xl space-y-8">
-      <ValidationChecklist
-        result={result}
-        title="Pattern validation tests"
-        passedLabel="Validated"
-        failedLabel="Not yet validated"
-      />
+      <section>
+        <p className="text-[13.5px]">
+          {result.valid ? (
+            <span className="font-medium text-accent-ink">Validated</span>
+          ) : (
+            <span className="font-medium text-ink">Hypothesis</span>
+          )}
+          <span className="text-ink-soft">
+            {" "}
+            · {result.passedCount} of {result.totalCount} tests passed
+          </span>
+          {recomputed ? (
+            <>
+              {" "}
+              <RecomputedNote />
+            </>
+          ) : null}
+        </p>
+        <div className="mt-4 border-t border-line pt-3">
+          <ValidationCheckRows checks={patternCheckRows(pattern, result, patternSignals)} />
+        </div>
+      </section>
       <section>
         <h3 className="mb-2 text-[13px] font-medium text-ink">Evidence window</h3>
         <p className="text-[13px] text-ink">
@@ -436,9 +564,9 @@ function ValidationTab({
           failedLabel="Below strong threshold"
         />
         <p className="mt-3 text-[11.5px] text-ink-faint">
-          The stronger threshold is optional — failing it does not invalidate the
-          pattern, but passing it marks a movement broad and deep enough to carry
-          significant weight in driver hypotheses.
+          The stronger threshold is optional — failing it does not invalidate
+          the pattern. Passing it marks a movement broad and deep enough to
+          anchor a driver hypothesis.
         </p>
       </section>
     </div>
@@ -451,69 +579,91 @@ function ValidationTab({
 
 function EvidenceTab({
   pattern,
+  result,
   patternSignals,
-  patternClusters,
-  trail,
+  linkedSources,
+  clusterEntries,
 }: {
   pattern: Pattern;
+  result: ValidationResult;
   patternSignals: Signal[];
-  patternClusters: LinkedClusterStatus[];
-  trail: TrailStep[];
+  linkedSources: Source[];
+  clusterEntries: ClusterEntry[];
 }) {
   const minSources = PATTERN_THRESHOLDS.minIndependentSources;
+  const mix = sourceMixSummary(linkedSources);
+  const derivedCount = linkedSources.length;
+  const storedCount = pattern.independentSourceCount;
+
+  // What is still missing: the failing tests plus any geographic
+  // concentration; when nothing fails, the honest gap is counter-evidence.
+  const gaps = [
+    ...failingTestSentences(result),
+    geographyConcentrationNote(patternSignals),
+  ].filter((x): x is string => Boolean(x));
+
+  // Source limitations: bias tags on the linked sources plus any bias
+  // caveats already written into the record.
+  const limitations = [biasTagNote(linkedSources), ...biasNotesInRecord(pattern)].filter(
+    (x): x is string => Boolean(x),
+  );
+
   return (
     <div className="space-y-8">
-      <section className="max-w-2xl">
-        <h3 className="mb-2 text-[13px] font-medium text-ink">Independent sources</h3>
-        <p className="text-[13px] text-ink">
-          Supported by{" "}
-          <span className="font-mono">{pattern.independentSourceCount}</span>{" "}
-          independent source{pattern.independentSourceCount === 1 ? "" : "s"}{" "}
-          <span
-            className={`font-mono text-[11.5px] ${
-              pattern.independentSourceCount >= minSources
-                ? "text-accent-ink"
-                : "text-caution"
-            }`}
-          >
-            (depth test needs ≥ {minSources})
-          </span>
-        </p>
-      </section>
+      <ConnectBlock heading="Independent sources">
+        {mix ? (
+          <>
+            <p>
+              {mix}{" "}
+              <span className="font-mono text-[11.5px] text-ink-faint">
+                (depth test needs ≥ {minSources})
+              </span>
+            </p>
+            {derivedCount !== storedCount ? (
+              <p className="mt-1.5 text-[12px] text-ink-faint">
+                The depth test uses the recorded count of {storedCount}{" "}
+                independent source{storedCount === 1 ? "" : "s"}; the key
+                signals currently linked resolve to {derivedCount} source
+                record{derivedCount === 1 ? "" : "s"}.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p>
+            The record states {storedCount} independent source
+            {storedCount === 1 ? "" : "s"}, but no source records are reachable
+            through the key signals yet — link the signals that show this
+            movement so the sources can be checked.
+          </p>
+        )}
+      </ConnectBlock>
 
       <section>
-        <h3 className="mb-3 text-[13px] font-medium text-ink">
+        <h3 className="mb-1 text-[13px] font-medium text-ink">
           Key signals ({patternSignals.length})
         </h3>
+        <p className="mb-3 max-w-2xl text-[12px] leading-relaxed text-ink-soft">
+          {evidenceLeadInSentence(patternSignals)}
+        </p>
         {patternSignals.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Signal</th>
-                  <th>Strength</th>
-                  <th>Confidence</th>
-                  <th>Country</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patternSignals.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <EntityLink kind="signal" id={s.id} title={s.title} />
-                    </td>
-                    <td>
-                      <SignalStrengthBadge strength={s.signalStrength} />
-                    </td>
-                    <td>
-                      <ConfidenceBadge level={s.confidence} />
-                    </td>
-                    <td className="text-[12px] text-ink-soft">{s.country}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="max-w-2xl divide-y divide-line">
+            {patternSignals.map((s) => (
+              <li key={s.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                  <EntityLink kind="signal" id={s.id} title={s.title} />
+                  <span className="flex shrink-0 items-center gap-2">
+                    <SignalStrengthBadge strength={s.signalStrength} />
+                    <ConfidenceBadge level={s.confidence} />
+                    <span className="text-[11px] text-ink-faint">{s.country}</span>
+                  </span>
+                </div>
+                <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-ink-soft">
+                  <span className="text-ink-faint">Why it belongs here — </span>
+                  {whySignalBelongs(s)}
+                </p>
+              </li>
+            ))}
+          </ul>
         ) : (
           <p className="text-[11.5px] text-ink-faint">
             No key signals linked yet. A pattern only exists through repeated
@@ -524,25 +674,30 @@ function EvidenceTab({
 
       <section className="max-w-2xl">
         <h3 className="mb-3 text-[13px] font-medium text-ink">
-          Clusters involved ({patternClusters.length})
+          Which clusters created this pattern ({clusterEntries.length})
         </h3>
-        {patternClusters.length > 0 ? (
-          <div className="space-y-3">
-            {patternClusters.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-baseline gap-x-3">
-                <EntityLink kind="cluster" id={c.id} title={c.name} />
-                {c.valid ? (
-                  <Pill
-                    tone="accent"
-                    title={`${c.passedCount} of ${c.totalCount} cluster validation checks passed`}
-                  >
-                    Valid cluster
-                  </Pill>
-                ) : (
-                  <span className="text-[11px] text-ink-faint">
-                    Candidate — {c.passedCount}/{c.totalCount} checks
-                  </span>
-                )}
+        {clusterEntries.length > 0 ? (
+          <div className="space-y-4">
+            {clusterEntries.map(({ cluster, result: cr }) => (
+              <div key={cluster.id}>
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <EntityLink kind="cluster" id={cluster.id} title={cluster.name} />
+                  {cr.valid ? (
+                    <Pill
+                      tone="accent"
+                      title={`${cr.passedCount} of ${cr.totalCount} cluster validation checks passed`}
+                    >
+                      Valid cluster
+                    </Pill>
+                  ) : (
+                    <span className="text-[11px] text-ink-faint">
+                      Candidate — {cr.passedCount}/{cr.totalCount} checks
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-ink-soft">
+                  {clusterPlainMeaning(cluster)}
+                </p>
               </div>
             ))}
           </div>
@@ -554,13 +709,37 @@ function EvidenceTab({
         )}
       </section>
 
-      <section className="max-w-2xl">
-        <h3 className="mb-1 text-[13px] font-medium text-ink">Evidence trail</h3>
-        <p className="mb-3 text-[12px] text-ink-faint">
-          From this conclusion back down to its sources.
-        </p>
-        <EvidenceTrail steps={trail} />
-      </section>
+      <ConnectBlock heading="What is still missing">
+        {gaps.length > 0 ? (
+          <ul className="space-y-1.5">
+            {gaps.map((g) => (
+              <li key={g}>{g}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            No test is failing right now. The gap to watch is counter-evidence
+            — cases that cut against the movement — and time: the window must
+            keep extending as new evidence arrives.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="Source limitations">
+        {limitations.length > 0 ? (
+          <ul className="space-y-1.5">
+            {limitations.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            No bias tags are recorded on the linked sources and no bias caveat
+            is written into the record. Absence of a recorded bias is not
+            absence of bias — ask who benefits from each source&apos;s story.
+          </p>
+        )}
+      </ConnectBlock>
     </div>
   );
 }
@@ -599,6 +778,39 @@ function MethodologyTab({
   ];
   return (
     <div className="max-w-2xl space-y-8">
+      <ConnectBlock heading="What a pattern is">
+        <p>
+          A pattern is a repeated movement across several clusters. It should
+          not be created from one cluster or one sector alone, and it is only
+          validated when the four tests below all pass.
+        </p>
+      </ConnectBlock>
+
+      <section>
+        <h3 className="mb-2 text-[13px] font-medium text-ink">The four tests</h3>
+        <ul className="max-w-2xl space-y-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+          <li>
+            Breadth — the movement must appear in at least {t.minSectors}{" "}
+            sectors. A movement confined to one sector is a sector story, not a
+            pattern.
+          </li>
+          <li>
+            Depth — at least {t.minIndependentSources} independent sources must
+            support it. This stops one loud source from looking like a
+            region-wide movement.
+          </li>
+          <li>
+            Persistence — the evidence must span at least{" "}
+            {t.minMonthsPersistence} months. This separates a durable movement
+            from a news cycle.
+          </li>
+          <li>
+            Coherence — the pattern must be sayable as one clear movement in a
+            single statement. If it cannot, it is probably two patterns.
+          </li>
+        </ul>
+      </section>
+
       <section>
         <h3 className="mb-3 text-[13px] font-medium text-ink">
           Pattern validation thresholds
@@ -624,8 +836,9 @@ function MethodologyTab({
         <p className="mt-3 text-[11.5px] text-ink-faint">
           A pattern is validated only when breadth, depth, persistence and
           coherence all pass. The strong-pattern rows are optional — they mark
-          extra weight, they do not gate validation. This pattern currently
-          passes {result.passedCount} of {result.totalCount} tests.
+          an unusually broad movement, they do not gate validation. This
+          pattern currently passes {result.passedCount} of {result.totalCount}{" "}
+          tests.
         </p>
       </section>
 
@@ -696,18 +909,32 @@ function MethodologyTab({
 const REVIEW_STATUS_OPTIONS = Object.keys(REVIEW_STATUS_LABELS) as ReviewStatus[];
 const CONFIDENCE_OPTIONS = Object.keys(CONFIDENCE_LABELS) as ConfidenceLevel[];
 
-function ReviewTab({ pattern }: { pattern: Pattern }) {
+function ReviewTab({
+  pattern,
+  result,
+  patternSignals,
+}: {
+  pattern: Pattern;
+  result: ValidationResult;
+  patternSignals: Signal[];
+}) {
   const updatePattern = useIntelligenceStore((s) => s.updatePattern);
   const [notes, setNotes] = useState(pattern.humanNotes);
   const [saved, setSaved] = useState(false);
+
+  // Open questions recorded on the key signals themselves — real analyst
+  // questions attached to the evidence, not generated prompts.
+  const openQuestions = [
+    ...new Set(patternSignals.flatMap((s) => s.openQuestions)),
+  ].slice(0, 4);
 
   return (
     <div className="max-w-2xl space-y-5">
       <div>
         <h3 className="text-[13px] font-medium text-ink">Human review</h3>
         <p className="mt-0.5 text-[12px] text-ink-faint">
-          Review decisions are stored separately from the computed validation
-          status and never override it.
+          Human judgment, recorded here, is kept separate from the computed
+          validation status and never overrides it.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -732,7 +959,7 @@ function ReviewTab({ pattern }: { pattern: Pattern }) {
         </Field>
         <Field
           label="Confidence"
-          hint="How much weight the pattern interpretation should carry."
+          hint="How much trust to place in this reading when it informs decisions."
         >
           <Select
             value={pattern.confidence}
@@ -757,6 +984,7 @@ function ReviewTab({ pattern }: { pattern: Pattern }) {
         <TextArea
           rows={5}
           value={notes}
+          placeholder="What feels solid? What is uncertain? What source bias might distort the reading? What would make this pattern weaker?"
           onChange={(e) => {
             setNotes(e.target.value);
             setSaved(false);
@@ -778,9 +1006,51 @@ function ReviewTab({ pattern }: { pattern: Pattern }) {
           <span className="text-[11.5px] text-accent-ink">Notes saved.</span>
         ) : null}
       </div>
-      <p className="text-[11.5px] text-ink-faint">
-        Created {fmtDate(pattern.createdAt)} · Last updated {fmtDate(pattern.updatedAt)}
+
+      <div className="border-t border-line pt-4">
+        <h4 className="text-[12.5px] font-medium text-ink">
+          Open questions from the key signals
+        </h4>
+        {openQuestions.length > 0 ? (
+          <ul className="mt-1.5 space-y-1">
+            {openQuestions.map((q) => (
+              <li key={q} className="text-[12px] leading-relaxed text-ink-soft">
+                {q}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-[12px] text-ink-faint">
+            No open questions recorded on the key signals yet.
+          </p>
+        )}
+      </div>
+
+      <p className="text-[12px] leading-relaxed text-ink-soft">
+        <span className="text-ink-faint">What to check next — </span>
+        {advancedNextStep(pattern, result, patternSignals)}
       </p>
+
+      <div className="border-t border-line pt-4">
+        <h4 className="mb-2 text-[12.5px] font-medium text-ink">Audit trail</h4>
+        <dl className="space-y-2">
+          <AuditLine
+            label="Record id"
+            value={<span className="font-mono text-[11.5px]">{pattern.id}</span>}
+          />
+          <AuditLine label="Created" value={fmtDate(pattern.createdAt)} />
+          <AuditLine label="Last updated" value={fmtDate(pattern.updatedAt)} />
+          <AuditLine
+            label="Computed from evidence"
+            value={
+              <span className="font-mono text-[11.5px]">
+                {result.valid ? "validated" : "not validated"} ·{" "}
+                {result.passedCount}/{result.totalCount} tests
+              </span>
+            }
+          />
+        </dl>
+      </div>
     </div>
   );
 }
@@ -876,40 +1146,59 @@ export default function PatternDetailPage() {
   const recomputed = statusDisagrees(pattern, result);
   const simple = mode === "simple";
 
-  // Evidence chain, downward from this pattern's actual links — steps are
-  // never invented, so a thinly evidenced pattern shows a visibly short trail.
-  const trailSteps: TrailStep[] = [{ stage: "pattern", title: pattern.name }];
-  for (const c of linkedClusters.slice(0, 3)) {
-    trailSteps.push({ stage: "cluster", title: c.name, href: `/clusters/${c.id}` });
-  }
-  for (const s of patternSignals.slice(0, 3)) {
-    trailSteps.push({
-      stage: signalStage(s),
-      title: s.title,
-      href: `/signals/${s.id}`,
-    });
-  }
-  const firstTrailSource = patternSignals[0]
-    ? sources.find((src) => src.id === patternSignals[0].sourceIds[0])
-    : undefined;
-  if (firstTrailSource) {
-    trailSteps.push({
-      stage: "source",
-      title: firstTrailSource.name,
-      href: `/sources/${firstTrailSource.id}`,
-    });
-  }
+  const linkedSources = linkedSourcesOfPattern(patternSignals, sources);
+  const mainTension = mainTensionOfPattern(pattern, contradictions);
 
-  const clusterStatuses: LinkedClusterStatus[] = linkedClusters.map((c) => {
-    const clusterResult = validateCluster(c, signals, sources);
-    return {
-      id: c.id,
-      name: c.name,
-      valid: clusterResult.valid,
-      passedCount: clusterResult.passedCount,
-      totalCount: clusterResult.totalCount,
-    };
-  });
+  const clusterEntries: ClusterEntry[] = linkedClusters.map((c) => ({
+    cluster: c,
+    result: validateCluster(c, signals, sources),
+  }));
+
+  // Right-rail relationship trail — top links first, everything else behind
+  // the expand control. Steps come only from records this pattern links to.
+  const topSignals = [...patternSignals].sort(
+    (a, b) =>
+      b.scores.strategicRelevance - a.scores.strategicRelevance ||
+      b.scores.evidence - a.scores.evidence,
+  );
+  const topSources = [...linkedSources].sort((a, b) => b.credibility - a.credibility);
+  const trailGroups: TrailGroup[] = [
+    {
+      label: "Top signals",
+      previewCount: 3,
+      steps: topSignals.map((s) => ({
+        stage: signalStage(s),
+        title: s.title,
+        href: `/signals/${s.id}`,
+      })),
+    },
+    {
+      label: "Top sources",
+      previewCount: 3,
+      steps: topSources.map((src) => ({
+        stage: "source" as const,
+        title: src.name,
+        href: `/sources/${src.id}`,
+      })),
+    },
+    {
+      label: "Built from clusters",
+      steps: linkedClusters.map((c) => ({
+        stage: "cluster" as const,
+        title: c.name,
+        href: `/clusters/${c.id}`,
+      })),
+    },
+    {
+      label: "Possible drivers",
+      steps: linkedDrivers.map((d) => ({
+        stage: "driver" as const,
+        title: d.name,
+        href: `/drivers/${d.id}`,
+      })),
+    },
+  ];
+  const trailHasSteps = trailGroups.some((g) => g.steps.length > 0);
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Patterns", href: "/patterns" },
@@ -922,40 +1211,21 @@ export default function PatternDetailPage() {
     });
   }
 
-  const relatedGroups: RelatedGroup[] = [
-    {
-      heading: "Clusters",
-      kind: "cluster",
-      items: linkedClusters.map((c) => ({ id: c.id, title: c.name })),
-      emptyNote:
-        "No clusters linked yet — a pattern rests on repeated cluster logic.",
-    },
-    {
-      heading: "Key signals",
-      kind: "signal",
-      items: patternSignals.map((s) => ({ id: s.id, title: s.title })),
-      emptyNote: "No key signals linked yet — a pattern only exists through its evidence.",
-    },
-    {
-      heading: "Contradictions",
-      kind: "contradiction",
-      items: linkedContradictions.map((c) => ({ id: c.id, title: c.name })),
-      emptyNote:
-        "No contradictions linked. A pattern without tension is usually under-scanned.",
-    },
-    {
-      heading: "Possible drivers",
-      kind: "driver",
-      items: linkedDrivers.map((d) => ({ id: d.id, title: d.name })),
-      emptyNote: "No driver hypotheses connected yet.",
-    },
-  ];
-
   const tabs = [
     {
       id: "overview",
       label: "Overview",
-      content: <OverviewTab pattern={pattern} patternSignals={patternSignals} />,
+      content: (
+        <OverviewTab
+          pattern={pattern}
+          result={result}
+          patternSignals={patternSignals}
+          linkedSources={linkedSources}
+          linkedClusters={linkedClusters}
+          linkedDrivers={linkedDrivers}
+          mainTension={mainTension}
+        />
+      ),
     },
     {
       id: "validation",
@@ -965,6 +1235,8 @@ export default function PatternDetailPage() {
           pattern={pattern}
           result={result}
           strongResult={strongResult}
+          patternSignals={patternSignals}
+          recomputed={recomputed}
         />
       ),
     },
@@ -974,9 +1246,10 @@ export default function PatternDetailPage() {
       content: (
         <EvidenceTab
           pattern={pattern}
+          result={result}
           patternSignals={patternSignals}
-          patternClusters={clusterStatuses}
-          trail={trailSteps}
+          linkedSources={linkedSources}
+          clusterEntries={clusterEntries}
         />
       ),
     },
@@ -985,19 +1258,44 @@ export default function PatternDetailPage() {
       label: `Contradictions (${linkedContradictions.length})`,
       content:
         linkedContradictions.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {linkedContradictions.map((c) => (
-              <ContradictionPanel key={c.id} contradiction={c} />
+              <TensionBlock
+                key={c.id}
+                name={c.name}
+                href={`/contradictions/${c.id}`}
+                typeLabel={`Contradiction · ${CONTRADICTION_TYPE_LABELS[c.contradictionType]}`}
+                sideA={{ claim: c.sideA, support: c.evidenceSideA }}
+                sideB={{ claim: c.sideB, support: c.evidenceSideB }}
+                rows={[
+                  {
+                    label: "Why it matters",
+                    text: firstSentence(
+                      c.underlyingTension.trim() || c.strategicImplication,
+                    ),
+                  },
+                  {
+                    label: "Effect on this pattern",
+                    text: contradictionEffectOnPattern(c, pattern),
+                  },
+                ]}
+              />
             ))}
           </div>
         ) : (
-          <NoContradictionNote />
+          <IncompleteNote
+            missing="No contradiction linked yet."
+            whyItMatters="A pattern nobody has argued against has not been tested."
+            nextStep="Look for evidence that cuts against this movement before connecting it to a driver."
+          />
         ),
     },
     {
       id: "review",
       label: "Review",
-      content: <ReviewTab pattern={pattern} />,
+      content: (
+        <ReviewTab pattern={pattern} result={result} patternSignals={patternSignals} />
+      ),
     },
   ];
   if (mode === "methodology") {
@@ -1047,7 +1345,20 @@ export default function PatternDetailPage() {
             plainly, so the right rail stays analyst-and-up. */}
         <aside className="mt-10 space-y-8 lg:mt-0">
           <ViewGate min="analyst">
-            <RelatedObjectsPanel groups={relatedGroups} />
+            {trailHasSteps ? (
+              <section>
+                <h2 className="mb-3 text-[13px] font-medium text-ink">
+                  Relationship trail
+                </h2>
+                <RelationshipTrail groups={trailGroups} />
+              </section>
+            ) : (
+              <IncompleteNote
+                missing="No linked records yet."
+                whyItMatters="A pattern only exists through the clusters and signals that show the movement."
+                nextStep="Link the clusters this pattern repeats across, then the key signals inside them."
+              />
+            )}
             {persistenceFailed ? (
               <PersistenceGuidance pattern={pattern} result={result} />
             ) : null}
