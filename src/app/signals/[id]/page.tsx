@@ -108,59 +108,133 @@ function linkedSources(signal: Signal, sources: Source[]): Source[] {
     .filter((s): s is Source => Boolean(s));
 }
 
+/** Split prose into sentences, keeping at most `max` — for short bullet lists. */
+function sentencesOf(text: string, max: number): string[] {
+  const matches = text.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g);
+  return (matches ?? [text])
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, max);
+}
+
 // ---------------------------------------------------------------------------
-// Simple view — one readable column, no analysis machinery
+// Simple view — the 10-second read, no analysis machinery
 // ---------------------------------------------------------------------------
+
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item) => (
+        <li key={item} className="flex max-w-2xl gap-2 text-[13px] leading-relaxed text-ink-soft">
+          <span aria-hidden className="text-ink-faint">
+            –
+          </span>
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const connectLink =
+  "text-[12.5px] text-ink-soft underline-offset-2 hover:text-ink hover:underline";
 
 function SimpleView({
   signal,
   sources,
   contradictions,
+  relatedSignals,
+  cluster,
+  territory,
+  moreDetail,
 }: {
   signal: Signal;
   sources: Source[];
   contradictions: Contradiction[];
+  relatedSignals: Array<{ id: string; title: string }>;
+  cluster: Cluster | null;
+  territory: FutureTerritory | null;
+  /** The full analyst content, rendered inline behind the disclosure. */
+  moreDetail: React.ReactNode;
 }) {
+  const savedSignalIds = useIntelligenceStore((s) => s.savedSignalIds);
+  const toggleSavedSignal = useIntelligenceStore((s) => s.toggleSavedSignal);
+  const updateSignal = useIntelligenceStore((s) => s.updateSignal);
+
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [noteKept, setNoteKept] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+
   const linked = linkedSources(signal, sources);
+  const saved = savedSignalIds.includes(signal.id);
+  const dismissed =
+    signal.reviewStatus === "archived_noise" || signal.reviewStatus === "rejected";
+
+  const whyBullets = sentencesOf(signal.whyItMatters, 3);
+  const possibilities = signal.potentialImplications.slice(0, 3);
+  const shownContradictions = contradictions.slice(0, 2);
+  const shownRelated = relatedSignals.slice(0, 3);
+  const hasConnectionLinks = shownRelated.length > 0 || cluster !== null || territory !== null;
+  const nothingConnected = shownContradictions.length === 0 && !hasConnectionLinks;
+  const firstSector = signal.sectors[0];
+
+  function handleDismiss() {
+    if (window.confirm("Dismiss this signal as noise?")) {
+      updateSignal(signal.id, { reviewStatus: "archived_noise" });
+    }
+  }
+
+  function handleKeepNote() {
+    const text = note.trim();
+    if (!text) return;
+    const existing = signal.humanNotes.trim();
+    updateSignal(signal.id, {
+      humanNotes: existing ? `${existing}\n\n${text}` : text,
+    });
+    setNote("");
+    setNoteKept(true);
+  }
+
   return (
     <div className="max-w-2xl space-y-8">
-      <Section title="What happened">
-        <Prose>{signal.zoom.whatHappened.trim() || signal.description}</Prose>
-      </Section>
-
-      <Section title="Why it matters">
-        <Prose>{signal.whyItMatters}</Prose>
-      </Section>
-
-      <Section title="How confident">
-        <ExplainedConfidence signal={signal} sources={sources} />
-      </Section>
-
-      <Section title="What evidence supports it">
-        <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-          {evidenceQualityLine(signal, sources)}
+      {/* Hero: one quiet line in words, then a one-sentence lede. */}
+      <section>
+        <p className="text-[12px] text-ink-faint">
+          {[
+            importanceWords(signal),
+            CONFIDENCE_LABELS[signal.confidence],
+            evidenceWords(signal, linked.length),
+          ].join(" · ")}
         </p>
-        {linked.length > 0 ? (
-          <ul className="mt-2 space-y-1">
-            {linked.map((src) => (
-              <li key={src.id} className="flex flex-wrap items-center gap-1.5">
-                <Link
-                  href={`/sources/${src.id}`}
-                  className="text-[12.5px] text-ink hover:text-accent-ink hover:underline"
-                >
-                  {src.name}
-                </Link>
-                {src.isDemo ? <DemoTag /> : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <div className="mt-2">
+          <Prose>
+            {firstSentence(signal.zoom.whatHappened.trim() || signal.description)}
+          </Prose>
+        </div>
+      </section>
+
+      <Section title="Why this matters">
+        <Bullets items={whyBullets} />
       </Section>
 
-      <Section title="What could contradict it">
-        {contradictions.length > 0 ? (
+      <Section title="What this could mean">
+        <p className="text-[11.5px] text-ink-faint">Possibilities, not predictions.</p>
+        {possibilities.length > 0 ? (
+          <div className="mt-2">
+            <Bullets items={possibilities} />
+          </div>
+        ) : (
+          <p className="mt-2 text-[11.5px] text-ink-faint">
+            No possibilities written down yet.
+          </p>
+        )}
+      </Section>
+
+      <Section title="What it connects to">
+        {shownContradictions.length > 0 ? (
           <ul className="space-y-2">
-            {contradictions.map((c) => (
+            {shownContradictions.map((c) => (
               <li key={c.id} className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
                 <Link
                   href={`/contradictions/${c.id}`}
@@ -173,16 +247,111 @@ function SimpleView({
               </li>
             ))}
           </ul>
-        ) : (
-          <NoContradictionNote />
-        )}
+        ) : null}
+        {nothingConnected ? (
+          <FaintNote>Nothing else is connected to this yet.</FaintNote>
+        ) : null}
+        {hasConnectionLinks ? (
+          <p
+            className={`flex flex-wrap gap-x-4 gap-y-1 ${
+              shownContradictions.length > 0 ? "mt-3" : ""
+            }`}
+          >
+            {shownRelated.map((r) => (
+              <Link key={r.id} href={`/signals/${r.id}`} className={connectLink}>
+                {r.title}
+              </Link>
+            ))}
+            {cluster ? (
+              <Link href={`/clusters/${cluster.id}`} className={connectLink}>
+                The bigger story: {cluster.name}
+              </Link>
+            ) : null}
+            {territory ? (
+              <Link href={`/territories/${territory.id}`} className={connectLink}>
+                A future it feeds: {territory.name}
+              </Link>
+            ) : null}
+          </p>
+        ) : null}
       </Section>
 
-      <Section title="Suggested next step">
-        <Prose>{nextStepForSignal(signal)}</Prose>
+      <Section title="What you can do">
+        <p className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px]">
+          <button
+            type="button"
+            onClick={() => toggleSavedSignal(signal.id)}
+            className={saved ? "text-accent-ink" : "text-ink-soft hover:text-ink"}
+          >
+            {saved ? "Saved" : "Save to watchlist"}
+          </button>
+          <Link
+            href={firstSector ? `/signals?sector=${firstSector}` : "/signals"}
+            className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+          >
+            Explore similar
+          </Link>
+          {dismissed ? (
+            <span className="text-ink-faint">Dismissed as noise</span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="text-ink-soft hover:text-ink"
+            >
+              Dismiss as noise
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNoteOpen((o) => !o)}
+            aria-expanded={noteOpen}
+            className="text-ink-soft hover:text-ink"
+          >
+            Add a note
+          </button>
+        </p>
+        {noteOpen ? (
+          <div className="mt-3 max-w-md">
+            <TextArea
+              rows={3}
+              value={note}
+              onChange={(e) => {
+                setNote(e.target.value);
+                setNoteKept(false);
+              }}
+              placeholder="A thought to keep with this signal."
+            />
+            <div className="mt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleKeepNote}
+                disabled={!note.trim()}
+                className="text-[12.5px] text-accent-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Keep note
+              </button>
+              {noteKept ? <span className="text-[11.5px] text-ink-faint">Noted.</span> : null}
+            </div>
+          </div>
+        ) : null}
       </Section>
 
-      <DepthHint>Scoring, zooming analysis, source bias and validation detail</DepthHint>
+      {/* Collapsed disclosure opening the full analyst content inline. */}
+      <section>
+        <button
+          type="button"
+          onClick={() => setDetailOpen((o) => !o)}
+          aria-expanded={detailOpen}
+          className="text-[12px] text-ink-faint hover:text-ink-soft"
+        >
+          <span className="mr-1 inline-block w-2 text-[9px]">
+            {detailOpen ? "▾" : "▸"}
+          </span>
+          More detail — the full analysis behind this signal
+        </button>
+        {detailOpen ? <div className="mt-4">{moreDetail}</div> : null}
+      </section>
     </div>
   );
 }
@@ -717,6 +886,7 @@ export default function SignalDetailPage() {
   const drivers = useIntelligenceStore((s) => s.drivers);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
   const indicators = useIntelligenceStore((s) => s.indicators);
+  const territories = useIntelligenceStore((s) => s.territories);
   const guidedMode = useIntelligenceStore((s) => s.guidedMode);
 
   if (!hydrated) {
@@ -753,14 +923,19 @@ export default function SignalDetailPage() {
   const linkedContradictions = signal.contradictionIds
     .map((cid) => contradictions.find((c) => c.id === cid))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const firstTerritory =
+    territories.find((t) => t.representativeSignalIds.includes(signal.id)) ?? null;
 
-  const crumbs: Array<{ label: string; href?: string }> = [
-    signal.observationId
-      ? { label: "Scan Inbox", href: `/inbox/${signal.observationId}` }
-      : { label: "Scan Inbox", href: "/inbox" },
-    { label: `Signal · ${signal.id}` },
-  ];
-  if (signal.clusterIds.length > 0) {
+  const crumbs: Array<{ label: string; href?: string }> =
+    mode === "simple"
+      ? [{ label: "Signals", href: "/signals" }, { label: signal.title }]
+      : [
+          signal.observationId
+            ? { label: "Scan Inbox", href: `/inbox/${signal.observationId}` }
+            : { label: "Scan Inbox", href: "/inbox" },
+          { label: `Signal · ${signal.id}` },
+        ];
+  if (mode !== "simple" && signal.clusterIds.length > 0) {
     crumbs.push({
       label: firstCluster ? `Cluster · ${firstCluster.id}` : `Cluster · ${signal.clusterIds[0]}`,
       href: `/clusters/${signal.clusterIds[0]}`,
@@ -822,15 +997,52 @@ export default function SignalDetailPage() {
     },
   ];
 
+  const analystTabs = (
+    <Tabs
+      tabs={[
+        { id: "overview", label: "Overview", content: <OverviewTab signal={signal} /> },
+        {
+          id: "evidence",
+          label: "Evidence",
+          content: <EvidenceTab signal={signal} sources={sources} />,
+        },
+        {
+          id: "scoring",
+          label: "Scoring",
+          content: <ScoringTab signal={signal} sources={sources} />,
+        },
+        { id: "zooming", label: "Zooming", content: <ZoomingTab signal={signal} /> },
+        { id: "systems", label: "Systems", content: <SystemsTab signal={signal} /> },
+        {
+          id: "contradictions",
+          label: "Contradictions",
+          content:
+            linkedContradictions.length > 0 ? (
+              <div className="space-y-8">
+                {linkedContradictions.map((c) => (
+                  <ContradictionPanel key={c.id} contradiction={c} />
+                ))}
+              </div>
+            ) : (
+              <NoContradictionNote />
+            ),
+        },
+        { id: "review", label: "Review", content: <ReviewTab signal={signal} /> },
+      ]}
+    />
+  );
+
   return (
     <>
       <Breadcrumbs items={crumbs} />
       <PageHeader title={signal.title} />
-      <p className="-mt-6 mb-8 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <IdChip id={signal.id} />
-        <SignalStrengthBadge strength={signal.signalStrength} />
-        <ConfidenceBadge level={signal.confidence} />
-      </p>
+      {mode !== "simple" ? (
+        <p className="-mt-6 mb-8 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <IdChip id={signal.id} />
+          <SignalStrengthBadge strength={signal.signalStrength} />
+          <ConfidenceBadge level={signal.confidence} />
+        </p>
+      ) : null}
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div className="min-w-0">
@@ -839,40 +1051,13 @@ export default function SignalDetailPage() {
               signal={signal}
               sources={sources}
               contradictions={linkedContradictions}
+              relatedSignals={resolveItems(signal.relatedSignalIds, signals, (s) => s.title)}
+              cluster={firstCluster}
+              territory={firstTerritory}
+              moreDetail={analystTabs}
             />
           ) : (
-            <Tabs
-              tabs={[
-                { id: "overview", label: "Overview", content: <OverviewTab signal={signal} /> },
-                {
-                  id: "evidence",
-                  label: "Evidence",
-                  content: <EvidenceTab signal={signal} sources={sources} />,
-                },
-                {
-                  id: "scoring",
-                  label: "Scoring",
-                  content: <ScoringTab signal={signal} sources={sources} />,
-                },
-                { id: "zooming", label: "Zooming", content: <ZoomingTab signal={signal} /> },
-                { id: "systems", label: "Systems", content: <SystemsTab signal={signal} /> },
-                {
-                  id: "contradictions",
-                  label: "Contradictions",
-                  content:
-                    linkedContradictions.length > 0 ? (
-                      <div className="space-y-8">
-                        {linkedContradictions.map((c) => (
-                          <ContradictionPanel key={c.id} contradiction={c} />
-                        ))}
-                      </div>
-                    ) : (
-                      <NoContradictionNote />
-                    ),
-                },
-                { id: "review", label: "Review", content: <ReviewTab signal={signal} /> },
-              ]}
-            />
+            analystTabs
           )}
         </div>
         <aside className="mt-10 space-y-8 lg:mt-0">

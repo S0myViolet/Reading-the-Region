@@ -2,7 +2,8 @@
 
 /**
  * Settings — workspace preferences, guidance controls, and data
- * administration, read as one quiet article: View depth, Guided mode &
+ * administration, read as one quiet article: Product mode (Simple vs
+ * Advanced, with the depth control inside Advanced), Guided mode &
  * onboarding, Data, then the review-status reference behind a disclosure.
  * All state lives in the client store, so the page is hydration-gated.
  */
@@ -11,22 +12,22 @@ import Link from "next/link";
 import { useState } from "react";
 import { ReviewStatusBadge } from "@/components/badges";
 import { PageHeader } from "@/components/PageHeader";
-import { ViewModeSwitch } from "@/components/ViewMode";
+import { AppModeSwitch, ViewModeSwitch } from "@/components/ViewMode";
 import { WALKTHROUGHS } from "@/lib/copy";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/types";
 import {
+  APP_MODE_DESCRIPTIONS,
   VIEW_MODE_DESCRIPTIONS,
   VIEW_MODE_LABELS,
-  type ViewMode,
 } from "@/lib/viewMode";
 
 // ---------------------------------------------------------------------------
 // Reference copy
 // ---------------------------------------------------------------------------
 
-/** The three view depths, in ascending order, for the definition list. */
-const VIEW_MODES: ViewMode[] = ["simple", "analyst", "methodology"];
+/** The two depths available inside Advanced mode, for the definition list. */
+const ADVANCED_DEPTHS = ["analyst", "methodology"] as const;
 
 /** One-line meaning for each review status, shown in the reference list. */
 const REVIEW_STATUS_MEANINGS: Record<ReviewStatus, string> = {
@@ -223,29 +224,49 @@ export default function SettingsPage() {
       />
 
       <div className="space-y-10">
-      {/* View depth -------------------------------------------------------- */}
+      {/* Product mode & view depth ------------------------------------------ */}
       <SettingsSection
-        title="View depth"
-        description="How much of the analytical engine each page shows. The same control appears in the sidebar; changing it never touches the evidence base."
+        title="Product mode"
+        description="Which product this workspace opens, and how much of the analytical engine each page shows. The same controls appear in the sidebar; changing them never touches the evidence base."
       >
         <div className="max-w-xs">
-          <ViewModeSwitch compact />
+          <AppModeSwitch />
         </div>
-        <dl className="mt-5 max-w-2xl space-y-3">
-          {VIEW_MODES.map((m) => (
-            <div key={m}>
-              <dt className="text-[12px] font-medium text-ink-faint">
-                {VIEW_MODE_LABELS[m]}
-                {m === "simple" ? (
-                  <span className="font-normal"> — default</span>
-                ) : null}
-              </dt>
-              <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
-                {VIEW_MODE_DESCRIPTIONS[m]}
-              </dd>
-            </div>
-          ))}
+        <dl className="mt-4 max-w-2xl space-y-3">
+          <div>
+            <dt className="text-[12px] font-medium text-ink-faint">
+              Simple<span className="font-normal"> — default</span>
+            </dt>
+            <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
+              {APP_MODE_DESCRIPTIONS.simple}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[12px] font-medium text-ink-faint">Advanced</dt>
+            <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
+              {APP_MODE_DESCRIPTIONS.advanced}
+            </dd>
+          </div>
         </dl>
+
+        <div className="mt-8">
+          <p className="text-[12px] font-medium text-ink">Depth inside Advanced mode</p>
+          <div className="mt-2 max-w-xs">
+            <ViewModeSwitch compact />
+          </div>
+          <dl className="mt-4 max-w-2xl space-y-3">
+            {ADVANCED_DEPTHS.map((m) => (
+              <div key={m}>
+                <dt className="text-[12px] font-medium text-ink-faint">
+                  {VIEW_MODE_LABELS[m]}
+                </dt>
+                <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
+                  {VIEW_MODE_DESCRIPTIONS[m]}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </SettingsSection>
 
       {/* Guided mode & onboarding ------------------------------------------ */}
