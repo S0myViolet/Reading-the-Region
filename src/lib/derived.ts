@@ -402,3 +402,206 @@ export function searchEntries(index: SearchEntry[], query: string): SearchEntry[
     .filter((e) => terms.every((t) => e.haystack.includes(t)))
     .slice(0, 30);
 }
+
+// ---------------------------------------------------------------------------
+// Advanced Overview: evidence triage and stage movement
+// ---------------------------------------------------------------------------
+
+import { signalStage, type PipelineStage } from "./pipeline";
+import { promotionCriteriaMet } from "./validation";
+import {
+  CONFIDENCE_LABELS,
+  CREDIBILITY_LABELS,
+  BIAS_TAG_LABELS,
+  REVIEW_STATUS_LABELS,
+  type ConfidenceLevel,
+} from "./types";
+
+export interface TriageItem {
+  signal: Signal;
+  reason: string;
+}
+
+export interface TriageGroup {
+  key: string;
+  title: string;
+  caption: string;
+  items: TriageItem[];
+}
+
+/**
+ * What needs analyst attention, grouped by the reason it is unsafe to rely
+ * on. A signal can appear under more than one lens — the lenses are
+ * different failure modes, not exclusive bins.
+ */
+export function evidenceTriage(d: IntelligenceData): TriageGroup[] {
+  const live = d.signals.filter(
+    (s) => !["rejected", "archived_noise", "duplicate"].includes(s.reviewStatus),
+  );
+  const srcById = new Map(d.sources.map((s) => [s.id, s]));
+
+  const groups: TriageGroup[] = [
+    {
+      key: "novel_thin",
+      title: "High novelty, low evidence",
+      caption: "One repetition from mattering, one correction from noise.",
+      items: live
+        .filter((s) => s.scores.novelty >= 4 && s.scores.evidence <= 2)
+        .map((s) => ({
+          signal: s,
+          reason: `Novelty ${s.scores.novelty}/5 on evidence ${s.scores.evidence}/5 — needs an independent source before it carries weight.`,
+        })),
+    },
+    {
+      key: "evidence_outruns_reading",
+      title: "Strong evidence, cautious interpretation",
+      caption: "The evidence base has outrun the stated confidence — review the reading.",
+      items: live
+        .filter((s) => s.scores.evidence >= 4 && s.confidence !== "high")
+        .map((s) => ({
+          signal: s,
+          reason: `Evidence ${s.scores.evidence}/5 yet ${CONFIDENCE_LABELS[s.confidence].toLowerCase()} — the interpretation may be lagging the base.`,
+        })),
+    },
+    {
+      key: "bias_warning",
+      title: "Source bias warning",
+      caption: "Leaning on low-credibility or bias-tagged sourcing.",
+      items: live
+        .flatMap((s) => {
+          const weak = s.sourceIds
+            .map((id) => srcById.get(id))
+            .find((src) => src && src.credibility <= 2 && src.biasTags.length > 0);
+          return weak
+            ? [{
+                signal: s,
+                reason: `Leans on ${weak.name} — ${CREDIBILITY_LABELS[weak.credibility].toLowerCase()}, ${weak.biasTags.slice(0, 2).map((t) => BIAS_TAG_LABELS[t].toLowerCase()).join(", ")}.`,
+              }]
+            : [];
+        }),
+    },
+    {
+      key: "contradicted",
+      title: "Contradiction detected",
+      caption: "Tension on record and no validating review yet.",
+      items: live
+        .filter((s) => s.contradictionIds.length > 0 && s.reviewStatus !== "validated")
+        .map((s) => {
+          const con = d.contradictions.find((c) => s.contradictionIds.includes(c.id));
+          return {
+            signal: s,
+            reason: con
+              ? `Cut against by “${con.name}” and not yet validated.`
+              : "Carries a contradiction and is not yet validated.",
+          };
+        }),
+    },
+    {
+      key: "review_required",
+      title: "Human review required",
+      caption: "The methodology will not let these carry weight unreviewed.",
+      items: signalsNeedingReview(d).map((s) => ({
+        signal: s,
+        reason: `Marked ${REVIEW_STATUS_LABELS[s.reviewStatus].toLowerCase()}.`,
+      })),
+    },
+  ];
+
+  return groups
+    .map((g) => ({ ...g, items: g.items.slice(0, 3) }))
+    .filter((g) => g.items.length > 0);
+}
+
+export interface StageMovement {
+  fromStage: PipelineStage;
+  toStage: PipelineStage;
+  title: string;
+  href: string;
+  /** Why the record sits at its stage — always derived, never invented. */
+  basis: string;
+  evidenceCount: number;
+  confidence: ConfidenceLevel | null;
+  reviewNote: string;
+  when: string;
+}
+
+/**
+ * The most recent movements through the pipeline, ordered by each record's
+ * last update. The store keeps no transition log, so this is honestly
+ * framed as "recent movement", not "today".
+ */
+export function recentStageMovements(d: IntelligenceData, limit = 6): StageMovement[] {
+  const moves: StageMovement[] = [];
+
+  for (const o of d.observations) {
+    if (o.status !== "promoted" || !o.promotedSignalId) continue;
+    const sig = d.signals.find((s) => s.id === o.promotedSignalId);
+    if (!sig) continue;
+    moves.push({
+      fromStage: "observation",
+      toStage: signalStage(sig),
+      title: sig.title,
+      href: `/signals/${sig.id}`,
+      basis: `Met ${promotionCriteriaMet(o)} of 9 promotion criteria at triage.`,
+      evidenceCount: sig.sourceIds.length,
+      confidence: sig.confidence,
+      reviewNote: REVIEW_STATUS_LABELS[sig.reviewStatus],
+      when: sig.updatedAt,
+    });
+  }
+  for (const s of d.signals) {
+    if (s.reviewStatus !== "validated") continue;
+    moves.push({
+      fromStage: "signal_candidate",
+      toStage: "valid_signal",
+      title: s.title,
+      href: `/signals/${s.id}`,
+      basis: "Human review confirmed the reading against its evidence.",
+      evidenceCount: s.sourceIds.length,
+      confidence: s.confidence,
+      reviewNote: "Human reviewed",
+      when: s.updatedAt,
+    });
+  }
+  for (const c of d.clusters) {
+    moves.push({
+      fromStage: "valid_signal",
+      toStage: "cluster",
+      title: c.name,
+      href: `/clusters/${c.id}`,
+      basis: `Groups ${c.signalIds.length} signals under one unifying question.`,
+      evidenceCount: c.signalIds.length,
+      confidence: c.confidence,
+      reviewNote: c.status === "valid" ? "Valid cluster" : "Candidate — below threshold",
+      when: c.updatedAt,
+    });
+  }
+  for (const p of d.patterns) {
+    moves.push({
+      fromStage: "cluster",
+      toStage: "pattern",
+      title: p.name,
+      href: `/patterns/${p.id}`,
+      basis: `Repeats across ${p.clusterIds.length} cluster${p.clusterIds.length === 1 ? "" : "s"} and ${p.keySignalIds.length} signals.`,
+      evidenceCount: p.keySignalIds.length,
+      confidence: p.confidence,
+      reviewNote: p.validationStatus === "validated" ? "Validated" : "Not yet validated",
+      when: p.updatedAt,
+    });
+  }
+  for (const t of d.territories) {
+    moves.push({
+      fromStage: "driver",
+      toStage: "territory",
+      title: t.name,
+      href: `/territories/${t.id}`,
+      basis: `${t.driverIds.length} drivers converge here.`,
+      evidenceCount: t.representativeSignalIds.length,
+      confidence: t.confidence,
+      reviewNote: t.monitoringStatus,
+      when: t.updatedAt,
+    });
+  }
+
+  return moves.sort((a, b) => b.when.localeCompare(a.when)).slice(0, limit);
+}

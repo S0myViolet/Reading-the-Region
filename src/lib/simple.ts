@@ -198,3 +198,86 @@ export function firstSentence(text: string): string {
   const m = text.match(/^.*?[.!?](?=\s|$)/);
   return m ? m[0] : text;
 }
+
+// ---------------------------------------------------------------------------
+// Today briefing extensions
+// ---------------------------------------------------------------------------
+
+import { SECTOR_LABELS as SECTOR_WORDS } from "./types";
+import type { StrategicImplication } from "./types";
+import { IMPLICATION_AUDIENCE_LABELS } from "./types";
+
+/**
+ * The Daily Brief: what the system noticed, then where movement centres.
+ * Both sentences derive from the live base.
+ */
+export function dailyBrief(data: IntelligenceData): string {
+  const opening = todaySentence(data);
+  const movers = [...data.signals]
+    .filter((s) => !["rejected", "archived_noise", "duplicate"].includes(s.reviewStatus))
+    .sort((a, b) => b.scores.momentum - a.scores.momentum)
+    .slice(0, 3);
+  if (movers.length === 0) return opening;
+  const themes = [...new Set(movers.map((s) => SECTOR_WORDS[s.sectors[0]]))].filter(Boolean);
+  if (themes.length === 0) return opening;
+  return `${opening} Movement centres on ${themes.join(", ").toLowerCase()}.`;
+}
+
+export interface DoNowAction {
+  id: string;
+  who: string;
+  what: string;
+  whyNow: string;
+  confidence: string;
+}
+
+/** One or two recommended present-day actions, strongest grounding first. */
+export function doNowActions(data: IntelligenceData, n = 2): DoNowAction[] {
+  const rank = { high: 2, medium: 1, low: 0 } as const;
+  return [...data.implications]
+    .filter((i) => !["rejected", "archived_noise"].includes(i.reviewStatus))
+    .sort(
+      (a, b) =>
+        rank[b.confidence] - rank[a.confidence] ||
+        b.evidenceSignalIds.length +
+          b.evidenceDriverIds.length -
+          (a.evidenceSignalIds.length + a.evidenceDriverIds.length),
+    )
+    .slice(0, n)
+    .map((i) => ({
+      id: i.id,
+      who: i.audiences.slice(0, 2).map((a) => IMPLICATION_AUDIENCE_LABELS[a]).join(" and "),
+      what: firstSentence(i.recommendedAction),
+      whyNow: firstSentence(i.whyItMatters),
+      confidence: i.confidence,
+    }));
+}
+
+export interface MovementGroups {
+  stronger: MonitoringIndicator[];
+  weaker: MonitoringIndicator[];
+  needsAttention: MonitoringIndicator[];
+}
+
+/** Movement since last check, for the Today briefing (top 2 per group). */
+export function movementSinceLastCheck(
+  data: IntelligenceData,
+  isOverdue: (i: MonitoringIndicator) => boolean,
+): MovementGroups {
+  const byRecency = (a: MonitoringIndicator, b: MonitoringIndicator) =>
+    b.dateLastChecked.localeCompare(a.dateLastChecked);
+  const attention = data.indicators.filter(
+    (i) => i.trend === "contradictory" || isOverdue(i),
+  );
+  return {
+    stronger: data.indicators
+      .filter((i) => i.trend === "strengthening")
+      .sort(byRecency)
+      .slice(0, 2),
+    weaker: data.indicators
+      .filter((i) => i.trend === "weakening")
+      .sort(byRecency)
+      .slice(0, 2),
+    needsAttention: attention.sort(byRecency).slice(0, 2),
+  };
+}
