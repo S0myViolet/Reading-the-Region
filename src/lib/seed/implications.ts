@@ -16,17 +16,17 @@ export const seedImplications: StrategicImplication[] = [
     audiences: ["developers", "urban_planners"],
     implicationType: "product",
     implication:
-      "Residential pipelines weighted towards investor studios are structurally mismatched with a settlement market: golden-visa demand is family demand — three bedrooms, school proximity, community fabric, transit access.",
+      "Developers may be building too many homes for investors and not enough for families who plan to stay.",
     whyItMatters:
-      "Product mix decisions being made now will deliver into the market of 2028–2030. If the settlement dynamic (SIG-003) holds, family-fit stock near schools and stations earns a durable occupancy and retention premium; if pipelines stay investor-weighted, developers will be discounting studios while competitors lease waiting-list family product.",
+      "Many long-term visa holders are arriving with families, so demand may shift toward larger homes, schools, and daily-life services. Homes planned now will reach the market in 2028–2030, when that shift would bite.",
     evidenceSignalIds: ["SIG-003", "SIG-010", "SIG-011"],
     evidenceDriverIds: ["DRV-002"],
     opportunity:
-      "First movers can secure school partnerships, transit-adjacent plots and community-programming operators before settlement pricing is consensus.",
+      "Developers who move first can secure school partnerships and plots near stations before prices reflect family demand.",
     risk:
-      "Over-rotation: if visa policy tightens (CON-003 escalation), family-stock bets need exit routes — design formats convertible between family and shared occupancy.",
+      "This may be overstated if long-term visas do not turn into actual long-term stays.",
     recommendedAction:
-      "Audit the residential pipeline for family-formation fit within one quarter: share of three-bedroom supply, school-place availability within 15 minutes, station distance, and a named community-programming budget per project. Rebalance the next two land acquisitions against that audit, and add golden-visa renewal data (IND-001) to the investment committee's standing pack.",
+      "Review your pipeline this quarter for three-bedroom supply, school places within 15 minutes, and station distance, then rebalance the next two land purchases against that review.",
     confidence: "medium",
     timeHorizon: "near_term",
     reviewStatus: "human_reviewed",
@@ -41,17 +41,17 @@ export const seedImplications: StrategicImplication[] = [
     audiences: ["banks"],
     implicationType: "innovation",
     implication:
-      "A settling population justifies decade-horizon retail products the transient model never supported — but winning them requires solving the trust problem first: customers demand human verification exactly where banks are automating (SIG-006), and youth credit relationships are forming outside banks entirely (SIG-009).",
+      "Settling families will want mortgages, education savings and retirement products, but they will only buy them from banks they trust to stay accountable.",
     whyItMatters:
-      "The bank that owns a family's mortgage, education savings and eventual retirement products captures twenty years of relationship value. That contest is being decided now, at two entry points banks currently treat as noise: the BNPL checkout where young customers form credit habits, and the verification moment where automated service either earns or burns accountability trust.",
+      "The bank that wins a family's mortgage and savings keeps that relationship for twenty years. Young customers are forming their first credit habits at instalment checkouts, outside banks, right now. Customers also demand a human answer exactly where banks are automating.",
     evidenceSignalIds: ["SIG-003", "SIG-006", "SIG-009"],
     evidenceDriverIds: ["DRV-001"],
     opportunity:
-      "Design a 'settlement bundle' — visa-linked mortgage pre-approval, education savings, family healthcare financing — with a named human adviser as the accountable spine of the relationship.",
+      "A settlement bundle — mortgage pre-approval, education savings, family healthcare financing — with one named human adviser could win these families early.",
     risk:
-      "Pricing human verification as premium-only invites regulator and reputation damage; recourse on high-stakes automated decisions is heading towards being a right, not a product.",
+      "Charging extra for human review of automated decisions invites regulator action and reputation damage.",
     recommendedAction:
-      "Stand up a two-part pilot within two quarters: (1) a settlement bundle for long-term-visa families with one named adviser per household and published human-review rights on all automated credit decisions; (2) an instalment-layer partnership or licence application so the bank meets under-30s at the checkout rather than at first mortgage. Report escalation-to-human volumes (IND-005) to the board monthly.",
+      "Pilot a settlement bundle for long-term-visa families within two quarters: one named adviser per household, published human-review rights on automated credit decisions, and an instalment partnership reaching under-30s at checkout.",
     confidence: "medium",
     timeHorizon: "near_term",
     reviewStatus: "needs_human_review",
@@ -66,17 +66,17 @@ export const seedImplications: StrategicImplication[] = [
     audiences: ["tourism_boards", "hotels"],
     implicationType: "experience",
     implication:
-      "The most valuable 'visitor' of the next decade may live ten minutes away: settlement turns destinations and hotels into repeat-use ecosystems for residents — memberships, clinics, programming — alongside the fly-in economy rather than instead of it.",
+      "Hotels and destinations can earn steady income from residents who visit every week, not only from tourists who visit once.",
     whyItMatters:
-      "Hotel longevity clinics (SIG-002) and mall lifestyle ecosystems (SIG-007) both point at relationship economics replacing visit economics. Tourism strategies measured purely in arrivals will misprice the settled-resident opportunity — and hotels that treat residents as off-peak filler will lose the membership relationship to operators who design for it.",
+      "Hotel clinics and mall memberships already show residents paying for repeat relationships. Tourism strategies that only count arrivals will miss this revenue, and hotels that treat residents as off-peak filler will lose them to operators who design for them.",
     evidenceSignalIds: ["SIG-002", "SIG-007"],
     evidenceDriverIds: ["DRV-002"],
     opportunity:
-      "Resident memberships (wellness, dining, work, family programming) create annuity revenue that smooths seasonality and survives travel shocks; clinic-anchored properties earn repeat clinical visits rather than one-off stays.",
+      "Resident memberships create steady annual revenue that smooths seasonality and survives travel shocks.",
     risk:
-      "Serving two masters badly: resident ecosystems and fly-in luxury have different service rhythms — properties need explicit zoning of the two, or both experiences degrade (CON-003's mobility side is still real revenue).",
+      "Serving residents and fly-in guests in the same spaces can degrade both experiences unless properties clearly separate the two.",
     recommendedAction:
-      "Pilot a resident-membership product at two flagship properties this year — wellness diagnostics, family programming and workspace under one annual fee — with a target of 30% of F&B and spa revenue from members within 18 months. Tourism boards: add resident repeat-use metrics (memberships, annual visits per resident) to destination scorecards alongside arrivals.",
+      "Pilot a resident membership at two flagship properties this year — wellness, family programming and workspace under one annual fee — and track member share of restaurant and spa revenue.",
     confidence: "medium",
     timeHorizon: "mid_term",
     reviewStatus: "human_reviewed",
@@ -91,17 +91,17 @@ export const seedImplications: StrategicImplication[] = [
     audiences: ["luxury_brands", "agencies"],
     implicationType: "brand",
     implication:
-      "In a settling Gulf, cultural credibility localises: regional authorship — designers, creators, dialect, references — is displacing imported prestige as the top of the persuasion stack (SIG-001, SIG-012), and translated global campaigns increasingly read as absentee marketing.",
+      "Gulf customers increasingly trust brands that work with regional designers and creators, and increasingly ignore translated global campaigns.",
     whyItMatters:
-      "A permanent population consumes identity differently from a transient one: residents building lives here reward brands that participate in the culture being made, not brands that visit it. The price of regional credibility is rising every season (CON-002) — buying it later will cost more and convince less.",
+      "Residents who are building lives here reward brands that take part in the culture being made locally. The price of regional credibility rises every season, so buying it later will cost more and convince less.",
     evidenceSignalIds: ["SIG-001", "SIG-012"],
     evidenceDriverIds: ["DRV-001"],
     opportunity:
-      "Early, structural partnerships with regional designers and creators — revenue-shared collections, multi-year ambassador relationships, production investment — lock in credibility before it is repriced.",
+      "Early, long-term partnerships with regional designers and creators lock in credibility before it is repriced.",
     risk:
-      "Token localisation (a Ramadan capsule, a translated tagline) is now legible as such and can convert indifference into active cynicism; authenticity failures travel fast through the creator networks brands are trying to court.",
+      "Token gestures — a Ramadan capsule or a translated tagline — are easy to spot and can turn indifference into open cynicism.",
     recommendedAction:
-      "Reallocate a defined share of next year's regional campaign budget — 30% is a defensible starting point — from global-asset adaptation to regionally authored work: commission at least one Gulf designer collaboration with genuine revenue share, and shift ambassador spend from global celebrity to a two-year portfolio of regional creators with editorial freedom. Measure engagement per dirham against the global-asset baseline.",
+      "Shift 30% of next year's regional campaign budget from adapted global assets to regionally authored work, starting with one Gulf designer collaboration on genuine revenue share.",
     confidence: "medium",
     timeHorizon: "immediate",
     reviewStatus: "human_reviewed",
@@ -116,17 +116,17 @@ export const seedImplications: StrategicImplication[] = [
     audiences: ["education_providers", "governments"],
     implicationType: "risk",
     implication:
-      "Schools are the institution most exposed to the gap between residency and belonging: settlement demand is filling classrooms today (SIG-003), but if the 'Platform Without Roots' dynamic holds, enrolment longevity, alumni value and university pathways will all underperform the permanence the visa data implies.",
+      "Schools are filling with long-term visa families today, but those families may still leave early, taking expected enrolment years and alumni value with them.",
     whyItMatters:
-      "Education groups are making capacity and curriculum investments on decade horizons, and governments are counting on schools to convert residency into attachment for the second generation. Whether families treat a school as a community anchor or a service they exit at the next move is the difference between an alumni economy and perpetual churn — and it is measurable now.",
+      "Education groups are investing in buildings and curricula for decades ahead. Whether families stay for a full school run or leave midway decides if those investments pay off, and it can be measured now.",
     evidenceSignalIds: ["SIG-003"],
     evidenceDriverIds: ["DRV-002"],
     opportunity:
-      "Schools that measure and design for continuity — full-cycle enrolment, local university pathways, alumni networks that remain in-region — become the strongest belonging infrastructure in the territory and can evidence it to policymakers.",
+      "Schools that track and design for continuity — full school runs, local university pathways, in-region alumni — become the strongest proof of belonging in the market.",
     risk:
-      "Building capacity against visa-length demand that behaves like contract-length demand: over-expanded campuses, under-used alumni investments, and a generation of students for whom the school was a corridor, not a community.",
+      "Schools may build capacity for visa-length demand that behaves like contract-length demand, leaving campuses over-expanded and alumni programmes unused.",
     recommendedAction:
-      "Instrument the belonging gap this academic year: track full-cycle completion rates (entry to graduation in one school), destination of leavers (in-region versus abroad), and parental tenure intentions in the annual survey. Set a board-level threshold — for example, full-cycle completion below 40% — that triggers a strategy review of capacity expansion, and share anonymised continuity data with residency policymakers as evidence for second-generation pathway design.",
+      "Track full-cycle completion, leaver destinations and parents' tenure intentions this academic year, and set a completion threshold that triggers a review of campus expansion plans.",
     confidence: "low",
     timeHorizon: "mid_term",
     reviewStatus: "needs_human_review",
