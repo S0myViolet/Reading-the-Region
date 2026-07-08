@@ -1,41 +1,45 @@
 "use client";
 
 /**
- * Intelligence Overview — the command center.
+ * Overview — the advanced command center.
  *
- * Reads the whole intelligence base and surfaces: layer counts, the pipeline,
- * what needs attention today, signals worth attention, emerging
- * contradictions, strengthening territories, the noise filter, and the
- * management center (system health). All data is derived client-side from the
+ * An intelligence control room ordered by daily movement: the pipeline and
+ * its headline figures, evidence triage (what is unsafe to rely on and why),
+ * task guidance, recent movement between stages, contradictions, monitoring
+ * movement, strengthening territories, then the analyst-gated noise filter
+ * and system health queues. All data is derived client-side from the
  * persisted store, so the page is hydration-gated.
  *
  * Calm idiom: plain sections separated by whitespace and type hierarchy —
- * no stat cards, no boxed dashboards. "What needs attention today" is the
- * landing point after the numbers.
+ * no stat cards, no boxed dashboards.
  */
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { TerritoryStatusBadge } from "@/components/badges";
+import { ConfidenceBadge, TerritoryStatusBadge, TrendBadge } from "@/components/badges";
 import { ContradictionPanel } from "@/components/ContradictionPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { IntelligencePipeline } from "@/components/IntelligencePipeline";
 import { PageHeader } from "@/components/PageHeader";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { RECOMMENDED_WORKFLOW } from "@/lib/copy";
 import {
   contradictionsEmerging,
+  evidenceTriage,
   guidanceTasks,
+  indicatorOverdue,
   managementCenter,
   noiseArchive,
   pipelineCounts,
+  recentStageMovements,
   signalsNeedingReview,
-  signalsWorthAttention,
   strengtheningTerritories,
   type ManagementItem,
 } from "@/lib/derived";
-import { scoreHeadline } from "@/lib/explain";
+import { STAGE_LABELS, signalStage } from "@/lib/pipeline";
+import { firstSentence } from "@/lib/simple";
 import { useHydrated, useIntelligenceStore, type IntelligenceData } from "@/lib/store";
 import { CONFIDENCE_LABELS, OBSERVATION_STATUS_LABELS } from "@/lib/types";
 
@@ -52,7 +56,7 @@ function formatDate(x: string): string {
 }
 
 /** Plain figure: mono number over a small faint label. A quiet link, no box. */
-function StatFigure({ label, value, href }: { label: string; value: number; href: string }) {
+function StageFigure({ label, value, href }: { label: string; value: number; href: string }) {
   return (
     <Link href={href} className="group block">
       <span className="block font-mono text-[20px] leading-none text-ink group-hover:text-accent-ink">
@@ -184,24 +188,36 @@ export default function OverviewPage() {
   );
 
   const derived = useMemo(() => {
-    const needsReviewStatuses = ["needs_human_review", "ai_suggested", "needs_evidence"];
+    const territoryNames = new Map(data.territories.map((t) => [t.id, t.name]));
+    const monitoringMovement = data.indicators
+      .map((indicator) => ({
+        indicator,
+        overdue: indicatorOverdue(indicator),
+        territoryName: indicator.territoryId
+          ? (territoryNames.get(indicator.territoryId) ?? null)
+          : null,
+      }))
+      .filter((x) => x.indicator.trend !== "stable" || x.overdue)
+      .sort((a, b) => {
+        if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+        return b.indicator.dateLastChecked.localeCompare(a.indicator.dateLastChecked);
+      })
+      .slice(0, 6);
+
     return {
       pipeline: pipelineCounts(data),
+      triage: evidenceTriage(data),
       tasks: guidanceTasks(data),
-      attention: signalsWorthAttention(data).slice(0, 6),
+      movements: recentStageMovements(data, 6),
       emerging: contradictionsEmerging(data).slice(0, 2),
       strengthening: strengtheningTerritories(data),
       noise: noiseArchive(data),
       management: managementCenter(data),
-      needingReview: signalsNeedingReview(data),
-      validatedSignals: data.signals.filter((s) => s.reviewStatus === "validated").length,
-      weakInReview: data.signals.filter(
-        (s) => s.signalStrength === "weak" && needsReviewStatuses.includes(s.reviewStatus),
-      ).length,
-      activeClusters: data.clusters.filter((c) => c.status !== "dissolved").length,
-      validatedPatterns: data.patterns.filter((p) => p.validationStatus === "validated").length,
-      candidateDrivers: data.drivers.filter((d) => d.status === "hypothesis").length,
-      strengtheningIndicators: data.indicators.filter((i) => i.trend === "strengthening").length,
+      needingReview: signalsNeedingReview(data).length,
+      signalCandidates: data.signals.filter((s) => signalStage(s) === "signal_candidate").length,
+      validSignals: data.signals.filter((s) => signalStage(s) === "valid_signal").length,
+      indicatorsMoving: data.indicators.filter((i) => i.trend !== "stable").length,
+      monitoringMovement,
     };
   }, [data]);
 
@@ -209,58 +225,99 @@ export default function OverviewPage() {
     return (
       <>
         <PageHeader
-          title="Intelligence Overview"
-          description="The health of the whole intelligence system: what is moving, what needs review, and where evidence is weak."
+          title="Overview"
+          description="Daily movement through the Reading the Region intelligence pipeline."
         />
         <p className="text-[12px] text-ink-faint">Loading the intelligence base…</p>
       </>
     );
   }
 
-  const stats: Array<{ label: string; value: number; href: string }> = [
-    { label: "Observations", value: data.observations.length, href: "/inbox" },
-    { label: "Validated signals", value: derived.validatedSignals, href: "/signals" },
-    { label: "Weak signals in review", value: derived.weakInReview, href: "/signals" },
-    { label: "Active clusters", value: derived.activeClusters, href: "/clusters" },
-    { label: "Validated patterns", value: derived.validatedPatterns, href: "/patterns" },
-    { label: "Contradictions", value: data.contradictions.length, href: "/contradictions" },
-    { label: "Candidate drivers", value: derived.candidateDrivers, href: "/drivers" },
-    { label: "Future territories", value: data.territories.length, href: "/territories" },
-    { label: "Scenarios", value: data.scenarios.length, href: "/scenarios" },
-    { label: "Strategic implications", value: data.implications.length, href: "/implications" },
-    {
-      label: "Indicators strengthening",
-      value: derived.strengtheningIndicators,
-      href: "/monitoring",
-    },
+  const figures: Array<{ label: string; value: number; href: string }> = [
+    { label: "Sources", value: data.sources.length, href: "/sources" },
+    { label: "Signal candidates", value: derived.signalCandidates, href: "/signals" },
+    { label: "Valid signals", value: derived.validSignals, href: "/signals?review=validated" },
     {
       label: "Awaiting human review",
-      value: derived.needingReview.length,
+      value: derived.needingReview,
       href: "/signals?review=needs_human_review",
     },
+    { label: "Indicators moving", value: derived.indicatorsMoving, href: "/monitoring" },
   ];
 
   return (
     <>
       <PageHeader
-        title="Intelligence Overview"
-        description="The health of the whole intelligence system: what is moving, what needs review, and where evidence is weak."
+        title="Overview"
+        description="Daily movement through the Reading the Region intelligence pipeline."
       />
       <WalkthroughPanel pageId="overview" />
 
-      {/* Stat strip: plain figures, no boxes ------------------------------- */}
-      <div className="mb-12 flex flex-wrap gap-x-10 gap-y-6">
-        {stats.map((s) => (
-          <StatFigure key={s.label} label={s.label} value={s.value} href={s.href} />
-        ))}
-      </div>
-
-      {/* Pipeline ----------------------------------------------------------- */}
-      <Section title="Intelligence pipeline" small>
+      {/* 1 · Pipeline movement ---------------------------------------------- */}
+      <Section title="Pipeline movement">
+        <div className="mb-8 flex flex-wrap gap-x-10 gap-y-6">
+          {figures.map((f) => (
+            <StageFigure key={f.label} label={f.label} value={f.value} href={f.href} />
+          ))}
+        </div>
         <IntelligencePipeline counts={derived.pipeline} />
       </Section>
 
-      {/* What needs attention today ----------------------------------------- */}
+      {/* 2 · Evidence triage -------------------------------------------------- */}
+      <Section
+        title="Evidence triage"
+        caption="Signals it is not yet safe to rely on, grouped by the reason. A signal can appear under more than one lens."
+        href="/signals"
+        linkLabel="Open the Signal Library"
+      >
+        {derived.triage.length > 0 ? (
+          <div className="space-y-8">
+            {derived.triage.map((group) => (
+              <div key={group.key}>
+                <h3 className="text-[13px] font-medium text-ink">{group.title}</h3>
+                <p className="mt-0.5 text-[12px] text-ink-faint">{group.caption}</p>
+                <div className="mt-1">
+                  {group.items.map(({ signal, reason }) => (
+                    <div key={signal.id} className="list-row">
+                      <div className="flex items-baseline justify-between gap-6">
+                        <p className="min-w-0 truncate text-[13.5px] font-medium leading-snug">
+                          <Link
+                            href={`/signals/${signal.id}`}
+                            className="text-ink hover:text-accent-ink"
+                          >
+                            {signal.title}
+                          </Link>
+                        </p>
+                        <span className="flex shrink-0 items-baseline gap-2">
+                          <PipelineStageBadge stage={signalStage(signal)} />
+                          <ConfidenceBadge level={signal.confidence} />
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+                        {reason}{" "}
+                        <Link
+                          href={`/signals/${signal.id}`}
+                          className="whitespace-nowrap text-accent-ink underline-offset-2 hover:underline"
+                        >
+                          Review
+                        </Link>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+            Nothing is flagged for triage: no live signal currently combines thin evidence with
+            high novelty, lags its evidence base, leans on bias-tagged sourcing, carries an
+            unresolved contradiction, or awaits human review.
+          </p>
+        )}
+      </Section>
+
+      {/* 3 · What needs attention today ---------------------------------------- */}
       <Section
         title="What needs attention today"
         caption="Task-based guidance derived from the current state of the base."
@@ -285,40 +342,44 @@ export default function OverviewPage() {
         )}
       </Section>
 
-      {/* Signals worth attention -------------------------------------------- */}
+      {/* 4 · Recent movement through the pipeline ------------------------------ */}
       <Section
-        title="Signals Worth Attention"
-        caption="High novelty, low confidence, high strategic relevance — early material that could matter."
-        href="/signals"
-        linkLabel="Open the Signal Library"
+        title="Recent movement through the pipeline"
+        caption="Ordered by last update — the store keeps no transition log, so this is recent movement, not today's."
       >
-        {derived.attention.length > 0 ? (
+        {derived.movements.length > 0 ? (
           <div>
-            {derived.attention.map((s) => (
-              <Link key={s.id} href={`/signals/${s.id}`} className="list-row group">
-                <p className="truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
-                  {s.title}
+            {derived.movements.map((m) => (
+              <Link
+                key={`${m.fromStage}-${m.toStage}-${m.href}`}
+                href={m.href}
+                className="list-row group"
+              >
+                <p className="text-[11px] text-ink-faint">
+                  {STAGE_LABELS[m.fromStage]} → {STAGE_LABELS[m.toStage]}
                 </p>
-                <p className="mt-1 text-[12px] text-ink-faint">
-                  {scoreHeadline("novelty", s.scores.novelty)} ·{" "}
-                  {scoreHeadline("strategicRelevance", s.scores.strategicRelevance)} ·{" "}
-                  {CONFIDENCE_LABELS[s.confidence]}
+                <p className="mt-0.5 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+                  {m.title}
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+                  {m.basis} · {m.evidenceCount} evidence link
+                  {m.evidenceCount === 1 ? "" : "s"} · {m.reviewNote}
+                  {m.confidence ? ` · ${CONFIDENCE_LABELS[m.confidence]}` : ""}
                 </p>
               </Link>
             ))}
           </div>
         ) : (
-          <EmptyState
-            message="No signal currently combines high novelty with low confidence and high strategic relevance. This section surfaces early material that could matter before it is well evidenced — promote observations from the Scan Inbox and score them in the Signal Library to populate it."
-            actionLabel="Open the Signal Library"
-            actionHref="/signals"
-          />
+          <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+            Nothing has moved between stages yet. Movement appears here when observations are
+            promoted, signals are validated, or clusters, patterns and territories are formed.
+          </p>
         )}
       </Section>
 
-      {/* Contradictions emerging -------------------------------------------- */}
+      {/* 5 · Contradictions found ---------------------------------------------- */}
       <Section
-        title="Contradictions Emerging"
+        title="Contradictions found"
         caption="Ranked by tension strength × future impact. Contradictions are strategic material, not errors."
         href="/contradictions"
         linkLabel="View all contradictions"
@@ -326,7 +387,13 @@ export default function OverviewPage() {
         {derived.emerging.length > 0 ? (
           <div className="space-y-8">
             {derived.emerging.map((c) => (
-              <ContradictionPanel key={c.id} contradiction={c} linked />
+              <div key={c.id}>
+                <ContradictionPanel contradiction={c} linked />
+                <p className="mt-2 pl-4 text-[12px] text-ink-faint">
+                  Tension strength {c.scores.tensionStrength}/5 · evidence balance{" "}
+                  {c.scores.evidenceBalance}/5 · future impact {c.scores.futureImpact}/5
+                </p>
+              </div>
             ))}
           </div>
         ) : (
@@ -338,9 +405,46 @@ export default function OverviewPage() {
         )}
       </Section>
 
-      {/* Strengthening territories ------------------------------------------ */}
+      {/* 6 · Monitoring movement ------------------------------------------------ */}
       <Section
-        title="Recently Strengthening Territories"
+        title="Monitoring movement"
+        caption="Indicators trending away from stable, or overdue for their scheduled check."
+        href="/monitoring"
+        linkLabel="Open Monitoring"
+      >
+        {derived.monitoringMovement.length > 0 ? (
+          <div>
+            {derived.monitoringMovement.map(({ indicator, overdue, territoryName }) => (
+              <Link key={indicator.id} href="/monitoring" className="list-row group">
+                <div className="flex items-baseline justify-between gap-6">
+                  <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+                    {indicator.name}
+                  </p>
+                  <span className="shrink-0">
+                    <TrendBadge trend={indicator.trend} />
+                  </span>
+                </div>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+                  {firstSentence(indicator.currentStatus)} · Last checked{" "}
+                  {formatDate(indicator.dateLastChecked)}
+                  {overdue ? <span className="text-caution"> · check overdue</span> : null}
+                  {territoryName ? ` · ${territoryName}` : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            message="Every indicator is currently stable and within its check cadence. Movement appears here when an indicator strengthens, weakens, turns contradictory, or goes past its scheduled check."
+            actionLabel="Open Monitoring"
+            actionHref="/monitoring"
+          />
+        )}
+      </Section>
+
+      {/* 7 · Strengthening territories ------------------------------------------ */}
+      <Section
+        title="Recently strengthening territories"
         caption="Territories whose leading indicators are trending upward."
         href="/territories"
         linkLabel="View all territories"
@@ -385,7 +489,7 @@ export default function OverviewPage() {
       <ViewGate min="analyst">
         {/* Noise filter ------------------------------------------------------ */}
         <Section
-          title="Noise Filter"
+          title="Noise filter"
           caption="Noise filtering is auditable, not silent — every archived or duplicate observation keeps its triage rationale."
           href="/inbox?status=archived_noise"
           linkLabel="View in Scan Inbox"
@@ -420,9 +524,9 @@ export default function OverviewPage() {
           )}
         </Section>
 
-        {/* Management center -------------------------------------------------- */}
+        {/* System health ------------------------------------------------------ */}
         <Section
-          title="Management Center — system health"
+          title="System health"
           caption="Where the base is weak, unreviewed, or below threshold. Work these queues to keep conclusions defensible."
           small
         >
