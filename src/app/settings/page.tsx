@@ -16,11 +16,7 @@ import { AppModeSwitch, ViewModeSwitch } from "@/components/ViewMode";
 import { WALKTHROUGHS } from "@/lib/copy";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/types";
-import {
-  APP_MODE_DESCRIPTIONS,
-  VIEW_MODE_DESCRIPTIONS,
-  VIEW_MODE_LABELS,
-} from "@/lib/viewMode";
+import { VIEW_MODE_DESCRIPTIONS, VIEW_MODE_LABELS } from "@/lib/viewMode";
 
 // ---------------------------------------------------------------------------
 // Reference copy
@@ -28,6 +24,14 @@ import {
 
 /** The two depths available inside Advanced mode, for the definition list. */
 const ADVANCED_DEPTHS = ["analyst", "methodology"] as const;
+
+/** Product-mode framing for the settings page. */
+const PRODUCT_MODE_COPY = {
+  simple:
+    "The guided product surface. Shows Today, Explore, New Finds, Signals, Futures, Decisions, and Watchlist. The full methodology still works in the background.",
+  advanced:
+    "The full intelligence engine. Shows every methodology layer, score, threshold, validation rule, source structure, and evidence trail.",
+} as const;
 
 /** One-line meaning for each review status, shown in the reference list. */
 const REVIEW_STATUS_MEANINGS: Record<ReviewStatus, string> = {
@@ -238,16 +242,20 @@ export default function SettingsPage() {
               Simple<span className="font-normal"> — default</span>
             </dt>
             <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
-              {APP_MODE_DESCRIPTIONS.simple}
+              {PRODUCT_MODE_COPY.simple}
             </dd>
           </div>
           <div>
             <dt className="text-[12px] font-medium text-ink-faint">Advanced</dt>
             <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
-              {APP_MODE_DESCRIPTIONS.advanced}
+              {PRODUCT_MODE_COPY.advanced}
             </dd>
           </div>
         </dl>
+        <p className="mt-4 max-w-2xl text-[11.5px] leading-relaxed text-ink-faint">
+          Guided mode is a separate onboarding and help layer — it explains
+          each page and does not change the methodology.
+        </p>
 
         <div className="mt-8">
           <p className="text-[12px] font-medium text-ink">Depth inside Advanced mode</p>

@@ -225,6 +225,12 @@ function MonitoringContent() {
           </ViewGate>
         }
       />
+      {analyst ? (
+        <p className="-mt-6 mb-8 max-w-2xl text-[12px] text-ink-faint">
+          Is each watched territory strengthening, weakening, mutating, or
+          being contradicted?
+        </p>
+      ) : null}
       <WalkthroughPanel pageId="monitoring" />
 
       {analyst && adding ? (

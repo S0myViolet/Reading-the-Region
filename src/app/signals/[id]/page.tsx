@@ -31,6 +31,7 @@ import {
   SourceCredibilityBadge,
 } from "@/components/badges";
 import { PlainTags, SectorTags, SourceBiasTags, SystemTags } from "@/components/tags";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { SignalScorePanel } from "@/components/ScorePanel";
 import { ZoomingPanel } from "@/components/ZoomingPanel";
@@ -40,6 +41,7 @@ import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { ExplainedScore } from "@/components/Explained";
 import { Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import { zoomComplete } from "@/lib/validation";
 import { explainContradiction } from "@/lib/explain";
 import { evidenceWords, firstSentence, importanceWords } from "@/lib/simple";
@@ -1039,6 +1041,7 @@ export default function SignalDetailPage() {
       {mode !== "simple" ? (
         <p className="-mt-6 mb-8 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <IdChip id={signal.id} />
+          <PipelineStageBadge stage={signalStage(signal)} />
           <SignalStrengthBadge strength={signal.signalStrength} />
           <ConfidenceBadge level={signal.confidence} />
         </p>

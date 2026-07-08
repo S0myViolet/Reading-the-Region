@@ -26,8 +26,10 @@ import {
   ControlSelect,
 } from "@/components/ControlBar";
 import { ConfidenceBadge, ReviewStatusBadge, SignalStrengthBadge } from "@/components/badges";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalStage } from "@/lib/pipeline";
 import { zoomComplete } from "@/lib/validation";
 import { evidenceWords, firstSentence } from "@/lib/simple";
 import { DEFINITIONS } from "@/lib/copy";
@@ -230,11 +232,12 @@ function SignalRow({ signal }: { signal: Signal }) {
         <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
           {signal.title}
         </p>
-        {MEANINGFUL_STRENGTHS.includes(signal.signalStrength) ? (
-          <span className="shrink-0">
+        <span className="flex shrink-0 items-center gap-2">
+          <PipelineStageBadge stage={signalStage(signal)} />
+          {MEANINGFUL_STRENGTHS.includes(signal.signalStrength) ? (
             <SignalStrengthBadge strength={signal.signalStrength} />
-          </span>
-        ) : null}
+          ) : null}
+        </span>
       </div>
       <p className="mt-1 text-[12px] text-ink-faint">{signalRowSummary(signal)}</p>
     </Link>
@@ -342,7 +345,10 @@ function SignalsTable({ signals }: { signals: Signal[] }) {
                   <ScoreChips scores={s.scores} />
                 </td>
                 <td>
-                  <ReviewStatusBadge status={s.reviewStatus} />
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <ReviewStatusBadge status={s.reviewStatus} />
+                    <PipelineStageBadge stage={signalStage(s)} />
+                  </span>
                 </td>
                 <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
                   {fmtDate(s.dateObserved)}

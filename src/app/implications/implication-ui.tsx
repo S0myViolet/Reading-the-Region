@@ -14,9 +14,12 @@ import { useState } from "react";
 import { IdChip, ReviewStatusBadge } from "@/components/badges";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { EntityLink } from "@/components/EntityLink";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { CheckboxList, Field, Select, TextArea } from "@/components/form";
 import { explainConfidenceGeneric, explainImplicationEvidence } from "@/lib/explain";
+import { signalStage } from "@/lib/pipeline";
+import { firstSentence } from "@/lib/simple";
 import { nextId, useIntelligenceStore } from "@/lib/store";
 import { modeAtLeast } from "@/lib/viewMode";
 import { validateImplication } from "@/lib/validation";
@@ -88,12 +91,47 @@ export function ImplicationEntry({
 }) {
   const [expanded, setExpanded] = useState(false);
   const updateImplication = useIntelligenceStore((s) => s.updateImplication);
+  const sources = useIntelligenceStore((s) => s.sources);
   const mode = useViewMode();
   const analyst = modeAtLeast(mode, "analyst");
 
   const unresolvedSignals = imp.evidenceSignalIds.length - evidenceSignals.length;
   const unresolvedDrivers = imp.evidenceDriverIds.length - evidenceDrivers.length;
   const grounding = validateImplication(imp);
+
+  // Evidence chain, top-down from the implication's actual links — steps are
+  // never invented, so a thinly grounded implication shows a visibly short trail.
+  const trailSteps: TrailStep[] = [
+    { stage: "implication", title: firstSentence(imp.implication) || imp.id },
+  ];
+  if (scenario)
+    trailSteps.push({
+      stage: "scenario",
+      title: scenario.title,
+      href: `/scenarios/${scenario.id}`,
+    });
+  if (territory)
+    trailSteps.push({
+      stage: "territory",
+      title: territory.name,
+      href: `/territories/${territory.id}`,
+    });
+  for (const d of evidenceDrivers)
+    trailSteps.push({ stage: "driver", title: d.name, href: `/drivers/${d.id}` });
+  for (const s of evidenceSignals.slice(0, 3)) {
+    trailSteps.push({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    });
+    const firstSource = sources.find((src) => src.id === s.sourceIds[0]);
+    if (firstSource)
+      trailSteps.push({
+        stage: "source",
+        title: firstSource.name,
+        href: `/sources/${firstSource.id}`,
+      });
+  }
 
   const metadata = [
     imp.audiences.length > 0
@@ -173,7 +211,7 @@ export function ImplicationEntry({
               </p>
             </div>
             <div>
-              <DetailLabel>Risk</DetailLabel>
+              <DetailLabel>What could make this wrong</DetailLabel>
               <p className="text-[12.5px] leading-relaxed text-ink-soft">
                 {imp.risk.trim() ? (
                   imp.risk
@@ -275,6 +313,11 @@ export function ImplicationEntry({
                 {unresolvedDrivers === 1 ? "s" : ""}.
               </p>
             ) : null}
+          </div>
+
+          <div>
+            <DetailLabel>Evidence chain</DetailLabel>
+            <EvidenceTrail steps={trailSteps} />
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

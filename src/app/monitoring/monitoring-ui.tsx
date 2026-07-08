@@ -286,6 +286,10 @@ function IndicatorDetail({
         {CADENCE_LABELS[indicator.cadence].toLowerCase()} · last checked{" "}
         {formatDate(indicator.dateLastChecked)} · <IdChip id={indicator.id} />
       </p>
+      <p className="text-[12px] text-ink-faint">
+        Next review — {CADENCE_LABELS[indicator.cadence].toLowerCase()} cadence,{" "}
+        {nextCheckPhrase(indicator)}.
+      </p>
 
       <div>
         <p className="mb-1 text-[11px] text-ink-faint">Evidence</p>
