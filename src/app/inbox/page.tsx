@@ -9,8 +9,8 @@
  *
  * Layout has exactly four layers: header, one control bar, the observation
  * list, and the collapsed page guide. The list is the visual focus. Advanced
- * mode adds the triage read per row (suggested stage, source credibility,
- * bias, roles, checklist basis); the simple rendering stays minimal — the
+ * mode adds the triage read per row (suggested stage, one short source
+ * quality note, checklist count); the simple rendering stays minimal — the
  * simple product covers this queue at /finds.
  */
 
@@ -34,14 +34,13 @@ import {
   TRIAGE_LABELS,
   type TriageSuggestion,
 } from "@/lib/pipeline";
-import type { Observation, ObservationStatus, Source } from "@/lib/types";
+import type { BiasTag, Observation, ObservationStatus, Source } from "@/lib/types";
 import {
   BIAS_TAG_LABELS,
   OBSERVATION_STATUS_LABELS,
   PROMOTION_CRITERIA,
   PROMOTION_MIN_CRITERIA,
   SECTOR_LABELS,
-  SOURCE_ROLE_LABELS,
 } from "@/lib/types";
 import {
   ObservationStatusPill,
@@ -96,6 +95,24 @@ function InboxHeader() {
   );
 }
 
+/** Bias label for mid-sentence use — acronyms and proper nouns keep their capital. */
+function biasWords(tag: BiasTag): string {
+  const label = BIAS_TAG_LABELS[tag];
+  if (/^(?:[A-Z]{2}|Gulf|Western|Anti)/.test(label)) return label;
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
+/**
+ * One short source-quality note per row. The credibility chip carries the
+ * level, so the note carries only the caveat: the first bias tag to watch
+ * for, or a quiet all-clear.
+ */
+function sourceQualityNote(source: Source | null): string {
+  if (!source) return "Quick capture — source not yet assessed.";
+  if (source.biasTags.length > 0) return `Watch for ${biasWords(source.biasTags[0])}.`;
+  return "Solid for its type.";
+}
+
 function ObservationRow({
   obs,
   source,
@@ -141,26 +158,8 @@ function ObservationRow({
       </p>
       {advanced ? (
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-ink-faint">
-          {source ? (
-            <>
-              <SourceCredibilityBadge score={source.credibility} />
-              {source.biasTags.length > 0 ? (
-                <span>
-                  {source.biasTags
-                    .slice(0, 2)
-                    .map((t) => BIAS_TAG_LABELS[t])
-                    .join(", ")}
-                </span>
-              ) : null}
-              <span>
-                {source.roles.length > 0
-                  ? source.roles.map((r) => SOURCE_ROLE_LABELS[r]).join(", ")
-                  : "No roles recorded"}
-              </span>
-            </>
-          ) : (
-            <span>Quick capture — credibility and bias not yet assessed</span>
-          )}
+          {source ? <SourceCredibilityBadge score={source.credibility} /> : null}
+          <span>{sourceQualityNote(source)}</span>
           <span
             className={`ml-auto font-mono ${ready ? "text-accent-ink" : ""}`}
             title={`Minimum ${PROMOTION_MIN_CRITERIA} of ${total} promotion criteria to promote — the checklist is the promotion basis; numeric scoring happens at signal promotion`}

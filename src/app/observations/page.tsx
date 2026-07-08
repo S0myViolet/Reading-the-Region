@@ -35,12 +35,21 @@ const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
   ),
 ];
 
-/** First words of a triage rationale — enough to recall the decision. */
-function firstWords(text: string, count = 9): string {
-  const words = text.trim().split(/\s+/);
-  if (words.length <= count) return text.trim();
-  return `${words.slice(0, count).join(" ")}…`;
+/** Signal titles are truncated so the outcome column stays scannable. */
+function truncate(text: string, max = 40): string {
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 1).trimEnd()}…`;
 }
+
+/** Short scannable outcome per triage decision; the rationale lives in the tooltip. */
+const OUTCOME_WORDS: Partial<Record<ObservationStatus, string>> = {
+  unreviewed: "Awaiting triage",
+  needs_more_evidence: "Needs more evidence",
+  archived_noise: "Archived as noise",
+  duplicate: "Duplicate",
+  merged: "Merged",
+  split: "Split into signals",
+};
 
 function LibraryHeader() {
   return (
@@ -63,23 +72,20 @@ function OutcomeCell({
       <Link
         href={`/signals/${obs.promotedSignalId}`}
         className="text-[12px] text-accent-ink hover:underline"
+        title={signal?.title}
       >
-        {signal?.title ?? "Promoted signal"}{" "}
-        <span className="font-mono text-[10.5px]">{obs.promotedSignalId}</span>
+        Became {truncate(signal?.title ?? obs.promotedSignalId)}
       </Link>
     );
   }
-  if (obs.status === "unreviewed") {
-    return <span className="text-[11.5px] text-ink-faint">Awaiting triage in the inbox</span>;
-  }
-  if (obs.triageRationale) {
-    return (
-      <span className="text-[11.5px] text-ink-faint" title={obs.triageRationale}>
-        {firstWords(obs.triageRationale)}
-      </span>
-    );
-  }
-  return <span className="text-[11.5px] text-ink-faint">No rationale recorded</span>;
+  return (
+    <span
+      className="whitespace-nowrap text-[11.5px] text-ink-faint"
+      title={obs.triageRationale ?? undefined}
+    >
+      {OUTCOME_WORDS[obs.status] ?? OBSERVATION_STATUS_LABELS[obs.status]}
+    </span>
+  );
 }
 
 function ObservationTableRow({
