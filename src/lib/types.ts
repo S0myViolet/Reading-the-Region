@@ -941,7 +941,12 @@ export const TERRITORY_MONITORING_LABELS: Record<TerritoryMonitoringStatus, stri
 
 export interface SectorImplicationNote {
   sector: Sector;
+  /** What changes in this sector if the territory grows. */
   note: string;
+  /** Why the change matters for the people and institutions in it. */
+  whyItMatters?: string;
+  /** One concrete decision this suggests. */
+  exampleDecision?: string;
 }
 
 export interface FutureTerritory {
@@ -1033,6 +1038,8 @@ export interface Scenario {
   horizon: ScenarioHorizon;
   scenarioType: ScenarioType;
   corePremise: string;
+  /** One sentence on how this scenario differs from its territory's siblings. */
+  differentiator?: string;
   whatHasChanged: string;
   howPeopleBehave: string;
   howInstitutionsBehave: string;

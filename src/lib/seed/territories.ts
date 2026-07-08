@@ -33,26 +33,50 @@ export const seedTerritories: FutureTerritory[] = [
       {
         sector: "real_estate_urban",
         note: "Demand shifts from investor studios to three-bedroom family homes near schools and stations. Community programming becomes part of running the asset, not just marketing it.",
+        whyItMatters:
+          "Developers who keep building for buyers who leave will hold the wrong stock as families become the market.",
+        exampleDecision:
+          "Weight the next land bid toward family districts near schools and transit, not investor towers.",
       },
       {
         sector: "education_work",
         note: "Schools stop being short stops for expatriate children and become lasting community anchors with alumni networks. Workforce policy must fit settlement alongside Saudisation and Emiratisation targets.",
+        whyItMatters:
+          "A school a family trusts for twelve years is a stronger settlement anchor than any visa category.",
+        exampleDecision:
+          "Plan school capacity and alumni programmes for families who stay a generation, not a contract cycle.",
       },
       {
         sector: "finance_banking_investment",
         note: "Settled families justify mortgages, education savings, retirement and inheritance products that transient customers never did. The banks that earn trust (CON-001) win these relationships.",
+        whyItMatters:
+          "This means banks may need products for families who stay for decades, not workers who leave after a contract.",
+        exampleDecision:
+          "Build a resident product line — mortgage, education savings, retirement — and price it on staying.",
       },
       {
         sector: "hospitality_tourism",
         note: "Residents become primary customers. Hotels can sell memberships, repeat visits and clinic services to people who live ten minutes away, alongside — and in tension with — fly-in tourists.",
+        whyItMatters:
+          "A hotel priced only on tourist arrivals misses the customers who could visit every week.",
+        exampleDecision:
+          "Pilot resident memberships for gyms, clinics and workspaces in one flagship property.",
       },
       {
         sector: "health_wellness_longevity",
         note: "Families who plan to stay need healthcare that stays with them. Wellness shifts from holiday retreats to everyday neighbourhood services, and physician-led, certified care becomes the premium.",
+        whyItMatters:
+          "Long-term patients reward continuity and verified quality; visitors reward novelty. The two need different systems.",
+        exampleDecision:
+          "Invest in neighbourhood clinics with named physicians rather than another destination spa.",
       },
       {
         sector: "retail_commerce",
         note: "Shops built for weekly routines beat shops built for one-off visits. Mall operators who bundle health, fitness and work memberships become gatekeepers to daily life.",
+        whyItMatters:
+          "Footfall from routine beats footfall from spectacle once residents outnumber visitors as spenders.",
+        exampleDecision:
+          "Re-let one anchor unit to daily-life services and measure repeat visits, not first visits.",
       },
     ],
     scenarioIds: ["SCN-001", "SCN-002"],

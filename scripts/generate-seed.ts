@@ -1013,6 +1013,8 @@ interface ScenarioDef {
   territoryId: string;
   horizon: ScenarioHorizon;
   scenarioType: ScenarioType;
+  /** One sentence on how this scenario differs from its territory's siblings. */
+  differentiator: string;
   corePremise: string;
   whatHasChanged: string;
   people: string;
@@ -1034,6 +1036,8 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     territoryId: "TER-001",
     horizon: "mid",
     scenarioType: "conservative",
+    differentiator:
+      "This scenario assumes settlement keeps growing but slower than policy headlines suggest, with a large short-stay workforce persisting alongside rooted families.",
     corePremise:
       "Families keep settling in the Gulf, but more slowly than headline policy suggests. They put down roots where schools and community exist, while high costs keep a large short-stay workforce alongside them.",
     whatHasChanged:
@@ -1064,6 +1068,8 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     territoryId: "TER-001",
     horizon: "long",
     scenarioType: "wildcard",
+    differentiator:
+      "This scenario assumes a shock does the sorting — a crisis reveals who actually settled by testing who stays when conditions worsen.",
     corePremise:
       "A major shock, such as a security crisis or a global financial downturn, tests who really settled. Rooted families stay and deepen their lives, while recently arrived money leaves quickly.",
     whatHasChanged:
@@ -1094,6 +1100,8 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     territoryId: "TER-102",
     horizon: "mid",
     scenarioType: "optimistic",
+    differentiator:
+      "This scenario assumes regional creative work becomes strong enough to sell abroad, not only to satisfy home audiences.",
     corePremise:
       "Regional creativity grows until the Gulf sells its culture abroad instead of only buying culture in. Arabic shows, Gulf design and regional cuisine become exports that other countries pay for.",
     whatHasChanged:
@@ -1124,6 +1132,8 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     territoryId: "TER-102",
     horizon: "near",
     scenarioType: "pessimistic",
+    differentiator:
+      "This scenario assumes the story of regional creativity runs ahead of the skills behind it, and audiences quietly notice the gap.",
     corePremise:
       "Claims about regional creativity grow faster than the actual creative skills behind them. Subsidised prestige, hidden foreign production and cheerleading coverage inflate a bubble that audiences quietly stop believing.",
     whatHasChanged:
@@ -1639,9 +1649,24 @@ const territory: FutureTerritory = {
   whatItChanges: NEW_TERRITORY.whatItChanges,
   whoItAffects: NEW_TERRITORY.whoItAffects,
   sectorImplications: [
-    { sector: "fashion_luxury", note: "Creating with regional designers replaces adapting global products as the way into the market." },
-    { sector: "media_entertainment_creator", note: "Commissioning shifts to Arabic-first originals that can also be exported." },
-    { sector: "culture_arts_heritage", note: "Museums and collections that define regional work become strategic assets." },
+    {
+      sector: "fashion_luxury",
+      note: "Creating with regional designers replaces adapting global products as the way into the market.",
+      whyItMatters: "Imported brand names may not be enough on their own once regional authorship carries status.",
+      exampleDecision: "Give regional creators real authorship, not just campaign placement.",
+    },
+    {
+      sector: "media_entertainment_creator",
+      note: "Commissioning shifts to Arabic-first originals that can also be exported.",
+      whyItMatters: "Translated formats compete on price; original formats build audiences other markets will pay for.",
+      exampleDecision: "Commission Arabic-first originals with export rights in mind instead of licensing another imported format.",
+    },
+    {
+      sector: "culture_arts_heritage",
+      note: "Museums and collections that define regional work become strategic assets.",
+      whyItMatters: "Whoever defines the canon of regional work shapes what gains value across fashion, media and design.",
+      exampleDecision: "Acquire and document living regional designers now, before their work is defined elsewhere.",
+    },
   ],
   scenarioIds: ["SCN-105", "SCN-106"],
   risks: NEW_TERRITORY.risks,
@@ -1668,6 +1693,7 @@ const scenarios: Scenario[] = NEW_SCENARIOS.map((s) => {
     territoryId: s.territoryId,
     horizon: s.horizon,
     scenarioType: s.scenarioType,
+    differentiator: s.differentiator,
     corePremise: s.corePremise,
     whatHasChanged: s.whatHasChanged,
     howPeopleBehave: s.people,

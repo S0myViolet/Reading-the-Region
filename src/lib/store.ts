@@ -231,13 +231,13 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
     }),
     {
       name: "reading-the-region-v1",
-      version: 4,
-      // v4 ships plain meanings on clusters and patterns for the Connect
-      // section. Refresh the data collections on upgrade while keeping the
-      // user's UI preferences and progress.
+      version: 5,
+      // v5 ships scenario differentiators and richer sector implications for
+      // the Interpret section. Refresh the data collections on upgrade while
+      // keeping the user's UI preferences and progress.
       migrate: (persisted, version) => {
         const state = persisted as Partial<IntelligenceStore>;
-        if (version < 4) {
+        if (version < 5) {
           return {
             ...state,
             ...seedData,

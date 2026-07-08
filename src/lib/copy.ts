@@ -134,7 +134,8 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   },
   drivers: {
     pageId: "drivers",
-    purpose: "Drivers explain why multiple patterns are emerging.",
+    purpose:
+      "Use this page to see which forces are shaping the region. A driver is stronger when it explains several patterns, has broad evidence, and has contradictions already checked.",
     recommendedAction: "Use drivers to explain why change is happening, not just describe it.",
     commonMistake:
       "Do not write drivers that merely describe consumer preferences. A driver must explain the deeper force behind change.",
@@ -193,7 +194,7 @@ export const DEFINITIONS: Record<string, string> = {
   cluster: "Signals grouped because they point at the same change.",
   pattern: "A repeated movement across clusters.",
   contradiction: "A tension between two valid but opposing forces.",
-  driver: "An underlying force that explains why patterns are emerging.",
+  driver: "A bigger force causing several patterns to appear at the same time.",
   territory: "A larger direction of change created by converging drivers.",
   scenario: "A plausible future world, not a prediction.",
   implication: "What should be done differently now.",

@@ -13,6 +13,8 @@ export const seedScenarios: Scenario[] = [
     territoryId: "TER-001",
     horizon: "mid",
     scenarioType: "transformational",
+    differentiator:
+      "This scenario assumes belonging grows alongside settlement — the second generation treats the Gulf as home, not as a base.",
     corePremise:
       "Long-term residents put down real roots, and their children grow up feeling the Gulf is home. Governments keep making it easier to stay, institutions rebuild around families who stay, and residents begin to feel that staying is wanted, not just permitted.",
     whatHasChanged:
@@ -109,6 +111,8 @@ export const seedScenarios: Scenario[] = [
     territoryId: "TER-001",
     horizon: "mid",
     scenarioType: "conservative",
+    differentiator:
+      "This scenario assumes visas and services improve faster than belonging, citizenship, and long-term commitment.",
     corePremise:
       "People stay longer, but they never feel the Gulf is home. Visas get renewed, homes get bought and children get schooled, yet identity, savings and long-term plans stay anchored somewhere else.",
     whatHasChanged:

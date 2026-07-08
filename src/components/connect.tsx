@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Shared building blocks for the Advanced Connect section — Cluster Maps,
- * Patterns, and Contradictions. Every Connect page must answer five
- * questions quickly: what is this, what supports it, why it matters, what
- * could weaken it, and what to check next. These blocks carry that structure
- * so the three route families answer them the same way.
+ * Shared building blocks for the Advanced Connect and Interpret sections —
+ * Cluster Maps, Patterns, Contradictions, Drivers, Future Territories, and
+ * Scenarios. Every one of these pages must answer five questions quickly:
+ * what is this, what supports it, why it matters, what could weaken it, and
+ * what to check next. These blocks carry that structure so the route
+ * families answer them the same way.
  */
 
 import Link from "next/link";
@@ -31,6 +32,75 @@ export function AtAGlance({
         </div>
       ))}
     </dl>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Status strip — one quiet line of state under a detail-page title
+// ---------------------------------------------------------------------------
+
+export function StatusStrip({
+  items,
+}: {
+  items: Array<{ text: string; tone?: "accent" | "caution" | "tension" | "neutral" }>;
+}) {
+  const toneClass = {
+    accent: "text-accent-ink",
+    caution: "text-caution",
+    tension: "text-tension",
+    neutral: "text-ink-soft",
+  } as const;
+  return (
+    <p className="flex flex-wrap items-baseline gap-y-1 text-[12px]">
+      {items.map((it, i) => (
+        <span key={`${it.text}-${i}`} className={toneClass[it.tone ?? "neutral"]}>
+          {i > 0 ? <span className="mx-2 text-ink-faint">·</span> : null}
+          {it.text}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Show-all list — first N items, the rest behind one quiet control
+// ---------------------------------------------------------------------------
+
+export function ShowAllList({
+  items,
+  previewCount = 6,
+  noun = "items",
+}: {
+  items: ReactNode[];
+  previewCount?: number;
+  /** Plural noun for the control, e.g. "signals" → "Show all 26 signals". */
+  noun?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, previewCount);
+  const hidden = items.length - Math.min(items.length, previewCount);
+  return (
+    <>
+      {visible}
+      {hidden > 0 && !expanded ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-2 block text-[12px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+        >
+          Show all {items.length} {noun}
+        </button>
+      ) : null}
+      {expanded && hidden > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="mt-2 block text-[12px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+        >
+          Show fewer
+        </button>
+      ) : null}
+    </>
   );
 }
 
@@ -206,7 +276,14 @@ export interface TrailGroup {
   previewCount?: number;
 }
 
-export function RelationshipTrail({ groups }: { groups: TrailGroup[] }) {
+export function RelationshipTrail({
+  groups,
+  expandLabel = "Show full relationship trail",
+}: {
+  groups: TrailGroup[];
+  /** Interpret pages call this the evidence trail — pass a matching label. */
+  expandLabel?: string;
+}) {
   const [expanded, setExpanded] = useState(false);
   const nonEmpty = groups.filter((g) => g.steps.length > 0);
   if (nonEmpty.length === 0) return null;
@@ -252,7 +329,7 @@ export function RelationshipTrail({ groups }: { groups: TrailGroup[] }) {
           onClick={() => setExpanded(true)}
           className="text-[12px] text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
         >
-          Show full relationship trail ({hidden} more)
+          {expandLabel} ({hidden} more)
         </button>
       ) : null}
       {expanded && hidden > 0 ? (
