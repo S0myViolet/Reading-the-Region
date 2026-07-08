@@ -45,26 +45,17 @@ export function compressionStages(d: IntelligenceData): Stage[] {
  * status murmur, not a KPI row. Counts are live.
  */
 export function EvidenceStatusLine({ data }: { data: IntelligenceData }) {
-  const candidates = data.signals.filter((s) => s.reviewStatus !== "validated").length;
-  const valid = data.signals.length - candidates;
+  const valid = data.signals.filter((s) => s.reviewStatus === "validated").length;
   const parts = [
-    `${data.sources.length} sources scanned`,
-    `${data.observations.length} observations`,
-    `${candidates} signal candidates`,
-    `${valid} valid signals`,
-    `${data.clusters.length} cluster maps`,
-    `${data.patterns.length} patterns`,
-    `${data.drivers.length} drivers`,
-    `${data.territories.length} future territories`,
+    `${data.sources.length} sources scanned.`,
+    `${valid} signals kept.`,
+    `${data.clusters.length} clusters formed.`,
+    `${data.patterns.length} patterns detected.`,
+    `${data.territories.length} future direction${data.territories.length === 1 ? "" : "s"} taking shape.`,
   ];
   return (
     <p className="mt-2 max-w-2xl text-[11.5px] leading-relaxed text-ink-faint">
-      {parts.map((p, i) => (
-        <span key={p} className="whitespace-nowrap">
-          {i > 0 ? <span className="px-1 text-line-strong">→</span> : null}
-          {p}
-        </span>
-      ))}
+      {parts.join(" ")}
     </p>
   );
 }

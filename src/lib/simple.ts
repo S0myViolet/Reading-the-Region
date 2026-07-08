@@ -211,6 +211,27 @@ import { IMPLICATION_AUDIENCE_LABELS } from "./types";
  * The Daily Brief: what the system noticed, then where movement centres.
  * Both sentences derive from the live base.
  */
+/** Sector → plain everyday theme, for the daily brief sentence. */
+const PLAIN_SECTOR_THEMES: Partial<Record<keyof typeof SECTOR_WORDS, string>> = {
+  migration_citizenship_belonging: "people staying longer",
+  culture_arts_heritage: "regional culture gaining value",
+  mobility_transport: "transport shaping daily life",
+  technology_ai: "AI and who people trust",
+  fashion_luxury: "what counts as premium",
+  real_estate_urban: "how homes and districts are built",
+  hospitality_tourism: "how hotels and destinations are used",
+  health_wellness_longevity: "health moving into daily places",
+  finance_banking_investment: "how people save and borrow",
+  media_entertainment_creator: "who audiences listen to",
+  retail_commerce: "how people shop",
+  food_beverage_third_places: "where people meet",
+  sports_gaming: "how young people spend time",
+  education_work: "how people learn and work",
+  climate_energy_environment: "heat shaping city life",
+  religion_ritual_ramadan: "how ritual shapes the year",
+  government_policy: "new rules and policies",
+};
+
 export function dailyBrief(data: IntelligenceData): string {
   const opening = todaySentence(data);
   const movers = [...data.signals]
@@ -218,9 +239,17 @@ export function dailyBrief(data: IntelligenceData): string {
     .sort((a, b) => b.scores.momentum - a.scores.momentum)
     .slice(0, 3);
   if (movers.length === 0) return opening;
-  const themes = [...new Set(movers.map((s) => SECTOR_WORDS[s.sectors[0]]))].filter(Boolean);
+  const themes = [
+    ...new Set(
+      movers.map((s) => PLAIN_SECTOR_THEMES[s.sectors[0]] ?? SECTOR_WORDS[s.sectors[0]]?.toLowerCase()),
+    ),
+  ].filter(Boolean);
   if (themes.length === 0) return opening;
-  return `${opening} Movement centres on ${themes.join(", ").toLowerCase()}.`;
+  const list =
+    themes.length === 1
+      ? themes[0]
+      : `${themes.slice(0, -1).join(", ")}, and ${themes[themes.length - 1]}`;
+  return `${opening} Most change today is around ${list}.`;
 }
 
 export interface DoNowAction {

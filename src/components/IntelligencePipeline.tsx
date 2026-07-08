@@ -44,7 +44,7 @@ export function IntelligencePipeline({
       </div>
       {!compact ? (
         <p className="mt-3 text-[11px] text-ink-faint">
-          Each layer reduces noise while increasing meaning. Counts show activity, not conclusions.
+          The system scans many sources, keeps only useful signals, then groups them into bigger patterns. Counts show activity, not conclusions.
         </p>
       ) : null}
     </div>
