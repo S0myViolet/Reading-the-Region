@@ -275,7 +275,7 @@ export function nextStepForSignal(signal: Signal): string {
   if (!zoomComplete(signal).valid)
     return "Complete the four-level zooming analysis before connecting this signal to clusters.";
   if (signal.reviewStatus === "needs_human_review" || signal.reviewStatus === "ai_suggested")
-    return "This signal needs human review before it carries weight in clusters or conclusions.";
+    return "This signal needs human review before it is used in clusters or conclusions.";
   if (signal.scores.evidence <= 2)
     return "Strengthen the evidence: add an independent source before this signal informs a pattern.";
   if (signal.clusterIds.length === 0 && signal.scores.strategicRelevance >= 3)

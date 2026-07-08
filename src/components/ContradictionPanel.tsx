@@ -59,8 +59,8 @@ export function ContradictionPanel({
 export function NoContradictionNote() {
   return (
     <p className="max-w-xl text-[12px] italic leading-relaxed text-ink-faint">
-      No strong contradiction has been identified yet. Treat this conclusion with caution —
-      unopposed conclusions are often under-scanned, not correct.
+      No contradiction linked yet. Check whether there is an opposing reading
+      before relying on this conclusion.
     </p>
   );
 }

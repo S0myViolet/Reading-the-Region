@@ -97,6 +97,6 @@ export function suggestedStage(obs: Observation): TriageSuggestion {
 
 export const TRIAGE_LABELS: Record<TriageSuggestion, string> = {
   noise: "Probably noise",
-  observation: "Keep as observation",
+  observation: "Needs more evidence",
   signal_candidate: "Promote to signal candidate",
 };

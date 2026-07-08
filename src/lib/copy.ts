@@ -105,7 +105,7 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   clusters: {
     pageId: "clusters",
     purpose:
-      "Clusters group signals by shared underlying logic, not by surface topic.",
+      "Clusters group signals that point at the same change, not signals that share a topic.",
     recommendedAction: "Use clusters to find relationships between signals.",
     commonMistake:
       "Do not create clusters called “AI,” “Fashion,” or “Tourism.” Those are topics, not foresight logic.",
@@ -190,7 +190,7 @@ export const DEFINITIONS: Record<string, string> = {
   weakSignal:
     "Early, ambiguous, or niche evidence that may become important if repeated.",
   noise: "Information that is interesting but not strategically meaningful.",
-  cluster: "Signals grouped by shared underlying logic.",
+  cluster: "Signals grouped because they point at the same change.",
   pattern: "A repeated movement across clusters.",
   contradiction: "A tension between two valid but opposing forces.",
   driver: "An underlying force that explains why patterns are emerging.",
@@ -210,7 +210,7 @@ export const RECOMMENDED_WORKFLOW: Array<{ step: number; title: string; detail: 
   { step: 3, title: "Promote strong observations into signals", detail: "Only observations that pass at least 3 promotion criteria." },
   { step: 4, title: "Score and zoom each signal", detail: "Nine scoring dimensions and the four-level zooming method." },
   { step: 5, title: "Connect related signals", detail: "Evidence gains meaning through relationships." },
-  { step: 6, title: "Create cluster candidates", detail: "Group signals by shared underlying logic, not topic." },
+  { step: 6, title: "Create cluster candidates", detail: "Group signals that point at the same change, not the same topic." },
   { step: 7, title: "Validate clusters", detail: "8 signals, 3 sources, 2 sectors, 2 actor types, one contradiction." },
   { step: 8, title: "Detect patterns", detail: "Repeated movements across clusters, tested for breadth, depth, persistence, and coherence." },
   { step: 9, title: "Identify contradictions", detail: "Search for tension between valid opposing forces." },
@@ -286,7 +286,7 @@ export const ONBOARDING_SCREENS: OnboardingScreen[] = [
 /** Core scanning philosophy, shown on the methodology page and overview. */
 export const PHILOSOPHY: Array<{ negative: string; positive: string }> = [
   { negative: "Do not collect trends.", positive: "Collect signals." },
-  { negative: "Do not group by topic.", positive: "Group by underlying logic." },
+  { negative: "Do not group by topic.", positive: "Group by what the signals mean." },
   { negative: "Do not search for confirmation.", positive: "Search for contradiction." },
   { negative: "Do not describe only what is happening.", positive: "Explain why it is happening." },
   { negative: "Do not predict one future.", positive: "Identify plausible futures." },

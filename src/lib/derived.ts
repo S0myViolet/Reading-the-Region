@@ -443,30 +443,30 @@ export function evidenceTriage(d: IntelligenceData): TriageGroup[] {
   const groups: TriageGroup[] = [
     {
       key: "novel_thin",
-      title: "High novelty, low evidence",
-      caption: "One repetition from mattering, one correction from noise.",
+      title: "Promising, but not strong enough yet",
+      caption: "New and interesting, but the evidence is still thin.",
       items: live
         .filter((s) => s.scores.novelty >= 4 && s.scores.evidence <= 2)
         .map((s) => ({
           signal: s,
-          reason: `Novelty ${s.scores.novelty}/5 on evidence ${s.scores.evidence}/5 — needs an independent source before it carries weight.`,
+          reason: `Interesting claim, but still too thin — needs one more solid source before it is used.`,
         })),
     },
     {
       key: "evidence_outruns_reading",
-      title: "Strong evidence, cautious interpretation",
-      caption: "The evidence base has outrun the stated confidence — review the reading.",
+      title: "Evidence is stronger than the current reading",
+      caption: "The evidence has grown; the stated confidence may be out of date.",
       items: live
         .filter((s) => s.scores.evidence >= 4 && s.confidence !== "high")
         .map((s) => ({
           signal: s,
-          reason: `Evidence ${s.scores.evidence}/5 yet ${CONFIDENCE_LABELS[s.confidence].toLowerCase()} — the interpretation may be lagging the base.`,
+          reason: `Evidence ${s.scores.evidence}/5 but still marked ${CONFIDENCE_LABELS[s.confidence].toLowerCase()} — re-read it; the confidence may deserve an upgrade.`,
         })),
     },
     {
       key: "bias_warning",
-      title: "Source bias warning",
-      caption: "Leaning on low-credibility or bias-tagged sourcing.",
+      title: "Source quality is weak",
+      caption: "Leaning on a low-credibility or bias-tagged source.",
       items: live
         .flatMap((s) => {
           const weak = s.sourceIds
@@ -482,8 +482,8 @@ export function evidenceTriage(d: IntelligenceData): TriageGroup[] {
     },
     {
       key: "contradicted",
-      title: "Contradiction detected",
-      caption: "Tension on record and no validating review yet.",
+      title: "Contradiction needs review",
+      caption: "An opposing reading is on record and no one has reviewed it yet.",
       items: live
         .filter((s) => s.contradictionIds.length > 0 && s.reviewStatus !== "validated")
         .map((s) => {
@@ -491,15 +491,15 @@ export function evidenceTriage(d: IntelligenceData): TriageGroup[] {
           return {
             signal: s,
             reason: con
-              ? `Cut against by “${con.name}” and not yet validated.`
-              : "Carries a contradiction and is not yet validated.",
+              ? `An opposing reading is on record (“${con.name}”) — review before relying on it.`
+              : "An opposing reading is on record — review before relying on it.",
           };
         }),
     },
     {
       key: "review_required",
       title: "Human review required",
-      caption: "The methodology will not let these carry weight unreviewed.",
+      caption: "These cannot be used in conclusions until a person reviews them.",
       items: signalsNeedingReview(d).map((s) => ({
         signal: s,
         reason: `Marked ${REVIEW_STATUS_LABELS[s.reviewStatus].toLowerCase()}.`,
