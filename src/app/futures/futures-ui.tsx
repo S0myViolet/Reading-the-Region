@@ -61,6 +61,13 @@ function resolveSignals(ids: string[], signals: Signal[]): Signal[] {
   return signals.filter((s) => wanted.has(s.id));
 }
 
+/** The sentence after the first, for a follow-on line. Null when absent. */
+function secondSentence(text: string): string | null {
+  const first = firstSentence(text);
+  const rest = text.slice(first.length).trim();
+  return rest ? firstSentence(rest) : null;
+}
+
 /**
  * The plain status reading from explainTerritoryStatus — the sentence after
  * the evidence-footing preamble — with methodology vocabulary translated
@@ -117,7 +124,10 @@ interface Story {
   key: string;
   href: string;
   name: string;
-  whyItMatters: string;
+  /** One plain sentence saying what the story claims — the title never carries the whole argument. */
+  plainMeaning: string;
+  /** One plain sentence on why it matters; omitted when the record cannot support it. */
+  whyItMatters: string | null;
   signalIds: string[];
   signalCount: number;
   confidence: ConfidenceLevel;
@@ -153,7 +163,8 @@ export function StoriesSection({
         key: c.id,
         href: `/clusters/${c.id}`,
         name: c.name,
-        whyItMatters: firstSentence(c.clusterStatement),
+        plainMeaning: firstSentence(c.clusterStatement),
+        whyItMatters: secondSentence(c.clusterStatement),
         signalIds: c.signalIds,
         signalCount: c.signalIds.length,
         confidence: c.confidence,
@@ -166,7 +177,10 @@ export function StoriesSection({
         key: p.id,
         href: `/patterns/${p.id}`,
         name: p.name,
-        whyItMatters: firstSentence(p.strategicMeaning),
+        plainMeaning: firstSentence(p.patternStatement),
+        whyItMatters: p.strategicMeaning.trim()
+          ? firstSentence(p.strategicMeaning)
+          : null,
         signalIds: p.keySignalIds,
         signalCount: p.keySignalIds.length,
         confidence: p.confidence,
@@ -193,10 +207,16 @@ export function StoriesSection({
               {story.name}
             </Link>
           </h2>
-          <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-            <span className="text-ink-faint">Why it matters — </span>
-            {story.whyItMatters}
+          <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft line-clamp-2">
+            <span className="text-ink-faint">Plain meaning — </span>
+            {story.plainMeaning}
           </p>
+          {story.whyItMatters ? (
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+              <span className="text-ink-faint">Why it matters — </span>
+              {story.whyItMatters}
+            </p>
+          ) : null}
           <p className="mt-2 text-[12px] text-ink-faint">
             Built on {signalCountWords(story.signalCount)} ·{" "}
             {CONFIDENCE_LABELS[story.confidence]}

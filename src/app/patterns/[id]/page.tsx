@@ -27,6 +27,7 @@ import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { evidenceBackingLine } from "@/components/EvidenceCompression";
 import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
@@ -48,12 +49,14 @@ import {
   type ValidationResult,
 } from "@/lib/validation";
 import { explainContradiction, explainPatternStatus } from "@/lib/explain";
+import { firstSentence } from "@/lib/simple";
 import type {
   ConfidenceLevel,
   Contradiction,
   Pattern,
   ReviewStatus,
   Signal,
+  Source,
 } from "@/lib/types";
 import {
   ACTOR_TYPE_LABELS,
@@ -130,68 +133,142 @@ function PatternStatement({ pattern }: { pattern: Pattern }) {
 // Simple view — the pattern as one readable article, depth on demand
 // ---------------------------------------------------------------------------
 
+/** A labelled plain block: faint inline label, then the sentence(s). */
+function PlainBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+      <span className="text-ink-faint">{label} — </span>
+      {children}
+    </p>
+  );
+}
+
 function SimpleView({
   pattern,
   result,
   linkedContradictions,
+  patternSignals,
+  sources,
   recomputed,
 }: {
   pattern: Pattern;
   result: ValidationResult;
   linkedContradictions: Contradiction[];
+  patternSignals: Signal[];
+  sources: Source[];
   recomputed: boolean;
 }) {
+  // The statement leads with the movement in one sentence, then says where
+  // it shows up (ending in a "We see this across …" sentence). Split it so
+  // the title never carries the whole argument.
+  const statement = pattern.patternStatement.trim();
+  const lead = statement ? firstSentence(statement) : "";
+  const remainder = statement.slice(lead.length).trim();
+  const whereWeSeeIt =
+    remainder ||
+    (pattern.evidenceSummary.trim() ? firstSentence(pattern.evidenceSummary) : "");
+
   return (
-    <div className="space-y-8">
-      <Section heading="Pattern statement">
-        <PatternStatement pattern={pattern} />
-      </Section>
+    <div className="space-y-5">
+      {statement ? (
+        <p className="max-w-2xl text-[14px] leading-relaxed text-ink">
+          <span className="text-ink-faint">The pattern — </span>
+          {lead}
+        </p>
+      ) : (
+        <MissingNote>
+          No pattern statement recorded yet. A pattern must be explainable as
+          one clear movement in a single statement — without it, the coherence
+          test cannot pass.
+        </MissingNote>
+      )}
 
-      <Section heading="Validation status">
-        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <PatternValidationPill result={result} />
-          {recomputed ? <RecomputedNote /> : null}
+      {whereWeSeeIt ? (
+        <PlainBlock label="Where we see it">{whereWeSeeIt}</PlainBlock>
+      ) : null}
+
+      {pattern.strategicMeaning.trim() ? (
+        <PlainBlock label="Why it matters">
+          {firstSentence(pattern.strategicMeaning)}
+        </PlainBlock>
+      ) : (
+        <MissingNote>
+          No strategic meaning recorded yet. State what this movement means
+          for decisions — interpretation, clearly labelled as such.
+        </MissingNote>
+      )}
+
+      {linkedContradictions.length > 0 ? (
+        <div className="max-w-2xl space-y-1.5">
+          {linkedContradictions.slice(0, 2).map((c, i) => (
+            <p key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
+              {i === 0 ? (
+                <span className="text-ink-faint">What could challenge it — </span>
+              ) : null}
+              {explainContradiction(c)}{" "}
+              <Link
+                href={`/contradictions/${c.id}`}
+                className="whitespace-nowrap text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
+              >
+                Explore this tension
+              </Link>
+            </p>
+          ))}
         </div>
-        <Prose>{explainPatternStatus(pattern, result)}</Prose>
-      </Section>
-
-      <Section
-        heading="Strategic meaning"
-        meta={<ProvenanceBadge label="human_interpretation" />}
-      >
-        {pattern.strategicMeaning.trim() ? (
-          <Prose>{pattern.strategicMeaning}</Prose>
-        ) : (
-          <MissingNote>
-            No strategic meaning recorded yet. State what this movement means
-            for decisions — interpretation, clearly labelled as such.
-          </MissingNote>
-        )}
-      </Section>
-
-      <Section heading="What could contradict this">
-        {linkedContradictions.length > 0 ? (
-          <ul className="space-y-2.5">
-            {linkedContradictions.map((c) => (
-              <li key={c.id} className="text-[13px] leading-relaxed text-ink-soft">
-                {explainContradiction(c)}{" "}
-                <Link
-                  href={`/contradictions/${c.id}`}
-                  className="whitespace-nowrap text-[11.5px] text-accent-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent"
-                >
-                  View {c.id}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
+      ) : (
+        <div className="max-w-2xl">
+          <p className="text-[13px] leading-relaxed text-ink-faint">
+            What could challenge it —
+          </p>
           <NoContradictionNote />
-        )}
-      </Section>
+        </div>
+      )}
 
-      <Section heading="Next step">
-        <Prose>{nextStepForPattern(result)}</Prose>
-      </Section>
+      <div className="max-w-2xl">
+        <PlainBlock label="Evidence">
+          {evidenceBackingLine(patternSignals, sources)}
+        </PlainBlock>
+        {patternSignals.length > 0 ? (
+          <details className="mt-1">
+            <summary className="cursor-pointer list-none text-[12px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft">
+              Show evidence
+            </summary>
+            <ul className="mt-2 space-y-1.5">
+              {patternSignals.slice(0, 6).map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={`/signals/${s.id}`}
+                    className="text-[12.5px] leading-relaxed text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-accent-ink"
+                  >
+                    {s.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </div>
+
+      <div className="max-w-2xl space-y-1.5 pt-1">
+        <p className="text-[12px] leading-relaxed text-ink-faint">
+          {explainPatternStatus(pattern, result)}
+          {recomputed ? (
+            <>
+              {" "}
+              <RecomputedNote />
+            </>
+          ) : null}
+        </p>
+        <p className="text-[12px] leading-relaxed text-ink-faint">
+          Next step — {nextStepForPattern(result)}
+        </p>
+      </div>
 
       <DepthHint>
         The four tests in detail, the strong-pattern threshold, key-signal and
@@ -957,6 +1034,8 @@ export default function PatternDetailPage() {
               pattern={pattern}
               result={result}
               linkedContradictions={linkedContradictions}
+              patternSignals={patternSignals}
+              sources={sources}
               recomputed={recomputed}
             />
           ) : (
@@ -964,9 +1043,11 @@ export default function PatternDetailPage() {
           )}
         </div>
 
+        {/* In simple mode the Show evidence disclosure covers the trail
+            plainly, so the right rail stays analyst-and-up. */}
         <aside className="mt-10 space-y-8 lg:mt-0">
-          <RelatedObjectsPanel groups={relatedGroups} />
           <ViewGate min="analyst">
+            <RelatedObjectsPanel groups={relatedGroups} />
             {persistenceFailed ? (
               <PersistenceGuidance pattern={pattern} result={result} />
             ) : null}
