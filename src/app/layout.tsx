@@ -13,8 +13,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
+    // suppressHydrationWarning covers attributes that browser extensions
+    // (Bitdefender's bis_skin_checked, Grammarly, dark-mode injectors)
+    // stamp onto the document before React hydrates. It silences attribute
+    // mismatches on these two elements only — real content mismatches
+    // deeper in the tree still surface.
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>
