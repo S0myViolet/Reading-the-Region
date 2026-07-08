@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * Shared helpers for the Scan Inbox route family (/inbox, /inbox/new,
- * /inbox/[id]). Page-local by design — nothing here is imported outside
- * src/app/inbox/.
+ * Shared helpers for the observation routes: the Scan Inbox family
+ * (/inbox, /inbox/new, /inbox/[id]) and the Observation Library
+ * (/observations). Route-local by design — nothing here is imported
+ * outside those two directories.
  */
 
 import { Pill } from "@/components/badges";
+import { TRIAGE_LABELS, type TriageSuggestion } from "@/lib/pipeline";
 import type {
   ObservationStatus,
   PromotionChecklist,
@@ -36,6 +38,40 @@ export function ObservationStatusPill({ status }: { status: ObservationStatus })
     <Pill tone={OBSERVATION_STATUS_TONES[status]}>
       {OBSERVATION_STATUS_LABELS[status]}
     </Pill>
+  );
+}
+
+/**
+ * The engine's triage suggestion as a quiet chip. Colour is earned:
+ * accent only when the checklist basis recommends promotion; a plain
+ * muted chip for "keep as observation"; bare faint text for probable
+ * noise. The suggestion derives from the promotion checklist alone —
+ * observations carry no numeric scores; scoring happens at promotion.
+ */
+export function TriageSuggestionChip({ suggestion }: { suggestion: TriageSuggestion }) {
+  const title =
+    "Engine suggestion from the promotion checklist — scoring happens at signal promotion";
+  if (suggestion === "signal_candidate") {
+    return (
+      <Pill tone="accent" title={title}>
+        {TRIAGE_LABELS.signal_candidate}
+      </Pill>
+    );
+  }
+  if (suggestion === "observation") {
+    return (
+      <span
+        title={title}
+        className="whitespace-nowrap rounded-[4px] bg-surface-muted px-1.5 py-px text-[11px] leading-[1.4] text-ink-soft"
+      >
+        {TRIAGE_LABELS.observation}
+      </span>
+    );
+  }
+  return (
+    <span title={title} className="whitespace-nowrap text-[11px] text-ink-faint">
+      {TRIAGE_LABELS.noise}
+    </span>
   );
 }
 

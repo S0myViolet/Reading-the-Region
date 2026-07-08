@@ -1,12 +1,17 @@
 "use client";
 
 /**
- * Scan Inbox — where raw observations enter before becoming signals.
- * An observation is not a signal: it earns promotion only through the
- * promotion checklist (minimum 3 of 9 criteria).
+ * Scan Inbox — the evidence triage desk. The page answers one question for
+ * each raw item: is this noise, an observation, a signal candidate, or a
+ * valid signal? An observation is not a signal: it earns promotion only
+ * through the promotion checklist (minimum 3 of 9 criteria), and it carries
+ * no numeric scores — scoring happens at signal promotion.
  *
  * Layout has exactly four layers: header, one control bar, the observation
- * list, and the collapsed page guide. The list is the visual focus.
+ * list, and the collapsed page guide. The list is the visual focus. Advanced
+ * mode adds the triage read per row (suggested stage, source credibility,
+ * bias, roles, checklist basis); the simple rendering stays minimal — the
+ * simple product covers this queue at /finds.
  */
 
 import Link from "next/link";
@@ -20,15 +25,30 @@ import {
   ControlSearch,
   ControlSelect,
 } from "@/components/ControlBar";
+import { SourceCredibilityBadge } from "@/components/badges";
+import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { promotionCriteriaMet } from "@/lib/validation";
-import type { Observation, ObservationStatus } from "@/lib/types";
 import {
+  suggestedStage,
+  TRIAGE_LABELS,
+  type TriageSuggestion,
+} from "@/lib/pipeline";
+import type { Observation, ObservationStatus, Source } from "@/lib/types";
+import {
+  BIAS_TAG_LABELS,
   OBSERVATION_STATUS_LABELS,
   PROMOTION_CRITERIA,
   PROMOTION_MIN_CRITERIA,
+  SECTOR_LABELS,
+  SOURCE_ROLE_LABELS,
 } from "@/lib/types";
-import { ObservationStatusPill, btnPrimary, fmtDate } from "./observation-ui";
+import {
+  ObservationStatusPill,
+  TriageSuggestionChip,
+  btnPrimary,
+  fmtDate,
+} from "./observation-ui";
 
 type FilterKey =
   | "all"
@@ -45,6 +65,15 @@ const STATUS_OPTIONS: Array<{ value: FilterKey; label: string }> = [
   { value: "archived_noise", label: OBSERVATION_STATUS_LABELS.archived_noise },
   { value: "needs_more_evidence", label: OBSERVATION_STATUS_LABELS.needs_more_evidence },
   { value: "duplicate", label: OBSERVATION_STATUS_LABELS.duplicate },
+];
+
+type TriageFilterKey = "all" | TriageSuggestion;
+
+const TRIAGE_FILTER_OPTIONS: Array<{ value: TriageFilterKey; label: string }> = [
+  { value: "all", label: "All suggestions" },
+  { value: "signal_candidate", label: TRIAGE_LABELS.signal_candidate },
+  { value: "observation", label: TRIAGE_LABELS.observation },
+  { value: "noise", label: TRIAGE_LABELS.noise },
 ];
 
 type SortKey = "newest" | "oldest" | "readiness";
@@ -67,9 +96,31 @@ function InboxHeader() {
   );
 }
 
-function ObservationRow({ obs }: { obs: Observation }) {
+function ObservationRow({
+  obs,
+  source,
+  advanced,
+}: {
+  obs: Observation;
+  source: Source | null;
+  advanced: boolean;
+}) {
   const met = promotionCriteriaMet(obs);
+  const total = PROMOTION_CRITERIA.length;
   const ready = met >= PROMOTION_MIN_CRITERIA;
+
+  const metaParts = [obs.sourceName, fmtDate(obs.dateObserved)];
+  if (advanced) {
+    metaParts.push(obs.city ? `${obs.country}, ${obs.city}` : obs.country);
+    if (obs.sectors.length > 0) {
+      metaParts.push(
+        obs.sectors
+          .slice(0, 2)
+          .map((s) => SECTOR_LABELS[s])
+          .join(", "),
+      );
+    }
+  }
 
   return (
     <Link href={`/inbox/${obs.id}`} className="list-row group">
@@ -77,22 +128,47 @@ function ObservationRow({ obs }: { obs: Observation }) {
         <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
           {obs.title}
         </p>
-        <span className="flex shrink-0 items-baseline gap-4">
-          <span
-            className={`text-[11.5px] ${ready ? "text-accent-ink" : "text-ink-faint"}`}
-            title={`${met} of ${PROMOTION_CRITERIA.length} promotion criteria met — minimum ${PROMOTION_MIN_CRITERIA} to promote`}
-          >
-            {met}/{PROMOTION_CRITERIA.length}
-          </span>
+        <span className="flex shrink-0 items-baseline gap-2.5">
+          {advanced ? <TriageSuggestionChip suggestion={suggestedStage(obs)} /> : null}
           <ObservationStatusPill status={obs.status} />
         </span>
       </div>
       <p className="mt-1 text-[12px] text-ink-faint">
-        {obs.sourceName} · {fmtDate(obs.dateObserved)}
+        {metaParts.join(" · ")}
         {obs.status === "promoted" && obs.promotedSignalId ? (
           <span className="text-accent-ink"> · promoted to {obs.promotedSignalId}</span>
         ) : null}
       </p>
+      {advanced ? (
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-ink-faint">
+          {source ? (
+            <>
+              <SourceCredibilityBadge score={source.credibility} />
+              {source.biasTags.length > 0 ? (
+                <span>
+                  {source.biasTags
+                    .slice(0, 2)
+                    .map((t) => BIAS_TAG_LABELS[t])
+                    .join(", ")}
+                </span>
+              ) : null}
+              <span>
+                {source.roles.length > 0
+                  ? source.roles.map((r) => SOURCE_ROLE_LABELS[r]).join(", ")
+                  : "No roles recorded"}
+              </span>
+            </>
+          ) : (
+            <span>Quick capture — credibility and bias not yet assessed</span>
+          )}
+          <span
+            className={`ml-auto font-mono ${ready ? "text-accent-ink" : ""}`}
+            title={`Minimum ${PROMOTION_MIN_CRITERIA} of ${total} promotion criteria to promote — the checklist is the promotion basis; numeric scoring happens at signal promotion`}
+          >
+            meets {met} of {total} criteria
+          </span>
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -100,7 +176,10 @@ function ObservationRow({ obs }: { obs: Observation }) {
 function InboxContent() {
   const hydrated = useHydrated();
   const searchParams = useSearchParams();
+  const mode = useViewMode();
+  const advanced = mode !== "simple";
   const observations = useIntelligenceStore((s) => s.observations);
+  const sources = useIntelligenceStore((s) => s.sources);
 
   const statusParam = searchParams.get("status");
   const [status, setStatus] = useState<FilterKey>(
@@ -108,6 +187,7 @@ function InboxContent() {
   );
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [triageFilter, setTriageFilter] = useState<TriageFilterKey>("all");
   const [sort, setSort] = useState<SortKey>("newest");
 
   const sourceOptions = useMemo(() => {
@@ -118,11 +198,17 @@ function InboxContent() {
     ];
   }, [observations]);
 
+  const sourceById = useMemo(
+    () => new Map(sources.map((s) => [s.id, s])),
+    [sources],
+  );
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = observations.filter((o) => {
       if (status !== "all" && o.status !== (status as ObservationStatus)) return false;
       if (sourceFilter !== "all" && o.sourceName !== sourceFilter) return false;
+      if (triageFilter !== "all" && suggestedStage(o) !== triageFilter) return false;
       if (q && !`${o.title} ${o.description}`.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -131,7 +217,7 @@ function InboxContent() {
       if (sort === "readiness") return promotionCriteriaMet(b) - promotionCriteriaMet(a);
       return b.dateObserved.localeCompare(a.dateObserved);
     });
-  }, [observations, status, sourceFilter, query, sort]);
+  }, [observations, status, sourceFilter, triageFilter, query, sort]);
 
   if (!hydrated) {
     return (
@@ -144,9 +230,23 @@ function InboxContent() {
 
   const unreviewed = observations.filter((o) => o.status === "unreviewed").length;
 
+  const sourceSelect = (
+    <ControlSelect
+      label="Source"
+      value={sourceFilter}
+      onChange={setSourceFilter}
+      options={sourceOptions}
+    />
+  );
+
   return (
     <>
       <InboxHeader />
+      {advanced ? (
+        <p className="-mt-4 mb-6 text-[12.5px] text-ink-faint">
+          Is this noise, an observation, a signal candidate, or a valid signal?
+        </p>
+      ) : null}
       <WalkthroughPanel pageId="inbox" />
 
       <ControlBar
@@ -157,6 +257,7 @@ function InboxContent() {
             </span>
           ) : null
         }
+        more={advanced ? sourceSelect : undefined}
       >
         <ControlSearch value={query} onChange={setQuery} placeholder="Search observations…" />
         <ControlSelect
@@ -165,12 +266,16 @@ function InboxContent() {
           onChange={(v) => setStatus(v as FilterKey)}
           options={STATUS_OPTIONS}
         />
-        <ControlSelect
-          label="Source"
-          value={sourceFilter}
-          onChange={setSourceFilter}
-          options={sourceOptions}
-        />
+        {advanced ? (
+          <ControlSelect
+            label="Suggested stage"
+            value={triageFilter}
+            onChange={(v) => setTriageFilter(v as TriageFilterKey)}
+            options={TRIAGE_FILTER_OPTIONS}
+          />
+        ) : (
+          sourceSelect
+        )}
         <ControlSelect
           label="Sort"
           value={sort}
@@ -191,14 +296,19 @@ function InboxContent() {
         />
       ) : rows.length === 0 ? (
         <EmptyState
-          message="Nothing matches the current filters. Statuses are triage decisions made on each observation's detail page — review unreviewed observations, or capture new raw material from scanning."
+          message="Nothing matches the current filters. Statuses are triage decisions made on each observation's detail page, and the suggested stage is the engine's read of the promotion checklist — review unreviewed observations, or capture new raw material from scanning."
           actionLabel="Add observation"
           actionHref="/inbox/new"
         />
       ) : (
         <section aria-label="Observations">
           {rows.map((o) => (
-            <ObservationRow key={o.id} obs={o} />
+            <ObservationRow
+              key={o.id}
+              obs={o}
+              source={o.sourceId ? sourceById.get(o.sourceId) ?? null : null}
+              advanced={advanced}
+            />
           ))}
         </section>
       )}

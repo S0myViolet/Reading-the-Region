@@ -16,11 +16,13 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { SectorTags, SourceBiasTags } from "@/components/tags";
 import { EntityLink, RelatedObjectsPanel } from "@/components/EntityLink";
 import { TextArea, TextInput } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { suggestedStage, TRIAGE_LABELS } from "@/lib/pipeline";
 import {
   canPromoteObservation,
   promotionCriteriaMet,
@@ -92,6 +94,7 @@ function TriagePanel({ obs }: { obs: Observation }) {
   const met = promotionCriteriaMet(obs);
   const total = PROMOTION_CRITERIA.length;
   const promotable = canPromoteObservation(obs);
+  const suggestion = suggestedStage(obs);
 
   function openAction(key: TriageActionKey) {
     setActiveAction((cur) => (cur === key ? null : key));
@@ -128,6 +131,24 @@ function TriagePanel({ obs }: { obs: Observation }) {
       <p className="mt-0.5 text-[12px] text-ink-faint">
         Tick the promotion criteria that genuinely hold, then decide.
       </p>
+
+      <ViewGate min="analyst">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink-soft">
+          The engine&apos;s read:{" "}
+          <span
+            className={`font-medium ${
+              suggestion === "signal_candidate" ? "text-accent-ink" : "text-ink"
+            }`}
+          >
+            {TRIAGE_LABELS[suggestion]}
+          </span>{" "}
+          — {met} of {total} criteria.
+        </p>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-ink-faint">
+          Observations carry no numeric scores — scoring completes at signal
+          promotion.
+        </p>
+      </ViewGate>
 
       <div className="mt-4 space-y-2">
         {PROMOTION_CRITERIA.map((c) => (
@@ -360,7 +381,12 @@ export default function ObservationDetailPage() {
       />
       <PageHeader
         title={obs.title}
-        actions={<ObservationStatusPill status={obs.status} />}
+        actions={
+          <>
+            <PipelineStageBadge stage="observation" />
+            <ObservationStatusPill status={obs.status} />
+          </>
+        }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
