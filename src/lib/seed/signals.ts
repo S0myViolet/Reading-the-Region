@@ -13,9 +13,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-001",
-    title: "Regional menswear labels are re-cutting Gulf heritage garments for contemporary wardrobes",
+    title: "Gulf menswear labels are redesigning heritage garments for everyday wear",
     description:
-      "A cohort of independent menswear labels in Dubai and Riyadh is releasing thobes, bishts and sirwal re-worked in technical fabrics, slimmer silhouettes and streetwear styling, sold direct-to-consumer and through regional concept stores. The pieces are positioned as daily wear for young Gulf men, priced between streetwear and entry luxury, and are selling through quickly on small drops.",
+      "Independent menswear labels in Dubai and Riyadh are redesigning thobes, bishts and sirwal. They use technical fabrics, slimmer cuts and streetwear styling. They sell directly to customers and through regional concept stores. The pieces are marketed as daily wear for young Gulf men. Prices sit between streetwear and entry-level luxury. Small production runs are selling out within days.",
     dateObserved: "2025-10-06",
     eventDate: "2025-09-20",
     sourceIds: ["SRC-006", "SRC-005"],
@@ -44,16 +44,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "Heritage dress is moving from ceremonial category to living design language. When identity garments become everyday fashion, regional identity becomes a commercial design input — and the reference point for aspiration starts shifting from imported luxury to regional authorship.",
+      "Young Gulf men are starting to wear heritage garments as everyday clothes, not only for ceremonies. That gives regional designers a commercial market for Gulf identity. Aspiration may shift from imported luxury brands to regional labels.",
     zoom: {
       whatHappened:
-        "Between September and December 2025, at least four independent menswear labels in Dubai and Riyadh released collections re-cutting the thobe, bisht and sirwal in technical fabrics and contemporary silhouettes, stocked through regional concept stores and direct-to-consumer channels; several drops sold out within days.",
+        "Between September and December 2025, at least four independent menswear labels in Dubai and Riyadh released redesigned thobes, bishts and sirwal. The pieces used technical fabrics and contemporary cuts. They were stocked in regional concept stores and sold directly to customers. Several drops sold out within days.",
       behaviourChanged:
-        "Young Gulf men are wearing heritage-derived pieces in everyday, mixed settings — offices, coffee houses, travel — rather than reserving national dress for formal occasions, and are choosing regional labels over imported streetwear for identity-signalling purchases.",
+        "Young Gulf men now wear heritage-derived pieces at the office, in coffee houses and while travelling. They no longer save national dress for formal occasions. For purchases that signal identity, they are choosing regional labels over imported streetwear.",
       systemChanged:
-        "The cultural-production and luxury systems are absorbing regional identity as a design input: buyers at concept stores are allocating shelf space to Gulf labels, stylists are mixing heritage cuts into editorial work, and 'regional' is becoming a premium claim rather than a craft niche.",
+        "The fashion and luxury system is starting to treat Gulf identity as a design input. Concept-store buyers are giving shelf space to Gulf labels. Stylists are mixing heritage cuts into editorial work. 'Regional' is becoming a premium claim, not a craft niche.",
       futurePlausible:
-        "If this continues, a recognisable contemporary Gulf design language could consolidate into an export category within five years — with regional labels competing for the identity-wardrobe spend that global luxury houses currently capture during Ramadan and Eid seasons.",
+        "If this continues, regional labels could build a recognisable Gulf design style within five years and win the Ramadan and Eid spending that global luxury houses capture today.",
       futureIsSpeculative: true,
     },
     systems: {
@@ -72,16 +72,16 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Regional concept retail becomes the gatekeeper channel for youth luxury spend, shifting negotiating power away from global-brand flagships.",
-      "Luxury mall operators may need Gulf-designer space as an anchor of cultural credibility, not a token corner.",
-      "Heritage-garment tailoring skills become a contested talent pool as labels scale.",
+      "Regional concept stores could become the main channel for young people's luxury spending, weakening global-brand flagships.",
+      "Mall operators may need real space for Gulf designers to stay culturally credible, not a token corner.",
+      "As labels grow, they will compete for the small pool of tailors skilled in heritage garments.",
     ],
     assumptions: [
-      "Sell-through reported by creators reflects genuine consumer demand rather than deliberately scarce drop sizes.",
-      "The behaviour extends beyond a Dubai–Riyadh creative circle to broader middle-class youth.",
+      "Reported sell-outs reflect real demand, not deliberately small production runs.",
+      "The trend reaches middle-class youth broadly, not just a creative circle in Dubai and Riyadh.",
     ],
     openQuestions: [
-      "Do repeat purchase rates hold once novelty fades, or is this a single-wardrobe-moment phenomenon?",
+      "Will buyers come back once the novelty fades, or is this a one-off purchase?",
       "Will womenswear see an equivalent movement, and through which garments?",
     ],
     contradictionIds: ["CON-002"],
@@ -92,7 +92,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: ["IND-004"],
     tags: ["heritage-design", "menswear", "thobe", "regional-identity", "youth-culture"],
     humanNotes:
-      "Promoted from OBS-001. Discovery came from the TikTok panel (low credibility) but the culture magazine's independent profiles of two labels lifted evidence to 3. Watch for a third independent source — retail sales data would move this to validated.",
+      "Promoted from OBS-001. The first sighting came from the TikTok panel, a low-credibility source. The culture magazine's independent profiles of two labels lifted evidence to 3. A third independent source — retail sales data — would move this to validated.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "human_reviewed",
@@ -105,9 +105,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-002",
-    title: "Gulf hotels are adding longevity clinics and clinical diagnostics to their properties",
+    title: "Gulf hotels are adding longevity clinics and medical diagnostics",
     description:
-      "Hotel and resort operators in Dubai and Riyadh are installing physician-led longevity clinics — diagnostic screening, biomarker panels, supervised programmes — as permanent facilities inside properties, sold as multi-day packages. At least three operator announcements since November 2025, with trade coverage reporting further operators scoping clinical partners.",
+      "Hotel and resort operators in Dubai and Riyadh are building physician-led longevity clinics inside their properties. The clinics offer diagnostic screening, biomarker panels and supervised health programmes, sold as multi-day packages. They are permanent facilities, not seasonal retreats. At least three operators have announced clinics since November 2025. Trade coverage reports more operators looking for clinical partners.",
     dateObserved: "2026-01-20",
     eventDate: "2026-01-12",
     sourceIds: ["SRC-009", "SRC-003", "SRC-002"],
@@ -136,16 +136,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "Hospitality is acquiring clinical infrastructure — a different regulatory, talent and trust proposition from spa wellness. If the Gulf captures fly-in longevity demand, hotels become health institutions with beds, and the tourism product shifts from days-of-stay to years-of-life.",
+      "Hotels are adding clinics and diagnostics, which may turn them into regular health and lifestyle destinations. Running a clinic demands different regulation, staff and trust than running a spa. If Gulf hotels win guests who fly in for health checks, their business shifts from selling nights to supporting guests' health over years.",
     zoom: {
       whatHappened:
-        "Between November 2025 and February 2026, three Gulf hotel operators announced permanent physician-led longevity clinics inside flagship properties in Dubai and Riyadh, offering diagnostic screening and multi-day medical programmes; trade press reports further operators in clinical-partner negotiations.",
+        "Between November 2025 and February 2026, three Gulf hotel operators announced permanent physician-led longevity clinics inside flagship properties in Dubai and Riyadh. The clinics offer diagnostic screening and multi-day medical programmes. Trade press reports more operators negotiating with clinical partners.",
       behaviourChanged:
-        "Affluent guests are booking hotel stays around diagnostics and supervised health programmes rather than leisure alone, and operators are re-training staff and re-purposing floor space from spa treatments to clinical delivery.",
+        "Wealthy guests are booking hotel stays around health checks and supervised programmes, not leisure alone. Operators are retraining staff and converting spa space into clinical space.",
       systemChanged:
-        "The tourism and healthcare systems are converging: hospitality assets are entering regulated clinical territory, competing for physicians and health licences, while health spending migrates into leisure venues — a structural blend rather than a packaging exercise.",
+        "Tourism and healthcare are merging inside hotels. Hotels are entering regulated medical territory and competing for doctors and health licences. Health spending is moving into leisure venues. This is a structural change, not a marketing repackage.",
       futurePlausible:
-        "If this continues, the Gulf could position itself within five years as a scheduled-diagnostics destination for South Asia, Africa and Europe — with hotel-clinics competing on verified clinical outcomes rather than amenity lists, and repeat health visits replacing one-off leisure trips.",
+        "If this continues, the Gulf could become a destination for scheduled health checks from South Asia, Africa and Europe within five years, with hotel clinics competing on verified medical results and repeat health visits replacing one-off holidays.",
       futureIsSpeculative: true,
     },
     systems: {
@@ -165,16 +165,16 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Hotel valuation models start pricing clinical capability and health-licence portfolios alongside beds and F&B.",
-      "A trust hierarchy emerges between physician-led clinics and cosmetic 'longevity-washing', requiring third-party verification.",
-      "Medical-tourism authorities gain a new asset class to regulate and market.",
+      "Hotel valuations may start to count clinics and health licences alongside rooms and restaurants.",
+      "Guests will need help telling doctor-led clinics from rebranded spas, which creates a role for independent verification.",
+      "Medical-tourism authorities get a new type of facility to regulate and promote.",
     ],
     assumptions: [
-      "Announced clinics will actually open with clinical staffing rather than remaining rebranded spas.",
+      "The announced clinics will open with real medical staff, not remain rebranded spas.",
     ],
     openQuestions: [
-      "Which regulator owns a clinic inside a hotel — tourism or health — and how quickly can licensing adapt?",
-      "Is demand primarily international fly-in or resident repeat-use?",
+      "Who regulates a clinic inside a hotel — the tourism authority or the health authority — and how fast can licensing adapt?",
+      "Do most customers fly in from abroad, or are they residents coming back regularly?",
     ],
     contradictionIds: ["CON-003"],
     relatedSignalIds: ["SIG-007", "SIG-011"],
@@ -184,7 +184,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["longevity", "hotel-clinics", "diagnostics", "medical-tourism", "wellness"],
     humanNotes:
-      "Promoted from OBS-002; OBS-010 (duplicate) folded in as momentum evidence. Evidence held at 3 because two of three sources are operator PR — the consulting outlook is the only independent corroboration. Needs an opening, not an announcement, to move up.",
+      "Promoted from OBS-002; the duplicate OBS-010 was folded in as momentum evidence. Evidence stays at 3 because two of the three sources are operator press releases. The consulting outlook is the only independent corroboration. A clinic actually opening, not another announcement, would raise the score.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "needs_human_review",
@@ -197,9 +197,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-003",
-    title: "Families are relocating to Dubai on long-term golden visas, driving schooling and family-housing demand",
+    title: "Families are relocating to Dubai on long-term golden visas",
     description:
-      "Households — not individual workers — are relocating to Dubai on 10-year golden visas, producing measurable pressure on school places in family districts, longer tenancy negotiations, and rising demand for three-bedroom stock. Policy data, newspaper reporting and consulting survey work all point in the same direction: relocation decisions are being made on a settlement horizon.",
+      "Whole households, not individual workers, are relocating to Dubai on 10-year golden visas. School places in family districts are under measurable pressure. Tenancy negotiations are getting longer, and demand for three-bedroom homes is rising. Policy data, newspaper reporting and consulting survey work all point the same way: families are moving with the intention to stay.",
     dateObserved: "2025-11-05",
     eventDate: "2025-10-20",
     sourceIds: ["SRC-001", "SRC-004", "SRC-002"],
@@ -228,16 +228,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "immediate",
     confidence: "high",
     whyItMatters:
-      "The unit of migration is shifting from the rotating worker to the settling family. Nearly every consumer institution in the Gulf — developers, schools, banks, retailers, healthcare — was built for a transient population; a settlement population invalidates core assumptions in all of them.",
+      "Migration to Dubai is shifting from rotating workers to settling families. Developers, schools, banks, retailers and healthcare providers built their businesses for people who leave after a few years. A population that stays for decades breaks core assumptions in all of them.",
     zoom: {
       whatHappened:
-        "Through autumn 2025, Dubai school groups reported lengthening waiting lists in family districts, agents reported rising three-bedroom renewals and longer requested tenancies, and official policy data showed sustained growth in 10-year visa issuance to families rather than single applicants.",
+        "Through autumn 2025, Dubai school groups reported longer waiting lists in family districts. Letting agents reported more three-bedroom renewals and requests for longer tenancies. Official policy data showed sustained growth in 10-year visas issued to families rather than single applicants.",
       behaviourChanged:
-        "Relocating households are making settlement-horizon commitments: multi-year school enrolment, longer leases or purchases, and moving ageing parents — decisions a two-year-contract expatriate model does not produce.",
+        "Relocating families are making long-term commitments: multi-year school enrolment, longer leases or home purchases, and moving ageing parents to Dubai. A model built around people leaving after a few years does not produce these decisions.",
       systemChanged:
-        "The migration system is being re-architected from labour rotation to population settlement, pulling the housing, education and family systems with it: demand shifts from studios and flats near business districts to family stock near schools, and institutions face customers with decade-long time horizons.",
+        "Dubai's migration system is shifting from labour rotation to family settlement, and housing, education and family life are shifting with it. Demand is moving from studios near business districts to family homes near schools. Schools, banks and developers now face customers who plan in decades, not contract cycles.",
       futurePlausible:
-        "If this continues, Dubai's core consumer economy reorganises around permanence within a decade — multigenerational households, alumni networks of local schools, retirement decisions made in the Gulf — and other GCC states compete on the same terms rather than on salary packages alone.",
+        "If this continues, Dubai's consumer economy reorganises around permanence within a decade — multigenerational households, school alumni networks, retirement in the Gulf — and other GCC states compete for settlers, not just salaried workers.",
       futureIsSpeculative: false,
     },
     systems: {
@@ -257,17 +257,17 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Residential pipelines weighted to studio/one-bed investor stock face a structural mismatch with settlement demand.",
-      "Education groups become strategic infrastructure players, with waiting lists acting as a leading indicator for district growth.",
-      "Financial institutions can underwrite decade-horizon products (mortgages, education savings, retirement) for a population they previously treated as transient.",
+      "Developers with pipelines full of studios and one-bedroom investor flats are building the wrong stock for settling families.",
+      "School groups become strategic infrastructure, and their waiting lists become an early indicator of district growth.",
+      "Banks can offer mortgages, education savings and retirement products to families they once treated as short-term residents.",
     ],
     assumptions: [
-      "Visa policy remains stable or continues to liberalise rather than tightening after an economic shock.",
-      "Families granted long-term residency behave long-term — the paperwork horizon translates into behavioural commitment.",
+      "Visa policy stays stable or loosens further, rather than tightening after an economic shock.",
+      "Families with 10-year visas actually behave long-term — the visa translates into real commitment.",
     ],
     openQuestions: [
-      "What share of golden-visa holders bring school-age children versus using the visa as an option-to-settle?",
-      "Does settlement extend to retirement in place, or do families still exit at the end of working life?",
+      "How many golden-visa holders bring school-age children, and how many hold the visa as a backup option?",
+      "Do families stay into retirement, or still leave when working life ends?",
     ],
     contradictionIds: ["CON-003"],
     relatedSignalIds: ["SIG-010", "SIG-011"],
@@ -277,7 +277,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: ["IND-001"],
     tags: ["golden-visa", "settlement", "family-housing", "schools", "permanence"],
     humanNotes:
-      "Strongest signal on the board: policy data, independent reporting and survey work converge. Anchor evidence for cluster CLU-003 and the Permanent Gulf territory. Keep separating issuance data (strong) from belonging claims (weak).",
+      "Strongest signal on the board: policy data, independent reporting and survey work all agree. It anchors cluster CLU-003 and the Permanent Gulf territory. Keep the strong visa-issuance data separate from the weaker claims about belonging.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "validated",
@@ -290,9 +290,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-004",
-    title: "Saudi cultural investment is converting into measurable creative-economy employment",
+    title: "Saudi cultural spending is creating real creative-sector jobs",
     description:
-      "State-backed cultural seasons, commissions and festival programmes in Saudi Arabia are now producing a visible creative labour market: production companies scaling headcount, recurring commissioning calendars, and salary competition for experienced Saudi producers and technical crafts. The spend has moved from event-buying to institution-building — training programmes, venues, year-round commissioning bodies.",
+      "Saudi Arabia's state-backed cultural seasons, commissions and festivals now support a visible creative job market. Production companies are hiring at scale. Commissioning calendars repeat year after year. Experienced Saudi producers and technical crews receive competing salary offers. The spending has moved from buying events to building institutions: training programmes, venues and year-round commissioning bodies.",
     dateObserved: "2025-09-14",
     eventDate: "2025-09-01",
     sourceIds: ["SRC-014", "SRC-008", "SRC-004"],
@@ -321,30 +321,30 @@ export const seedSignals: Signal[] = [
     timeHorizon: "immediate",
     confidence: "high",
     whyItMatters:
-      "Vision 2030's cultural spending is crossing the line from spectacle to labour market. A creative economy with career paths changes who young Saudis can become — and gives regional brands, media and tourism a domestic production base instead of an imported one.",
+      "Young Saudis can now build careers in the creative sector, not just attend state-funded events. That changes who they can become. It also gives regional brands, media and tourism a Saudi production base instead of an imported one.",
     zoom: {
       whatHappened:
-        "Through 2025, Saudi cultural seasons and commissions published recurring year-round programming calendars, cultural bodies expanded training schemes, and interview and press evidence recorded production companies hiring at scale, with salary competition for experienced Saudi creative and technical staff.",
+        "Through 2025, Saudi cultural seasons and commissions published recurring year-round programming calendars. Cultural bodies expanded training schemes. Interviews and press reports recorded production companies hiring at scale, with salary competition for experienced Saudi creative and technical staff.",
       behaviourChanged:
-        "Young Saudis are choosing creative-sector employment as a credible career rather than a hobby or exile path, and production firms are structuring permanent teams around a dependable commissioning pipeline instead of staffing per event.",
+        "Young Saudis are choosing creative jobs as a credible career, not a hobby or a reason to move abroad. Production firms are building permanent teams around a dependable pipeline of commissions instead of staffing event by event.",
       systemChanged:
-        "The cultural-production system is being industrialised by the state: culture is planned, budgeted and measured as an economic sector, which rewires the labour system (new occupations, Saudisation pressure in creative roles) and the governance system (culture as delivery portfolio, not heritage custody).",
+        "The state is turning cultural production into an industry. Culture is now planned, budgeted and measured as an economic sector. The job market gains new occupations and Saudisation pressure in creative roles. Government treats culture as a portfolio to deliver, not only heritage to protect.",
       futurePlausible:
-        "If this continues, Saudi Arabia could hold the Gulf's deepest creative labour pool by 2030, exporting production capacity across the region — provided commissioning survives budget cycles and the training bottleneck in technical crafts is closed.",
+        "If this continues, Saudi Arabia could hold the Gulf's deepest creative workforce by 2030 and export production capacity across the region — provided commissioning survives budget cycles and training closes the shortage of technical craft skills.",
       futureIsSpeculative: false,
     },
     systems: null,
     potentialImplications: [
-      "Regional brands and platforms gain a Saudi production base, reducing dependence on Beirut, Cairo and London supply chains.",
-      "Creative-labour costs rise as state demand competes with the private sector for the same limited talent pool.",
-      "Cultural authorship becomes a national capability question, tying creative careers to Saudisation policy.",
+      "Regional brands and platforms gain a Saudi production base, reducing reliance on Beirut, Cairo and London.",
+      "Creative salaries rise as state projects and private firms compete for the same small talent pool.",
+      "Who makes Saudi culture becomes a national policy question, tying creative careers to Saudisation rules.",
     ],
     assumptions: [
-      "State cultural budgets persist at scale through oil-price cycles rather than being the first discretionary cut.",
+      "State cultural budgets survive oil-price cycles instead of being the first spending cut.",
     ],
     openQuestions: [
-      "How much of the new employment is durable institutional capacity versus event-cycle contracting?",
-      "Can training pipelines close the technical-crafts bottleneck flagged in interview evidence (see OBS-014)?",
+      "How many of the new jobs are permanent, and how many are short contracts tied to event seasons?",
+      "Can training programmes close the shortage of technical craft skills flagged in interview evidence (see OBS-014)?",
     ],
     contradictionIds: [],
     relatedSignalIds: ["SIG-001", "SIG-008", "SIG-012"],
@@ -354,7 +354,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: ["IND-002"],
     tags: ["vision-2030", "creative-economy", "cultural-investment", "saudisation", "labour-market"],
     humanNotes:
-      "Event-calendar and PR sources carry gulf_boosterism; weight rests on the producer interview and newspaper corroboration. The unreviewed Saudisation observation (OBS-014) is a candidate extension on the labour dimension.",
+      "The event-calendar and PR sources lean promotional (gulf_boosterism). The weight rests on the producer interview and newspaper corroboration. The unreviewed Saudisation observation (OBS-014) could extend the labour-market side.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "validated",
@@ -369,7 +369,7 @@ export const seedSignals: Signal[] = [
     id: "SIG-005",
     title: "Arabic-language podcasts are becoming a mainstream commuting habit",
     description:
-      "Platform listening data shows sustained growth in Arabic-language podcast hours in Saudi Arabia and the UAE, concentrated in weekday morning and evening windows that map onto commuting. Interview-format shows in Gulf dialects dominate the top charts, and advertisers are shifting brand budgets into host-read Arabic formats.",
+      "Platform data shows Arabic-language podcast listening growing steadily in Saudi Arabia and the UAE. Listening peaks on weekday mornings and evenings, matching commute times. Interview shows in Gulf dialects dominate the top charts. Advertisers are moving brand budgets into host-read Arabic formats.",
     dateObserved: "2026-02-11",
     eventDate: "2026-02-04",
     sourceIds: ["SRC-007", "SRC-016"],
@@ -398,28 +398,28 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "A daily Arabic-language attention window is forming in the commute — long-form, host-trusted, dialect-native. That is a different persuasion environment from social video, and it is being colonised by regional voices rather than translated global content.",
+      "Gulf commuters now spend a daily window with long Arabic audio from hosts they trust. That is a different persuasion environment from social video. Regional voices, not translated global content, are filling it.",
     zoom: {
       whatHappened:
-        "Platform data published in early 2026 showed double-digit year-on-year growth in Arabic podcast listening hours in KSA and the UAE, with weekday peaks at 07:00–09:00 and 17:00–19:00 and Gulf-dialect interview shows holding most top-chart positions.",
+        "Platform data published in early 2026 showed double-digit annual growth in Arabic podcast listening hours in Saudi Arabia and the UAE. Listening peaked on weekdays at 07:00–09:00 and 17:00–19:00. Gulf-dialect interview shows held most top-chart positions.",
       behaviourChanged:
-        "Commuters are defaulting to long-form Arabic audio in the car and on new metro journeys — replacing music radio and English-language content with regional hosts they follow personally, episode after episode.",
+        "Commuters are choosing long Arabic audio in the car and on new metro journeys. They are replacing music radio and English-language content with regional hosts they follow personally, episode after episode.",
       systemChanged:
-        "The media and attention systems are re-localising: a daily long-form attention slot is shifting from broadcast radio and global platforms to regional creator networks, moving advertising money, talent and editorial agenda-setting into Arabic-first hands.",
+        "The daily media habit is moving from broadcast radio and global platforms to regional podcast networks. Advertising money, talent and agenda-setting are shifting into Arabic-first hands.",
       futurePlausible:
-        "If this continues, Gulf-dialect audio could become the primary daily media layer for young professionals — making podcast hosts the region's trusted explainers and giving brands and institutions a native channel that bypasses both legacy media and Western platforms' editorial norms.",
+        "If this continues, Gulf-dialect audio could become young professionals' main daily media — making podcast hosts the region's trusted explainers and giving brands and institutions a native channel that bypasses both legacy media and Western platforms.",
       futureIsSpeculative: true,
     },
     systems: null,
     potentialImplications: [
-      "Host-read Arabic audio becomes a premium trust channel for banks, developers and government communicators.",
-      "Metro expansion multiplies hands-free listening minutes, coupling media habits to transport infrastructure.",
+      "Banks, developers and government communicators may treat host-read Arabic audio as a premium, high-trust channel.",
+      "Metro expansion adds hands-free listening time, tying media habits to transport infrastructure.",
     ],
     assumptions: [
-      "Platform-reported growth reflects genuine listener behaviour rather than selective disclosure by a party with a growth story to tell.",
+      "The platform's growth figures reflect real listening, not selective disclosure by a company with a growth story to sell.",
     ],
     openQuestions: [
-      "How concentrated is listening across a handful of hit shows — is this a creator economy or a two-show phenomenon?",
+      "Is listening spread across many shows, or concentrated in two or three hits?",
     ],
     contradictionIds: [],
     relatedSignalIds: ["SIG-010", "SIG-012"],
@@ -429,7 +429,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["arabic-audio", "podcasts", "commuting", "attention", "creator-economy"],
     humanNotes:
-      "Single platform-data source plus desk memo; the platform has an interest in the growth narrative. Held at evidence 3 pending an independent listenership survey.",
+      "One platform-data source plus a desk memo, and the platform benefits from the growth narrative. Evidence held at 3 until an independent listener survey appears.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "human_reviewed",
@@ -442,9 +442,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-006",
-    title: "AI adoption in Gulf retail banks is triggering customer demand for human verification",
+    title: "Gulf bank customers are demanding human review of AI decisions",
     description:
-      "Gulf retail banks are deploying AI assistants and automated credit decisioning at pace, in line with national AI strategies. The counter-signal: equity research and youth survey data both record rising demand for human confirmation of AI-made decisions — more branch appointments, complaints requesting human review, and survey verbatims describing distrust of unexplained automated refusals.",
+      "Gulf retail banks are rolling out AI assistants and automated credit decisions quickly, in line with national AI strategies. At the same time, equity research and youth survey data record customers asking for a person to confirm what the AI decided. Branch appointments are rising. Complaints request human review. Survey respondents describe distrust of automated refusals that come without explanation.",
     dateObserved: "2026-03-09",
     eventDate: "2026-02-25",
     sourceIds: ["SRC-013", "SRC-011", "SRC-004"],
@@ -473,16 +473,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "Customers are not resisting AI — they are pricing it. The demand is for a human layer on top of automation: confirmation, explanation, accountability. That reframes 'human service' from a cost to be automated away into a product attribute that can be sold, and it will not stay confined to banking.",
+      "Bank customers are not rejecting AI. They want a person to confirm, explain and take responsibility for important automated decisions. That turns human service from a cost to cut into a product banks can sell. The same demand is likely to spread beyond banking.",
     zoom: {
       whatHappened:
-        "In Q1 2026, an investment-bank sector note recorded Gulf retail banks' accelerating AI deployment alongside rising branch appointment bookings and complaint volumes requesting human review of automated decisions; the quarterly youth survey logged matching verbatims about unexplained AI refusals.",
+        "In the first quarter of 2026, an investment-bank sector note recorded Gulf retail banks accelerating AI deployment. The same note flagged rising branch appointment bookings and complaints asking for human review of automated decisions. The quarterly youth survey logged matching comments about unexplained AI refusals.",
       behaviourChanged:
-        "Customers accept AI for speed but escalate to humans for stakes: they complete routine tasks with assistants, then book branch time or file complaints to have credit and account decisions confirmed, explained or overturned by a person.",
+        "Customers use AI for routine tasks because it is fast. For decisions that matter, they book branch appointments or file complaints to get a person to confirm, explain or overturn the outcome.",
       systemChanged:
-        "The trust system inside finance is bifurcating: transactional trust is transferring to machines while accountability trust remains stubbornly human — forcing banks to re-architect service models around a verification layer rather than a pure automation curve, and drawing regulator attention to explainability.",
+        "Trust in banking is splitting in two. Customers trust machines with transactions but still want a person accountable for decisions. Banks must design a human verification layer instead of a pure automation path, and regulators are starting to look at explainability.",
       futurePlausible:
-        "If this continues, 'a named human confirms this' becomes a chargeable service tier across Gulf banking, insurance and government services — and institutions that automated away their human capacity may find themselves buying it back at premium cost.",
+        "If this continues, 'a named person confirms this' becomes a paid service tier across Gulf banking, insurance and government services — and institutions that cut their human staff may have to buy that capacity back at a premium.",
       futureIsSpeculative: true,
     },
     systems: {
@@ -501,12 +501,12 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "'Human-verified' service tiers become a designed product line in Gulf retail banking rather than a complaints channel.",
-      "Explainability regulation could arrive faster in the Gulf than elsewhere, set by states that are simultaneously AI champions and consumer protectors.",
-      "Branch networks get repositioned as trust infrastructure rather than legacy cost.",
+      "Banks may design human-verified service tiers as products, instead of handling verification through complaints.",
+      "Gulf states champion AI and protect consumers at the same time, so rules requiring explainable decisions could arrive here first.",
+      "Branch networks may be repositioned as trust infrastructure rather than a legacy cost.",
     ],
     assumptions: [
-      "Verification demand reflects a durable trust preference, not a transition-period discomfort that fades with familiarity.",
+      "The demand for human confirmation is lasting, not a discomfort that fades as people get used to AI.",
     ],
     openQuestions: [
       "Will customers actually pay for human verification, or only demand it for free?",
@@ -520,7 +520,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: ["IND-005"],
     tags: ["ai-adoption", "trust", "verification", "banking", "explainability"],
     humanNotes:
-      "Promoted from OBS-004. The two evidence streams (equity note, survey) share no methodology, which strengthens the pattern; but both are indirect measures of trust. A bank's own escalation data would settle it.",
+      "Promoted from OBS-004. The equity note and the survey share no methodology, which makes their agreement more convincing. Both still measure trust indirectly. A bank's own escalation data would settle it.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "needs_human_review",
@@ -533,9 +533,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-007",
-    title: "Regional malls are repositioning as lifestyle ecosystems built around fitness, clinics, co-working and culture",
+    title: "Gulf malls are filling anchor space with gyms, clinics and co-working",
     description:
-      "Mall owners across the UAE and Saudi Arabia are re-letting anchor space from department-store retail to gyms, medical and dental clinics, co-working floors, cultural venues and community programming. Leasing language has shifted from footfall to dwell time and repeat visitation, and operators report membership-style relationships (gym contracts, clinic registrations, desk subscriptions) replacing transaction-only visits.",
+      "Mall owners in the UAE and Saudi Arabia are re-letting anchor space from department stores to gyms, medical and dental clinics, co-working floors, cultural venues and community events. Leasing teams now talk about time spent and repeat visits, not just footfall. Operators report membership relationships — gym contracts, clinic registrations, desk subscriptions — replacing one-off shopping trips.",
     dateObserved: "2025-12-02",
     eventDate: "2025-11-18",
     sourceIds: ["SRC-003", "SRC-002", "SRC-015"],
@@ -564,16 +564,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "immediate",
     confidence: "medium",
     whyItMatters:
-      "In a climate where the mall is the de facto public realm for much of the year, its repositioning from shopping venue to daily-life infrastructure changes what 'retail' competes on: not transactions but membership in residents' routines. That favours operators who can programme life, not just lease space.",
+      "For much of the year, the mall is the closest thing Gulf residents have to public space. As malls host daily routines — exercise, healthcare, work — retail stops competing on transactions and starts competing for a place in residents' weekly lives. Operators who can programme daily life, not just lease space, win.",
     zoom: {
       whatHappened:
-        "Trade reporting through late 2025, consulting survey data and search-trend movement all recorded regional mall operators converting anchor retail space to fitness, clinical, co-working and cultural uses, with leasing strategies publicly reframed around dwell time and repeat visitation.",
+        "Through late 2025, trade reporting, consulting survey data and search-trend movement all recorded regional mall operators converting anchor retail space to fitness, clinical, co-working and cultural uses. Operators publicly reframed leasing strategy around time spent and repeat visits.",
       behaviourChanged:
-        "Residents are using malls as routine infrastructure — morning gym sessions, clinic appointments, workdays at co-working floors, evening cultural programming — visiting several times a week for reasons unconnected to shopping.",
+        "Residents use malls for daily routines: morning gym sessions, clinic appointments, workdays at co-working desks, evening cultural events. Many visit several times a week for reasons unconnected to shopping.",
       systemChanged:
-        "The retail system is merging with urban and community systems: malls are absorbing functions of the high street, the clinic, the office and the civic centre, which shifts their economics from sales-per-square-metre to relationships-per-resident and makes them a planning question, not just an investment one.",
+        "Malls are absorbing the functions of the high street, the clinic, the office and the civic centre. Their economics shift from sales per square metre to relationships per resident. That makes malls a city-planning question, not just an investment one.",
       futurePlausible:
-        "If this continues, the Gulf mall becomes the organising node of neighbourhood life within five years — with operators holding membership relationships across health, work and leisure, and pure-retail formats surviving only as tenants inside someone else's ecosystem.",
+        "If this continues, the Gulf mall becomes the organising centre of neighbourhood life within five years — with operators holding membership relationships across health, work and leisure, and pure retail surviving only as a tenant inside someone else's venue.",
       futureIsSpeculative: false,
     },
     systems: {
@@ -591,15 +591,15 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Retail leases will increasingly price adjacency to ecosystem anchors (gyms, clinics) rather than to fashion flagships.",
-      "Mall operators become gatekeepers for consumer health and wellness distribution in the Gulf.",
-      "Community programming budgets shift from marketing line-items to core asset-management functions.",
+      "Retail rents may start to depend on proximity to gyms and clinics rather than fashion flagships.",
+      "Mall operators become the gatekeepers for reaching Gulf consumers with health and wellness services.",
+      "Budgets for community events shift from marketing extras to core asset management.",
     ],
     assumptions: [
-      "Service-anchor tenants (clinics, gyms, co-working) are financially durable rather than a stop-gap for structurally vacant space.",
+      "Clinics, gyms and co-working tenants can pay rent durably; they are not a stop-gap for empty space.",
     ],
     openQuestions: [
-      "Does ecosystem repositioning work in secondary malls, or only in dominant super-regional assets?",
+      "Does this work in smaller malls, or only in the dominant regional destinations?",
     ],
     contradictionIds: ["CON-002"],
     relatedSignalIds: ["SIG-002", "SIG-008", "SIG-011"],
@@ -609,7 +609,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["malls", "lifestyle-ecosystem", "dwell-time", "mixed-use", "third-places"],
     humanNotes:
-      "Three independent source types agree on direction. The open question is depth: how much anchor space has actually transacted versus been announced. Awaiting leasing data before considering validation.",
+      "Three independent source types point the same way. The open question is depth: how much anchor space has actually been leased versus announced. Waiting for leasing data before considering validation.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "human_reviewed",
@@ -622,9 +622,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-008",
-    title: "Specialty coffee houses are functioning as third places and youth community infrastructure in Riyadh and Jeddah",
+    title: "Riyadh and Jeddah coffee houses are becoming young people's gathering places",
     description:
-      "Structured field observation in Riyadh and Jeddah records specialty coffee houses operating as de facto community infrastructure: full from evening to past midnight with study groups, book clubs, small-business meetings and informal majlis-style gatherings. Operators are leaning in — programming events, holding tables for recurring groups, and tolerating long dwell times that pure F&B economics would not.",
+      "Structured field visits in Riyadh and Jeddah found specialty coffee houses working as community venues. They are full from evening past midnight with study groups, book clubs, small-business meetings and informal majlis-style gatherings. Operators encourage this. They programme events, hold tables for regular groups, and accept long stays that pure food-and-drink economics would not.",
     dateObserved: "2025-10-19",
     eventDate: null,
     sourceIds: ["SRC-012", "SRC-008"],
@@ -653,16 +653,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "immediate",
     confidence: "medium",
     whyItMatters:
-      "Saudi youth are building social infrastructure ahead of the state and the market: the coffee house is where community, taste and ambition are being organised. Institutions that want a relationship with young Saudis will find them here first — and the majlis instinct is being re-housed in commercial space, which makes belonging a business model.",
+      "Young Saudis are building their own gathering places before the state or developers provide them. The coffee house is where community, taste and ambition are organised. Institutions that want a relationship with young Saudis will find them there first. The majlis tradition is moving into commercial venues, so hosting community is becoming a business.",
     zoom: {
       whatHappened:
-        "Across six structured observation visits in October 2025, specialty coffee houses in Riyadh and Jeddah were consistently at or near capacity from 20:00 past midnight, hosting recurring study groups, book clubs and business meetings, with several operators programming events and reserving space for repeat groups.",
+        "Across six structured observation visits in October 2025, specialty coffee houses in Riyadh and Jeddah were at or near capacity from 20:00 past midnight. They hosted recurring study groups, book clubs and business meetings. Several operators programmed events and reserved space for repeat groups.",
       behaviourChanged:
-        "Young Saudis are treating coffee houses as default gathering infrastructure — a scheduled, recurring, group behaviour rather than incidental consumption — and operators are optimising for community retention over table turnover.",
+        "Young Saudis treat coffee houses as their default meeting place. Gatherings are scheduled, recurring and group-based, not incidental. Operators optimise for keeping communities, not turning tables.",
       systemChanged:
-        "The community system is being rebuilt through commercial third places: functions once held by the family majlis, the university and the mosque courtyard are partially migrating to independent venues, making SME operators custodians of youth social life and giving the urban night a new anchor use.",
+        "Community life is moving into commercial venues. Functions once held by the family majlis, the university and the mosque courtyard now partly happen in independent coffee houses. Small operators have become custodians of youth social life, and the urban evening has a new anchor.",
       futurePlausible:
-        "If this continues, a third-place economy could become a recognised urban asset class in Saudi cities — programmed, invested in and courted by developers and cultural bodies — with venue communities acting as the distribution layer for everything from books to banking products aimed at the young.",
+        "If this continues, coffee houses and similar venues could become a recognised urban asset class in Saudi cities — programmed, invested in and courted by developers and cultural bodies — with venue communities becoming the channel for reaching the young, from books to banking.",
       futureIsSpeculative: true,
     },
     systems: {
@@ -680,16 +680,16 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Coffee houses become the highest-trust physical channel for reaching young Saudis — more valuable than mall media.",
-      "Developers will attempt to manufacture third places at masterplan scale; authenticity becomes the scarce input.",
-      "The evening and night economy gains a non-entertainment anchor compatible with local norms.",
+      "Coffee houses become the most trusted physical channel for reaching young Saudis, worth more than mall advertising.",
+      "Developers will try to build gathering places into masterplans; authenticity becomes the scarce ingredient.",
+      "The evening and night economy gains an anchor that fits local norms and does not depend on entertainment venues.",
     ],
     assumptions: [
-      "Observed venues are representative of a broader movement rather than a handful of exceptional districts.",
+      "The venues observed represent a broad movement, not a few exceptional districts.",
     ],
     openQuestions: [
-      "How does the behaviour interact with Ramadan rhythms and summer heat — is it seasonal or structural?",
-      "Do women-led and mixed groups have equal access across cities, or is the behaviour segmented?",
+      "Does the pattern hold through Ramadan and summer heat, or is it seasonal?",
+      "Do women-led and mixed groups have the same access in every city, or is the pattern segmented?",
     ],
     contradictionIds: ["CON-001"],
     relatedSignalIds: ["SIG-001", "SIG-004", "SIG-007"],
@@ -699,7 +699,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["third-places", "specialty-coffee", "youth", "community-infrastructure", "majlis"],
     humanNotes:
-      "Promoted from OBS-005. Ethnographic base is small (six visits); producer interview corroborates the community-infrastructure reading. Would benefit from operator revenue-mix data or a survey question on gathering habits.",
+      "Promoted from OBS-005. The field evidence is small — six visits — and the producer interview supports the community reading. Operator revenue data or a survey question on gathering habits would strengthen it.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "human_reviewed",
@@ -712,9 +712,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-009",
-    title: "BNPL is becoming default youth credit in the Gulf while regulators move towards tighter licensing",
+    title: "Young Gulf consumers are using buy-now-pay-later more, and regulators are responding",
     description:
-      "Survey data shows buy-now-pay-later reaching habitual use among Gulf 18–30s, with a growing minority stacking multiple concurrent plans; equity research maps rapid volume growth at regional providers. Simultaneously, central-bank commentary signals tighter licensing and affordability rules. Adoption and regulation are accelerating on the same curve.",
+      "Survey data shows Gulf 18–30s using buy-now-pay-later as a habit, with a growing minority juggling several plans at once. Equity research maps rapid volume growth at regional providers. At the same time, central-bank commentary points to tighter licensing and affordability rules. Use and regulation are accelerating together.",
     dateObserved: "2026-04-14",
     eventDate: "2026-04-02",
     sourceIds: ["SRC-011", "SRC-013"],
@@ -743,30 +743,30 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "A generation's first credit relationship is forming outside the banking system, at the checkout. Whoever ends up licensed to own that instalment layer — banks, fintechs, or retailers — owns the on-ramp to every subsequent financial product for Gulf youth.",
+      "Young Gulf consumers are forming their first credit relationship at the checkout, outside the banking system. Whoever wins the licence to run that instalment layer — banks, fintechs or retailers — controls the entry point to every later financial product for this generation.",
     zoom: {
       whatHappened:
-        "In April 2026 the quarterly GCC youth survey reported majority monthly BNPL use among Saudi 18–30 respondents with a rising share holding three or more concurrent plans, while investment-bank research recorded provider volume growth and central-bank commentary signalled tighter licensing and affordability requirements.",
+        "In April 2026, the quarterly GCC youth survey reported that most Saudi 18–30 respondents use buy-now-pay-later monthly, with a rising share holding three or more plans at once. Investment-bank research recorded provider volume growth. Central-bank commentary signalled tighter licensing and affordability requirements.",
       behaviourChanged:
-        "Young consumers are defaulting to instalments for mid-ticket purchases and managing personal cash flow through stacked plans rather than cards or savings — normalising continuous, app-managed micro-debt as ordinary financial behaviour.",
+        "Young consumers now default to instalments for mid-sized purchases. They manage cash flow through several overlapping plans instead of cards or savings. Continuous, app-managed micro-debt has become ordinary financial behaviour.",
       systemChanged:
-        "The consumer-finance system is being re-layered: credit issuance is shifting from regulated bank products to embedded checkout finance, forcing regulators to extend the licensing perimeter and pushing banks to partner with or acquire the fintechs intermediating their future customers.",
+        "Consumer credit is moving from regulated bank products to finance embedded at the checkout. Regulators are extending the licensing perimeter to cover it. Banks face partnering with, or buying, the fintechs that now sit between them and their future customers.",
       futurePlausible:
-        "If this continues, a regulated instalment layer becomes the default youth credit architecture in the Gulf — with affordability data from BNPL flows feeding credit scoring, and the first providers to achieve full licences converting checkout relationships into full banking ones.",
+        "If this continues, a regulated instalment layer becomes the default credit system for Gulf youth — with repayment data feeding credit scores, and the first fully licensed providers converting checkout relationships into full banking ones.",
       futureIsSpeculative: false,
     },
     systems: null,
     potentialImplications: [
-      "Banks that ignore the instalment layer may meet their next generation of customers only as competitors' data.",
-      "Regulatory licensing will consolidate the sector quickly; scale and compliance capacity become the moat.",
-      "Retailers gain bargaining power as owners of the checkout where credit is now originated.",
+      "Banks that ignore instalment finance may only ever see their next generation of customers in a competitor's data.",
+      "Licensing will consolidate the sector quickly; providers with scale and compliance capacity will survive.",
+      "Retailers gain bargaining power because credit now starts at their checkout.",
     ],
     assumptions: [
-      "Regulators tighten rules without banning the model — formalisation, not prohibition.",
-      "Survey-reported stacking behaviour is directionally accurate despite the digital-panel skew.",
+      "Regulators formalise the model rather than banning it.",
+      "The survey's finding on stacked plans is directionally right despite the digital panel's skew.",
     ],
     openQuestions: [
-      "What default and delinquency rates are hiding in stacked plans that no single provider can see?",
+      "How many missed payments hide across stacked plans that no single provider can see?",
     ],
     contradictionIds: [],
     relatedSignalIds: ["SIG-006"],
@@ -776,7 +776,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["bnpl", "youth-finance", "consumer-credit", "regulation", "fintech"],
     humanNotes:
-      "Promoted from OBS-006. Trust dimension links it to PAT-002: regulation here is the institutionalisation of trust in an automated credit environment. Needs central-bank documentation rather than reported commentary to firm up the regulatory side.",
+      "Promoted from OBS-006. The trust dimension links it to PAT-002: regulation here institutionalises trust in automated credit. The regulatory side needs central-bank documents, not reported commentary, to firm up.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "needs_human_review",
@@ -789,9 +789,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-010",
-    title: "Riyadh Metro and Dubai mobility expansion are changing daily urban behaviour",
+    title: "The Riyadh Metro and Dubai transit are changing daily routines",
     description:
-      "Ridership on the Riyadh Metro continues to build through its second year of full operation, with academic ridership studies recording routine commuter adoption, station-district rental premiums and changed evening travel patterns; Dubai's expanding metro, bus and micro-mobility network shows parallel dynamics. Car-first daily routines are visibly loosening in specific corridors.",
+      "Riyadh Metro ridership keeps building in its second year of full operation. Academic studies record routine commuter use, rental premiums near stations and changed evening travel. Dubai's growing metro, bus and micro-mobility network shows the same pattern. In specific corridors, the car-first daily routine is visibly loosening.",
     dateObserved: "2025-08-26",
     eventDate: "2025-08-15",
     sourceIds: ["SRC-010", "SRC-004", "SRC-015"],
@@ -820,16 +820,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "immediate",
     confidence: "high",
     whyItMatters:
-      "Transit is the Gulf's biggest behavioural experiment: it restructures where people live, how they spend the commute (see the Arabic-audio signal), what districts are worth, and who encounters whom in public. A generation of Riyadh residents is forming daily habits no previous generation had.",
+      "Transit is the Gulf's biggest behavioural experiment. It changes where families live, how commuters spend travel time (see the Arabic-audio signal), what districts are worth, and who meets whom in public. A generation of Riyadh residents is forming daily habits no previous generation had.",
     zoom: {
       whatHappened:
-        "Academic ridership studies and press reporting through late 2025 recorded sustained growth in routine commuter use of the Riyadh Metro, rental premiums forming around key stations, and rising search interest for station-adjacent housing; Dubai reported parallel expansion in metro and micro-mobility usage.",
+        "Academic ridership studies and press reports through late 2025 recorded sustained growth in routine commuting on the Riyadh Metro. Rents rose near key stations, and searches for station-adjacent housing increased. Dubai reported parallel growth in metro and micro-mobility use.",
       behaviourChanged:
-        "Commuters in served corridors are structuring daily routines around timetables rather than traffic — choosing housing for station proximity, reclaiming the commute for audio and reading, and making car-free evening trips that previously did not happen.",
+        "Commuters in served corridors plan their day around timetables instead of traffic. They choose homes near stations, use the commute for audio and reading, and make car-free evening trips that previously did not happen.",
       systemChanged:
-        "The mobility and urban systems are decoupling daily life from universal car dependence: land value is re-pricing around access rather than road frontage, and the housing system is acquiring a transit-oriented logic that planners can now steer — a structural change in how Gulf cities allocate value.",
+        "Daily life in Riyadh and Dubai is starting to detach from total car dependence. Land near stations is gaining value over land with road frontage. Housing is acquiring a transit-oriented logic that planners can now steer.",
       futurePlausible:
-        "If this continues, Riyadh and Dubai develop genuinely transit-oriented districts by 2030 — denser, more walkable, more encounter-rich — and the second-order effects (street retail, third places, reduced parking economics) compound into a different everyday urbanism for the Gulf.",
+        "If this continues, Riyadh and Dubai develop genuinely transit-oriented districts by 2030 — denser, more walkable, more social — with street retail, gathering places and weaker parking economics compounding into a different everyday city.",
       futureIsSpeculative: false,
     },
     systems: {
@@ -849,15 +849,15 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Land and retail strategies must re-price around station catchments rather than highway visibility.",
-      "The commute becomes a daily media and services window with captive attention (links to Arabic audio growth).",
-      "Municipal design standards for shade and last-mile comfort become competitive infrastructure.",
+      "Land and retail strategies must price locations by station catchments, not highway visibility.",
+      "The commute becomes a daily window of captive attention for media and services (see the Arabic-audio signal).",
+      "Shade and comfortable walking routes to stations become infrastructure that cities compete on.",
     ],
     assumptions: [
-      "Ridership growth continues past novelty into entrenched habit across seasons.",
+      "Ridership keeps growing after the novelty fades and holds across seasons.",
     ],
     openQuestions: [
-      "How resilient is adoption through the first full summer cycles — does behaviour revert to cars from June to September?",
+      "Does metro use hold through full summers, or do riders return to cars from June to September?",
     ],
     contradictionIds: ["CON-003"],
     relatedSignalIds: ["SIG-003", "SIG-005"],
@@ -867,7 +867,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: ["IND-003"],
     tags: ["riyadh-metro", "transit", "urban-behaviour", "transit-oriented-development", "commuting"],
     humanNotes:
-      "Academic source (SRC-010) is the strongest in the dataset; validated on the strength of independent ridership work plus press and search-trend corroboration. Summer resilience is the key monitoring question — indicator IND-003 tracks it.",
+      "The academic source (SRC-010) is the strongest in the dataset. Validated on independent ridership research plus press and search-trend corroboration. Summer resilience is the key monitoring question; indicator IND-003 tracks it.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "validated",
@@ -880,9 +880,9 @@ export const seedSignals: Signal[] = [
   // ---------------------------------------------------------------------------
   {
     id: "SIG-011",
-    title: "Wellness-branded residences are selling at significant premiums to comparable stock",
+    title: "Developers claim wellness-branded homes sell at large premiums",
     description:
-      "Developer and operator announcements claim wellness-branded residential towers in Dubai — circadian lighting, air and water certification, in-building clinics and longevity programming — are selling at double-digit premiums to comparable unbranded stock. Search interest in wellness-residence terms is rising, but no independent transaction analysis yet substantiates the premium.",
+      "Developers and operators claim wellness-branded residential towers in Dubai are selling at double-digit premiums over similar unbranded buildings. The towers offer circadian lighting, certified air and water, in-building clinics and longevity programmes. Search interest in wellness residences is rising. No independent analysis of transactions yet supports the premium.",
     dateObserved: "2026-05-22",
     eventDate: "2026-05-10",
     sourceIds: ["SRC-009", "SRC-015"],
@@ -911,16 +911,16 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "low",
     whyItMatters:
-      "If the premium is real, health is displacing brand-name glamour as the top of the residential value stack — a meaningful re-pricing of what 'luxury housing' means in a settlement-era Gulf. If it is not real, this is developer narrative looking for buyers. Either answer is strategically useful.",
+      "If the premium is real, buyers are starting to pay more for health features than for brand-name glamour. That would change what luxury housing means as families settle in the Gulf. If it is not real, this is a developer sales story looking for buyers. Either answer is useful.",
     zoom: {
       whatHappened:
-        "In the first half of 2026, at least two Dubai developers announced wellness-branded residential towers with clinical and certification features, claiming sales premiums over comparable stock; search-trend data shows rising interest in wellness-residence terms, with no independent transaction analysis yet published.",
+        "In the first half of 2026, at least two Dubai developers announced wellness-branded residential towers with clinics and health certifications, claiming sales premiums over similar buildings. Search-trend data shows rising interest in wellness-residence terms. No independent transaction analysis has been published.",
       behaviourChanged:
-        "A segment of buyers appears to be selecting homes on health infrastructure — clinics, air quality, programming — rather than location and brand prestige alone, treating the home as a preventative-health product.",
+        "Some buyers appear to choose homes for health features — clinics, air quality, health programming — rather than location and brand prestige alone. They treat the home as a preventative-health product.",
       systemChanged:
-        "If corroborated, the housing and healthcare systems are beginning to fuse at the premium end: residential real estate absorbing clinical services and certification regimes, and 'healthy building' shifting from marketing garnish to priced attribute.",
+        "If the claims hold, premium housing and healthcare are starting to fuse. Homes would absorb clinical services and certification regimes, and 'healthy building' would move from marketing language to a priced attribute.",
       futurePlausible:
-        "If this continues and the premium survives independent verification, wellness certification could become a standard valuation layer in Gulf residential property within five years — pulling insurers, clinical operators and certification bodies into the housing value chain. This projection rests on weak evidence and should be read as a possibility, not a probability.",
+        "If this continues and independent data confirms the premium, wellness certification could become a standard part of Gulf home valuation within five years — though this rests on weak evidence and should be read as a possibility, not a probability.",
       futureIsSpeculative: true,
     },
     systems: {
@@ -938,15 +938,15 @@ export const seedSignals: Signal[] = [
       ],
     },
     potentialImplications: [
-      "Valuation and mortgage models may need a verified wellness-certification input rather than accepting brand claims.",
-      "Hotel-clinic operators (see SIG-002) have a licensing path into residential — one trust system feeding another.",
+      "Valuers and mortgage lenders may need verified wellness certification instead of accepting brand claims.",
+      "Hotel-clinic operators (see SIG-002) could license their services into homes, extending one trust system into another.",
     ],
     assumptions: [
-      "Developer-claimed premiums have some basis in transactions rather than being purely promotional.",
+      "The claimed premiums have some basis in actual sales, not just promotion.",
     ],
     openQuestions: [
-      "Do resale transactions — not launch prices — show any wellness premium?",
-      "Is demand from end-user residents or from investors betting on the narrative?",
+      "Do resales — not launch prices — show any wellness premium?",
+      "Are the buyers residents who will live there, or investors betting on the story?",
     ],
     contradictionIds: ["CON-002"],
     relatedSignalIds: ["SIG-002", "SIG-003", "SIG-007"],
@@ -971,7 +971,7 @@ export const seedSignals: Signal[] = [
     id: "SIG-012",
     title: "Regional creators are replacing global celebrities in Gulf brand campaigns",
     description:
-      "Luxury, beauty and lifestyle brands operating in the Gulf are recasting campaigns around regional creators — Gulf-dialect voices with engaged local followings — in roles previously reserved for global celebrities. The creator panel shows sustained paid-partnership growth for regional names, culture-magazine coverage documents the shift in casting, and desk notes record agency briefs explicitly asking for 'regional credibility' over global reach.",
+      "Luxury, beauty and lifestyle brands in the Gulf are recasting campaigns around regional creators — Gulf-dialect voices with engaged local followings — in roles once reserved for global celebrities. The creator panel shows sustained growth in paid partnerships for regional names. Culture-magazine coverage documents the casting shift. Desk notes record agency briefs explicitly asking for 'regional credibility' over global reach.",
     dateObserved: "2026-06-08",
     eventDate: "2026-05-30",
     sourceIds: ["SRC-006", "SRC-005", "SRC-016"],
@@ -1000,29 +1000,29 @@ export const seedSignals: Signal[] = [
     timeHorizon: "near_term",
     confidence: "medium",
     whyItMatters:
-      "Cultural authority in the Gulf is being repriced: proximity and dialect now buy more persuasion than global fame. For global brands this inverts the old playbook — the regional market is no longer where global campaigns are translated, but where credibility must be earned locally or bought from those who hold it.",
+      "For brands in the Gulf, local voices may be becoming more valuable than global celebrity names. Sharing the audience's dialect and daily life now persuades more than fame. This reverses the old playbook: the Gulf is no longer a place to translate global campaigns, but a place where credibility must be earned locally or bought from those who hold it.",
     zoom: {
       whatHappened:
-        "Through spring 2026, brand campaigns in the Gulf visibly recast regional creators in hero roles: the tracked creator panel recorded sustained growth in paid partnerships for Gulf-based names, and culture-press coverage documented luxury and beauty campaigns fronted by regional faces where global ambassadors previously appeared.",
+        "Through spring 2026, Gulf brand campaigns visibly recast regional creators in lead roles. The tracked creator panel recorded sustained growth in paid partnerships for Gulf-based names. Culture-press coverage documented luxury and beauty campaigns fronted by regional faces where global ambassadors previously appeared.",
       behaviourChanged:
-        "Consumers are responding to — and brands are budgeting for — voices that share their dialect, references and daily context; audiences engage with regional creators' brand content at rates that make imported celebrity endorsement look expensive and inert.",
+        "Audiences respond more to voices that share their dialect, references and daily context, and brands now budget for that. Engagement with regional creators' brand content makes imported celebrity endorsement look expensive and flat.",
       systemChanged:
-        "The attention and luxury systems are re-localising their trust hierarchies: the value chain of influence (casting, talent management, campaign production) is shifting into regional hands, building a creator-economy infrastructure that keeps cultural and commercial authority inside the Gulf.",
+        "The business of influence is moving into regional hands. Casting, talent management and campaign production are shifting to Gulf-based players. That builds a creator economy which keeps cultural and commercial authority inside the region.",
       futurePlausible:
-        "If this continues, the Gulf becomes a market where global brands must co-create with regional cultural authors as a condition of entry — and the strongest regional creators evolve into media businesses and brand owners themselves, competing with the multinationals that once hired them.",
+        "If this continues, global brands will need to co-create with regional creators to enter the Gulf market — and the strongest creators will grow into media businesses and brand owners competing with the multinationals that once hired them.",
       futureIsSpeculative: true,
     },
     systems: null,
     potentialImplications: [
-      "Talent management and creator-economy infrastructure become a strategic regional industry, not an agency afterthought.",
-      "Global campaign frameworks with translated assets will underperform; regional creative authority becomes a budget line.",
-      "Regional creators accumulate brand equity that can convert into owned product lines (links to SIG-001's label cohort).",
+      "Talent management for regional creators becomes a strategic regional industry, not an agency afterthought.",
+      "Translated global campaigns will underperform; brands will need a budget line for regional creative leadership.",
+      "Regional creators build name value they can turn into their own product lines (see SIG-001's label cohort).",
     ],
     assumptions: [
-      "Engagement advantages of regional creators persist as their rates rise towards celebrity levels.",
+      "Regional creators keep their engagement advantage even as their fees rise towards celebrity levels.",
     ],
     openQuestions: [
-      "Where is the ceiling — do regional creators retain credibility once they become ubiquitous brand fronts?",
+      "Do regional creators stay credible once they front many brands at once?",
     ],
     contradictionIds: ["CON-002"],
     relatedSignalIds: ["SIG-001", "SIG-004", "SIG-005"],
@@ -1032,7 +1032,7 @@ export const seedSignals: Signal[] = [
     monitoringIndicatorIds: [],
     tags: ["creator-economy", "brand-campaigns", "regional-credibility", "casting", "luxury"],
     humanNotes:
-      "Panel and culture-press sources overlap with SIG-001's evidence base — treat the two signals as independent behaviours (wearing vs casting) but partially shared sourcing when counting cluster sources.",
+      "The panel and culture-press sources overlap with SIG-001's evidence base. Treat the two signals as separate behaviours (wearing versus casting) but count their partly shared sources carefully at cluster level.",
     aiNotes: "",
     aiNotesLabel: null,
     reviewStatus: "human_reviewed",
