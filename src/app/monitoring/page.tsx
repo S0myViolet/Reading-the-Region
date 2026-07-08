@@ -37,6 +37,7 @@ import {
   CadenceRhythm,
   MonitoringIndicatorRow,
   MonitoringQuestions,
+  overallReadSentence,
   type LinkedRef,
 } from "./monitoring-ui";
 
@@ -49,11 +50,30 @@ const TREND_ORDER: IndicatorTrend[] = [
   "contradictory",
 ];
 
-function MonitoringHeader({ actions }: { actions?: React.ReactNode }) {
+/** One-line meaning under each counter — what the figure is evidence of. */
+const FILTER_MEANINGS: Record<FilterKey, string> = {
+  strengthening: "evidence is moving in the territory's direction",
+  weakening: "evidence is moving against it",
+  stable: "little meaningful change since the last check",
+  contradictory: "evidence is mixed or pulling both ways",
+  overdue: "the indicator needs to be checked again",
+};
+
+function MonitoringHeader({
+  analyst,
+  actions,
+}: {
+  analyst?: boolean;
+  actions?: React.ReactNode;
+}) {
   return (
     <PageHeader
       title="Monitoring"
-      description={DEFINITIONS.indicator}
+      description={
+        analyst
+          ? "Indicators that show whether future territories are strengthening, weakening, stable, or being contradicted."
+          : DEFINITIONS.indicator
+      }
       actions={actions}
     />
   );
@@ -74,16 +94,25 @@ function StatusFigure({
   count,
   active,
   cautionary,
+  meaning,
   onClick,
 }: {
   label: string;
   count: number;
   active: boolean;
   cautionary?: boolean;
+  /** Advanced mode: one short line saying what the figure means. */
+  meaning?: string;
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={active} className="text-left">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={meaning}
+      className="text-left"
+    >
       <span
         className={`block font-mono text-[20px] leading-none ${
           cautionary && count > 0
@@ -104,6 +133,11 @@ function StatusFigure({
       >
         {label}
       </span>
+      {meaning ? (
+        <span className="mt-1 block max-w-[19ch] text-[10.5px] leading-snug text-ink-faint">
+          {meaning}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -113,6 +147,8 @@ interface IndicatorGroup {
   heading: string;
   territoryId: string | null;
   items: MonitoringIndicator[];
+  /** All of the territory's indicators, ignoring filters — the honest base for the overall read. */
+  all: MonitoringIndicator[];
 }
 
 function MonitoringContent() {
@@ -183,17 +219,24 @@ function MonitoringContent() {
   for (const t of territories) {
     const items = visible.filter((i) => i.territoryId === t.id).sort(byLastChecked);
     if (items.length > 0)
-      groups.push({ key: t.id, heading: t.name, territoryId: t.id, items });
+      groups.push({
+        key: t.id,
+        heading: t.name,
+        territoryId: t.id,
+        items,
+        all: indicators.filter((i) => i.territoryId === t.id),
+      });
   }
-  const unattached = visible
-    .filter((i) => i.territoryId === null || !knownTerritoryIds.has(i.territoryId))
-    .sort(byLastChecked);
+  const isUnattached = (i: MonitoringIndicator) =>
+    i.territoryId === null || !knownTerritoryIds.has(i.territoryId);
+  const unattached = visible.filter(isUnattached).sort(byLastChecked);
   if (unattached.length > 0)
     groups.push({
       key: "unattached",
-      heading: "Unattached indicators",
+      heading: analyst ? "Not yet tied to a territory" : "Unattached indicators",
       territoryId: null,
       items: unattached,
+      all: indicators.filter(isUnattached),
     });
 
   // --- link resolution for the rows ----------------------------------------
@@ -209,6 +252,7 @@ function MonitoringContent() {
   return (
     <>
       <MonitoringHeader
+        analyst={analyst}
         actions={
           <ViewGate min="analyst">
             <button
@@ -225,12 +269,6 @@ function MonitoringContent() {
           </ViewGate>
         }
       />
-      {analyst ? (
-        <p className="-mt-6 mb-8 max-w-2xl text-[12px] text-ink-faint">
-          Is each watched territory strengthening, weakening, mutating, or
-          being contradicted?
-        </p>
-      ) : null}
       <WalkthroughPanel pageId="monitoring" />
 
       {analyst && adding ? (
@@ -244,6 +282,7 @@ function MonitoringContent() {
             label={INDICATOR_TREND_LABELS[t]}
             count={trendCounts[t]}
             active={filter === t}
+            meaning={analyst ? FILTER_MEANINGS[t] : undefined}
             onClick={() => setFilter((f) => (f === t ? null : t))}
           />
         ))}
@@ -252,6 +291,7 @@ function MonitoringContent() {
           count={overdueCount}
           active={filter === "overdue"}
           cautionary
+          meaning={analyst ? FILTER_MEANINGS.overdue : undefined}
           onClick={() => setFilter((f) => (f === "overdue" ? null : "overdue"))}
         />
       </div>
@@ -360,10 +400,23 @@ function MonitoringContent() {
                   g.heading
                 )}
               </h2>
-              <span className="text-[11.5px] text-ink-faint">
-                {g.items.length} indicator{g.items.length === 1 ? "" : "s"}
-              </span>
+              {analyst ? (
+                g.items.length !== g.all.length ? (
+                  <span className="text-[11.5px] text-ink-faint">
+                    {g.items.length} of {g.all.length} shown
+                  </span>
+                ) : null
+              ) : (
+                <span className="text-[11.5px] text-ink-faint">
+                  {g.items.length} indicator{g.items.length === 1 ? "" : "s"}
+                </span>
+              )}
             </div>
+            {analyst ? (
+              <p className="mt-1 text-[12px] text-ink-soft">
+                {overallReadSentence(g.all)}
+              </p>
+            ) : null}
             <div>
               {g.items.map((i) => (
                 <MonitoringIndicatorRow
