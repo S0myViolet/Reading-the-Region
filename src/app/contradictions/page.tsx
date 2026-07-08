@@ -6,10 +6,11 @@
  * the intelligence base, and both sides stay evidence-linked to signals.
  *
  * Layout has exactly four layers: header, one control bar, the tension list,
- * and the collapsed page guide. Each tension is one .list-row — the readable
- * sentence is the content; the type sits quietly on the right. Analyst view
- * adds a tension-strength reading to the row and the score-based ordering
- * control to the bar.
+ * and the collapsed page guide. Each tension is one .list-row. The simple row
+ * is the readable sentence with the type quietly on the right. The advanced
+ * row makes tensions comparable at a glance: both sides as short labelled
+ * lines, why it matters, tension strength in words, and the linked-signal
+ * count — plus the score-based ordering control in the bar.
  */
 
 import Link from "next/link";
@@ -30,9 +31,12 @@ import type { Contradiction, ContradictionType } from "@/lib/types";
 import { CONTRADICTION_TYPE_LABELS } from "@/lib/types";
 import {
   CONTRADICTION_SORT_OPTIONS,
+  TENSION_STRENGTH_WORDS,
   btnPrimary,
-  contradictionScoreReading,
+  firstSentence,
+  linkedSignalCount,
   sortContradictions,
+  whyItMattersLine,
   type ContradictionSort,
 } from "./contradiction-ui";
 
@@ -58,7 +62,33 @@ function ContradictionsHeader() {
 }
 
 function ContradictionRow({ contradiction }: { contradiction: Contradiction }) {
-  const analyst = useViewMode() !== "simple";
+  const advanced = useViewMode() !== "simple";
+
+  if (!advanced) {
+    return (
+      <Link
+        href={`/contradictions/${contradiction.id}`}
+        className="list-row group"
+      >
+        <div className="flex items-baseline justify-between gap-6">
+          <p className="min-w-0 truncate text-[13.5px] font-medium text-ink group-hover:text-accent-ink">
+            {contradiction.name}
+          </p>
+          <span className="shrink-0 text-[11.5px] text-ink-faint">
+            {CONTRADICTION_TYPE_LABELS[contradiction.contradictionType]}
+          </span>
+        </div>
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
+          {explainContradiction(contradiction)}
+        </p>
+      </Link>
+    );
+  }
+
+  const why = whyItMattersLine(contradiction);
+  const signalCount = linkedSignalCount(contradiction);
+  const strength = contradiction.scores.tensionStrength;
+
   return (
     <Link
       href={`/contradictions/${contradiction.id}`}
@@ -72,18 +102,31 @@ function ContradictionRow({ contradiction }: { contradiction: Contradiction }) {
           {CONTRADICTION_TYPE_LABELS[contradiction.contradictionType]}
         </span>
       </div>
-      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
-        {explainContradiction(contradiction)}
-        {analyst ? (
-          <>
-            {" "}
-            · Tension strength {contradiction.scores.tensionStrength}/5 —{" "}
-            {contradictionScoreReading(
-              "tensionStrength",
-              contradiction.scores.tensionStrength,
-            )}
-          </>
-        ) : null}
+      <div className="mt-1.5 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+        <p className="text-[12px] leading-relaxed text-ink-soft">
+          <span className="text-ink-faint">One side — </span>
+          {firstSentence(contradiction.sideA)}
+        </p>
+        <p className="text-[12px] leading-relaxed text-ink-soft">
+          <span className="text-ink-faint">The other side — </span>
+          {firstSentence(contradiction.sideB)}
+        </p>
+      </div>
+      {why ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+          <span className="text-ink-faint">Why it matters — </span>
+          {why}
+        </p>
+      ) : null}
+      <p className="mt-1.5 text-[11.5px] text-ink-faint">
+        Tension strength: {TENSION_STRENGTH_WORDS[strength]}{" "}
+        <span className="font-mono text-[10.5px]">{strength}/5</span>
+        {" · "}
+        {signalCount} signal{signalCount === 1 ? "" : "s"} linked
+        {" · "}
+        <span className="underline decoration-line-strong underline-offset-2 group-hover:text-ink-soft">
+          Open contradiction
+        </span>
       </p>
     </Link>
   );

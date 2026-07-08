@@ -14,6 +14,7 @@ import type {
   Contradiction,
   ContradictionScores,
   Score,
+  Signal,
 } from "@/lib/types";
 
 /** Calm primary button — the one filled action on a page. */
@@ -29,6 +30,53 @@ export function fmtDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+/** First sentence of a text block — for one-line row summaries. */
+export function firstSentence(text: string): string {
+  const t = text.trim();
+  const m = t.match(/^[^.!?]*[.!?]/);
+  return (m ? m[0] : t).trim();
+}
+
+/** Tension strength as a plain word, shown next to the n/5 figure. */
+export const TENSION_STRENGTH_WORDS: Record<Score, string> = {
+  1: "Very low",
+  2: "Low",
+  3: "Moderate",
+  4: "High",
+  5: "Very high",
+};
+
+/** Distinct signals linked across both sides of a contradiction. */
+export function linkedSignalCount(c: Contradiction): number {
+  return new Set([...c.sideASignalIds, ...c.sideBSignalIds]).size;
+}
+
+/**
+ * One honest line on why a tension matters: the first sentence of the
+ * strategic implication, falling back to the underlying tension. Empty
+ * string when neither has been written.
+ */
+export function whyItMattersLine(c: Contradiction): string {
+  const source = c.strategicImplication.trim() || c.underlyingTension.trim();
+  return source ? firstSentence(source) : "";
+}
+
+/**
+ * How strong one side's linked evidence is, computed from the resolved
+ * signals' own evidence scores. Returns null when no signals are linked —
+ * the caller says so in its own words.
+ */
+export function sideEvidenceStrength(sideSignals: Signal[]): string | null {
+  const n = sideSignals.length;
+  if (n === 0) return null;
+  const scores = sideSignals.map((s) => s.scores.evidence);
+  const lo = Math.min(...scores);
+  const hi = Math.max(...scores);
+  const range =
+    lo === hi ? `evidence score ${lo} of 5` : `evidence scores ${lo}–${hi} of 5`;
+  return `${n} signal${n === 1 ? "" : "s"} linked · ${range}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,8 +181,8 @@ const CONTRADICTION_SCORE_READINGS: Record<
     strong: "how this resolves will shape futures across the region",
   },
   emotionalCharge: {
-    low: "judged to carry little emotional weight for those inside it",
-    moderate: "carries real emotional weight for those inside it",
+    low: "judged to touch feelings only lightly for those inside it",
+    moderate: "emotionally loaded for those inside it",
     strong: "deeply felt — identity and belonging are in play",
   },
 };
