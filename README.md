@@ -31,6 +31,12 @@ npm run typecheck  # strict TypeScript check
 
 The workspace opens seeded with a demonstration dataset (observations, signals, cluster candidates, patterns, contradictions, driver hypotheses, one future territory, scenarios, implications, and monitoring indicators) so every layer of the method is visible immediately. All demo sources are labelled as sample data; no real citations are invented. Data is persisted to the browser's localStorage; use **Settings → Reset to demonstration dataset** to restore the seed.
 
+## Two modes, one engine
+
+**Simple Mode** (default) is the product: **Today** (daily briefing) → **Explore** (browse by question, place, theme) → **New Finds** (one-at-a-time review: keep, need more proof, dismiss) → **Signals** (insight cards) → **Futures** (stories, tensions, possibilities, scenarios) → **Decisions** (what it means for action) → **Watchlist** (what is getting stronger or weaker). It speaks human language — no scores, criteria fractions, or methodology vocabulary.
+
+**Advanced Mode** (toggle in the sidebar or Settings) is the full intelligence system: Scan Inbox, Signal Library, Sources, Clusters, Patterns, Contradictions, Drivers, Future Territories, Scenarios, Strategic Implications and Monitoring, with every score, threshold, validation rule and audit trail visible. The same data powers both; Simple Mode never bypasses the methodology — it translates it.
+
 ## Structure
 
 | Area | Purpose |
