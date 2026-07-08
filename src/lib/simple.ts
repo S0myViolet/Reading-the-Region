@@ -46,7 +46,7 @@ export const TREND_WORDS: Record<IndicatorTrend, string> = {
   strengthening: "Getting stronger",
   weakening: "Getting weaker",
   stable: "Holding steady",
-  contradictory: "Pulling both ways",
+  contradictory: "Being contradicted",
 };
 
 /** One-line evidence description without methodology vocabulary. */
