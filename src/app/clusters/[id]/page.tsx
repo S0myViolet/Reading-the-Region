@@ -7,11 +7,12 @@
  * evidence; the stored status is never presented on its own.
  *
  * Visibility layers: the simple view reads as one article — statement,
- * status in plain language, evidence summary, what could contradict it,
- * next step — separated by whitespace, not boxes. Analyst view opens the
- * full tabs (validation checklist, nine-dimension scores, per-signal table,
- * review controls); Methodology view adds the threshold table and audit
- * trail as plain definition lines.
+ * status in plain language with its evidence backing line, evidence
+ * summary, what could contradict it, next step — separated by whitespace,
+ * not boxes. Analyst view opens the full tabs (validation checklist,
+ * nine-dimension scores, per-signal table, review controls) plus the
+ * evidence trail from the cluster down to signals and sources; Methodology
+ * view adds the threshold table and audit trail as plain definition lines.
  */
 
 import Link from "next/link";
@@ -28,6 +29,9 @@ import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components
 import { ScoreGrid } from "@/components/ScorePanel";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
+import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
+import { EvidenceBackingLine } from "@/components/EvidenceCompression";
+import { signalStage } from "@/lib/pipeline";
 import { ConfidenceBadge, SignalStrengthBadge } from "@/components/badges";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
@@ -44,6 +48,7 @@ import type {
   Contradiction,
   ReviewStatus,
   Signal,
+  Source,
 } from "@/lib/types";
 import {
   ACTOR_TYPE_LABELS,
@@ -93,10 +98,14 @@ function SimpleView({
   cluster,
   result,
   linkedContradictions,
+  clusterSignals,
+  sources,
 }: {
   cluster: Cluster;
   result: ValidationResult;
   linkedContradictions: Contradiction[];
+  clusterSignals: Signal[];
+  sources: Source[];
 }) {
   return (
     <div className="space-y-8">
@@ -113,6 +122,9 @@ function SimpleView({
           <ClusterValidityPill result={result} />
         </div>
         <Prose>{explainClusterStatus(cluster, result)}</Prose>
+        <div className="mt-2">
+          <EvidenceBackingLine signals={clusterSignals} sources={sources} />
+        </div>
       </Section>
 
       <Section heading="Evidence summary">
@@ -653,6 +665,35 @@ export default function ClusterDetailPage() {
   );
   const simple = mode === "simple";
 
+  // Evidence trail, assembled downward from links that actually exist:
+  // the cluster → up to four member signals → for two of those signals,
+  // their first source that still resolves in the store. No step is ever
+  // invented; a thin trail stays visibly thin.
+  const trailSignals = clusterSignals.slice(0, 4);
+  const trailSteps: TrailStep[] = [
+    { stage: "cluster", title: cluster.name },
+    ...trailSignals.map(
+      (s): TrailStep => ({
+        stage: signalStage(s),
+        title: s.title,
+        href: `/signals/${s.id}`,
+      }),
+    ),
+  ];
+  const trailSourceIds = new Set<string>();
+  for (const s of trailSignals.slice(0, 2)) {
+    const src = s.sourceIds
+      .map((sid) => sources.find((x) => x.id === sid))
+      .find((x): x is Source => Boolean(x));
+    if (!src || trailSourceIds.has(src.id)) continue;
+    trailSourceIds.add(src.id);
+    trailSteps.push({
+      stage: "source",
+      title: src.name,
+      href: `/sources/${src.id}`,
+    });
+  }
+
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Signal Clusters", href: "/clusters" },
     { label: cluster.name },
@@ -757,9 +798,25 @@ export default function ClusterDetailPage() {
               cluster={cluster}
               result={result}
               linkedContradictions={linkedContradictions}
+              clusterSignals={clusterSignals}
+              sources={sources}
             />
           ) : (
-            <Tabs tabs={tabs} />
+            <>
+              <Tabs tabs={tabs} />
+              <ViewGate min="analyst">
+                <section className="mt-10 max-w-2xl">
+                  <h2 className="mb-1 text-[13px] font-medium text-ink">
+                    Evidence trail
+                  </h2>
+                  <p className="mb-3 text-[12px] text-ink-faint">
+                    From this cluster down to member signals and their sources
+                    — every step is a live link, none is asserted.
+                  </p>
+                  <EvidenceTrail steps={trailSteps} />
+                </section>
+              </ViewGate>
+            </>
           )}
         </div>
 

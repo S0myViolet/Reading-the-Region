@@ -7,10 +7,12 @@
  * contradiction, plus score minimums); the stored status is never trusted
  * on its own.
  *
- * Layout has exactly four layers: header, one control bar, the cluster
- * list, and the collapsed page guide. Each row is one primary line (the
- * shared-logic name) and one plain-language status line; accent appears
- * only on clusters that have earned validity.
+ * Two registers. The simple view keeps the calm list rows: one primary
+ * line, one plain-language status line. The advanced view renders the
+ * clusters as a grid of quiet map tiles — name, unifying question, a live
+ * evidence line (signals · sources · sectors), computed validity in plain
+ * words, and the linked tension when one exists. Valid maps sort first,
+ * then by evidence weight.
  */
 
 import Link from "next/link";
@@ -28,7 +30,7 @@ import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
 import { DEFINITIONS } from "@/lib/copy";
-import type { Cluster, Sector, Signal } from "@/lib/types";
+import type { Cluster, Contradiction, Sector, Signal } from "@/lib/types";
 import { SECTOR_LABELS } from "@/lib/types";
 import {
   btnPrimary,
@@ -47,6 +49,15 @@ const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
   { value: "candidate", label: "Candidates" },
 ];
 
+interface ClusterRowData {
+  cluster: Cluster;
+  result: ValidationResult;
+  linked: Signal[];
+  facts: DerivedClusterFacts;
+  sourceCount: number;
+  tension: string | null;
+}
+
 function ClustersHeader() {
   return (
     <PageHeader
@@ -61,6 +72,7 @@ function ClustersHeader() {
   );
 }
 
+/** Simple view — unchanged calm list row: one primary line, one status line. */
 function ClusterRow({
   cluster,
   result,
@@ -95,27 +107,86 @@ function ClusterRow({
   );
 }
 
+/**
+ * Advanced view — one cluster-map tile. Quiet by design: no shadows, no
+ * colour flood; accent appears only on the two words a cluster has earned.
+ * All figures are computed live from resolved members, never stored counts.
+ */
+function ClusterMapCard({ row }: { row: ClusterRowData }) {
+  const { cluster, result, linked, facts, sourceCount, tension } = row;
+  return (
+    <Link
+      href={`/clusters/${cluster.id}`}
+      className="card group flex flex-col p-5 transition-colors hover:border-line-strong"
+    >
+      <p className="text-[14px] font-medium leading-snug text-ink group-hover:text-accent-ink">
+        {cluster.name}
+      </p>
+      {cluster.unifyingQuestion.trim() ? (
+        <p className="mt-1.5 line-clamp-2 text-[12px] italic leading-relaxed text-ink-faint">
+          {cluster.unifyingQuestion}
+        </p>
+      ) : null}
+      <div className="mt-auto pt-4">
+        <p className="font-mono text-[11px] text-ink-faint">
+          {linked.length} signal{linked.length === 1 ? "" : "s"} · {sourceCount}{" "}
+          source{sourceCount === 1 ? "" : "s"} · {facts.sectors.length} sector
+          {facts.sectors.length === 1 ? "" : "s"}
+        </p>
+        <p className="mt-1.5 text-[12px]">
+          {result.valid ? (
+            <span className="font-medium text-accent-ink">Valid cluster</span>
+          ) : (
+            <span className="text-ink-faint">
+              Candidate — passes {result.passedCount} of {result.totalCount}{" "}
+              checks
+            </span>
+          )}
+        </p>
+        {tension ? (
+          <p className="mt-1 truncate text-[12px] text-ink-faint">
+            Tension: {tension}
+          </p>
+        ) : null}
+      </div>
+    </Link>
+  );
+}
+
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 export default function ClustersPage() {
   const hydrated = useHydrated();
   const mode = useViewMode();
   const clusters = useIntelligenceStore((s) => s.clusters);
   const signals = useIntelligenceStore((s) => s.signals);
   const sources = useIntelligenceStore((s) => s.sources);
+  const contradictions = useIntelligenceStore((s) => s.contradictions);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
 
-  const rows = useMemo(
+  const rows: ClusterRowData[] = useMemo(
     () =>
       [...clusters]
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .map((cluster) => {
           const result = validateCluster(cluster, signals, sources);
           const linked = signalsOfCluster(cluster, signals);
-          const facts: DerivedClusterFacts = deriveClusterFacts(linked);
-          return { cluster, result, linked, facts };
+          const facts = deriveClusterFacts(linked);
+          const memberSourceIds = new Set(linked.flatMap((s) => s.sourceIds));
+          const sourceCount = sources.filter((src) =>
+            memberSourceIds.has(src.id),
+          ).length;
+          const tension =
+            cluster.contradictionIds
+              .map((cid) => contradictions.find((c) => c.id === cid))
+              .find((c): c is Contradiction => Boolean(c))?.name ?? null;
+          return { cluster, result, linked, facts, sourceCount, tension };
         }),
-    [clusters, signals, sources],
+    [clusters, signals, sources, contradictions],
   );
 
   if (!hydrated) {
@@ -149,16 +220,31 @@ export default function ClustersPage() {
     return true;
   });
 
+  // Grid order: earned validity first, then evidence weight (signal count).
+  const gridRows = [...filtered].sort((a, b) => {
+    if (a.result.valid !== b.result.valid) return a.result.valid ? -1 : 1;
+    return b.linked.length - a.linked.length;
+  });
+
   const validCount = rows.filter((r) => r.result.valid).length;
+  const advanced = mode !== "simple";
 
   return (
     <>
       <ClustersHeader />
       <WalkthroughPanel pageId="clusters" />
 
+      {advanced && rows.length > 0 ? (
+        <p className="mb-6 text-[12px] text-ink-faint">
+          {capitalize(countInWords(rows.length))} map
+          {rows.length === 1 ? "" : "s"} drawn from the scan — groups share
+          underlying logic, not topic.
+        </p>
+      ) : null}
+
       <ControlBar
         more={
-          mode !== "simple" && sectorsPresent.length > 0 ? (
+          advanced && sectorsPresent.length > 0 ? (
             <ControlSelect
               label="Sector"
               value={sectorFilter}
@@ -196,13 +282,22 @@ export default function ClustersPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           message={`Nothing matches the current filters. Reset the search or status${
-            mode !== "simple" ? " and sector" : ""
+            advanced ? " and sector" : ""
           } filters to see all ${countInWords(rows.length)} cluster${
             rows.length === 1 ? "" : "s"
           }, or create a new candidate from related signals.`}
           actionLabel="Create cluster candidate"
           actionHref="/clusters/new"
         />
+      ) : advanced ? (
+        <section
+          aria-label="Cluster maps"
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2"
+        >
+          {gridRows.map((r) => (
+            <ClusterMapCard key={r.cluster.id} row={r} />
+          ))}
+        </section>
       ) : (
         <section aria-label="Signal clusters">
           {filtered.map((r) => (
