@@ -7,8 +7,7 @@
  */
 
 import type { ConfidenceLevel, Region, SignalScores } from "@/lib/types";
-import { CONFIDENCE_LABELS, SCORE_DIMENSION_LABELS, SCORE_RUBRICS } from "@/lib/types";
-import { scoreHeadline } from "@/lib/explain";
+import { SCORE_DIMENSION_LABELS, SCORE_RUBRICS } from "@/lib/types";
 
 export const btnPrimary =
   "bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink";
@@ -131,28 +130,6 @@ export function ScoreChips({ scores }: { scores: SignalScores }) {
       })}
     </span>
   );
-}
-
-/**
- * Plain-words secondary line for a signal list row: the two strongest
- * headline scores, the confidence level, and the country, joined by " · ".
- */
-export function signalRowSummary(signal: {
-  scores: SignalScores;
-  confidence: ConfidenceLevel;
-  country: string;
-}): string {
-  const headline: Array<keyof SignalScores> = [
-    "novelty",
-    "momentum",
-    "evidence",
-    "strategicRelevance",
-  ];
-  const strongest = [...headline]
-    .sort((a, b) => signal.scores[b] - signal.scores[a])
-    .slice(0, 2)
-    .map((dim) => scoreHeadline(dim, signal.scores[dim]));
-  return [...strongest, CONFIDENCE_LABELS[signal.confidence], signal.country].join(" · ");
 }
 
 /**

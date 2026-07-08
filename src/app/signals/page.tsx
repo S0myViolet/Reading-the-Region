@@ -53,7 +53,7 @@ import {
   SYSTEM_LABELS,
   TIME_HORIZON_LABELS,
 } from "@/lib/types";
-import { ScoreChips, btnPrimary, fmtDate, optionsFrom, signalRowSummary } from "./signal-ui";
+import { ScoreChips, btnPrimary, fmtDate, optionsFrom } from "./signal-ui";
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -240,7 +240,18 @@ function SignalRow({ signal }: { signal: Signal }) {
           ) : null}
         </span>
       </div>
-      <p className="mt-1 text-[12px] text-ink-faint">{signalRowSummary(signal)}</p>
+      <p className="mt-1 max-w-2xl truncate text-[12.5px] text-ink-soft">
+        <span className="text-ink-faint">What happened</span>
+        {" — "}
+        {firstSentence(signal.description)}
+      </p>
+      <p className="mt-0.5 text-[12px] text-ink-faint">
+        {[
+          CONFIDENCE_LABELS[signal.confidence],
+          evidenceWords(signal, signal.sourceIds.length),
+          signal.country,
+        ].join(" · ")}
+      </p>
     </Link>
   );
 }

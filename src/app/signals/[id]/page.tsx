@@ -38,16 +38,16 @@ import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink"
 import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { SignalScorePanel } from "@/components/ScorePanel";
 import { ZoomingPanel } from "@/components/ZoomingPanel";
-import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
+import { ContradictionPanel } from "@/components/ContradictionPanel";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
-import { ExplainedScore } from "@/components/Explained";
+import { ExplainedConfidence, ExplainedScore } from "@/components/Explained";
 import { Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { signalStage } from "@/lib/pipeline";
 import { zoomComplete } from "@/lib/validation";
-import { explainContradiction } from "@/lib/explain";
-import { evidenceWords, firstSentence, importanceWords } from "@/lib/simple";
+import { explainContradiction, nextStepForSignal } from "@/lib/explain";
+import { capitalize, evidenceWords, firstSentence, importanceWords } from "@/lib/simple";
 import type {
   Cluster,
   ConfidenceLevel,
@@ -106,6 +106,17 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 
 function FaintNote({ children }: { children: React.ReactNode }) {
   return <p className="text-[11.5px] text-ink-faint">{children}</p>;
+}
+
+/** Quiet derived line: faint inline label, one dash, one sentence. */
+function LabeledLine({ label, text }: { label: string; text: string }) {
+  return (
+    <p className="max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+      <span className="text-[11.5px] text-ink-faint">{label}</span>
+      {" — "}
+      {text}
+    </p>
+  );
 }
 
 function linkedSources(signal: Signal, sources: Source[]): Source[] {
@@ -378,8 +389,28 @@ function OverviewTab({ signal }: { signal: Signal }) {
         <Prose>{signal.whyItMatters}</Prose>
       </Section>
 
-      <Section title="Description">
+      <Section title="What happened">
         <Prose>{signal.description}</Prose>
+      </Section>
+
+      <Section title="Potential implications">
+        {signal.potentialImplications.length > 0 ? (
+          <ul className="space-y-1.5">
+            {signal.potentialImplications.map((imp) => (
+              <li key={imp} className="flex gap-2 text-[13px] leading-relaxed text-ink-soft">
+                <span aria-hidden className="text-ink-faint">
+                  –
+                </span>
+                {imp}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <FaintNote>
+            No potential implications articulated yet. What could this change for the sector,
+            the audience, or the region if it continues?
+          </FaintNote>
+        )}
       </Section>
 
       <Section title="Classification">
@@ -428,26 +459,6 @@ function OverviewTab({ signal }: { signal: Signal }) {
         </dl>
       </Section>
 
-      <Section title="Potential implications">
-        {signal.potentialImplications.length > 0 ? (
-          <ul className="space-y-1.5">
-            {signal.potentialImplications.map((imp) => (
-              <li key={imp} className="flex gap-2 text-[13px] leading-relaxed text-ink-soft">
-                <span aria-hidden className="text-ink-faint">
-                  –
-                </span>
-                {imp}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <FaintNote>
-            No potential implications articulated yet. What could this change for the sector,
-            the audience, or the region if it continues?
-          </FaintNote>
-        )}
-      </Section>
-
       <Section title="Assumptions">
         {signal.assumptions.length > 0 ? (
           <ul className="space-y-1.5">
@@ -482,6 +493,8 @@ function OverviewTab({ signal }: { signal: Signal }) {
           <FaintNote>No open questions recorded.</FaintNote>
         )}
       </Section>
+
+      <LabeledLine label="Next step" text={nextStepForSignal(signal)} />
     </div>
   );
 }
@@ -496,6 +509,17 @@ function EvidenceTab({
   observation: Observation | null;
 }) {
   const linked = linkedSources(signal, sources);
+
+  // What the evidence base still lacks — derived honestly from the record,
+  // never invented. At most the two most pressing gaps are named.
+  const gaps: string[] = [];
+  if (signal.sourceIds.length < 2) gaps.push("no independent second source yet");
+  if (signal.scores.momentum <= 2) gaps.push("no repetition recorded yet");
+  if (signal.contradictionIds.length === 0) gaps.push("no opposing reading checked yet");
+  const missingText =
+    gaps.length === 0
+      ? "Nothing critical — the base is reasonably complete."
+      : `${capitalize(gaps.slice(0, 2).join("; "))}.`;
 
   // Evidence chain, downward from this signal's actual links — steps are
   // never invented, so a thinly evidenced signal shows a visibly short trail.
@@ -566,6 +590,14 @@ function EvidenceTab({
         </div>
       </Section>
 
+      <section className="space-y-2">
+        <LabeledLine label="What is missing" text={missingText} />
+        <LabeledLine
+          label="Evidence quality"
+          text={evidenceWords(signal, signal.sourceIds.length)}
+        />
+      </section>
+
       <Section title="Dates">
         <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
           <Fact label="Date observed">{fmtDate(signal.dateObserved)}</Fact>
@@ -609,6 +641,7 @@ const EXPLAINED_DIMS: Array<keyof SignalScores> = [
   "momentum",
   "evidence",
   "strategicRelevance",
+  "crossSectorRelevance",
 ];
 
 const SCORE_STEPS: Score[] = [1, 2, 3, 4, 5];
@@ -637,7 +670,8 @@ function ScoringTab({ signal, sources }: { signal: Signal; sources: Source[] }) 
 
       <div className="max-w-2xl">
         <Section title="Confidence logic">
-          <ul className="space-y-3">
+          <ExplainedConfidence signal={signal} sources={sources} />
+          <ul className="mt-5 space-y-3">
             {CONFIDENCE_ORDER.map((level) => {
               const current = level === signal.confidence;
               return (
@@ -712,7 +746,20 @@ function ScoringTab({ signal, sources }: { signal: Signal; sources: Source[] }) 
   );
 }
 
-function ZoomingTab({ signal }: { signal: Signal }) {
+function ZoomingTab({
+  signal,
+  contradictions,
+}: {
+  signal: Signal;
+  contradictions: Contradiction[];
+}) {
+  const firstContradiction = contradictions[0];
+  const weakenText = firstContradiction
+    ? `An opposing reading is on record: ${firstContradiction.name}.`
+    : signal.zoom.futureIsSpeculative
+      ? "The future level is marked speculative — the evidence is not yet strong enough to lean on it."
+      : "Nothing recorded yet — look for the opposing case.";
+
   return (
     <div className="space-y-8">
       <p className="max-w-2xl text-[12px] leading-relaxed text-ink-faint">
@@ -721,6 +768,7 @@ function ZoomingTab({ signal }: { signal: Signal }) {
         4 is not a signal reading, it is a guess.
       </p>
       <ZoomingPanel zoom={signal.zoom} />
+      <LabeledLine label="What could weaken this reading" text={weakenText} />
       <ViewGate min="methodology">
         <ValidationChecklist
           result={zoomComplete(signal)}
@@ -735,13 +783,39 @@ function ZoomingTab({ signal }: { signal: Signal }) {
 
 function SystemsTab({ signal }: { signal: Signal }) {
   const systems = signal.systems;
-  if (!systems) {
+  if (
+    !systems ||
+    (!systems.firstOrderEffect.trim() &&
+      !systems.secondOrderEffect.trim() &&
+      !systems.thirdOrderEffect.trim())
+  ) {
     return (
-      <p className="max-w-2xl text-[12.5px] leading-relaxed text-ink-soft">
-        Systems analysis not yet completed — ask what system produced this behaviour, what
-        incentives are shifting, and what second-order effects could emerge if the change
-        continues.
-      </p>
+      <div className="max-w-2xl space-y-5">
+        <p className="text-[13px] leading-relaxed text-ink-soft">
+          Systems analysis not completed yet.
+        </p>
+        <div>
+          <p className="text-[12px] font-medium text-ink">Questions to answer next</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {[
+              "What system produced this behaviour?",
+              "What incentives are changing?",
+              "What second-order effects could follow?",
+            ].map((q) => (
+              <li key={q} className="flex gap-2 text-[13px] leading-relaxed text-ink-soft">
+                <span aria-hidden className="text-ink-faint">
+                  ?
+                </span>
+                {q}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <LabeledLine
+          label="Next"
+          text="complete the systems analysis in an edit pass, or note why it is not needed."
+        />
+      </div>
     );
   }
   const chain: Array<{ label: string; text: string }> = [
@@ -796,7 +870,7 @@ function SystemsTab({ signal }: { signal: Signal }) {
   );
 }
 
-function ReviewTab({ signal }: { signal: Signal }) {
+function ReviewTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
   const updateSignal = useIntelligenceStore((s) => s.updateSignal);
   const [status, setStatus] = useState<ReviewStatus>(signal.reviewStatus);
   const [notes, setNotes] = useState(signal.humanNotes);
@@ -849,6 +923,12 @@ function ReviewTab({ signal }: { signal: Signal }) {
           placeholder="Reviewer judgement, caveats, follow-ups — kept separate from AI-drafted material."
         />
       </Section>
+
+      <Section title="Confidence">
+        <ExplainedConfidence signal={signal} sources={sources} />
+      </Section>
+
+      <LabeledLine label="Next action" text={nextStepForSignal(signal)} />
 
       <ViewGate min="methodology">
         <Section title="Audit trail">
@@ -990,7 +1070,23 @@ export default function SignalDetailPage() {
     });
   }
 
-  const relatedGroups: RelatedGroup[] = [
+  const patternsGroup: RelatedGroup = {
+    heading: "Patterns",
+    kind: "pattern",
+    items: resolveItems(signal.patternIds, patterns, (p) => p.name),
+    emptyNote: "Not yet cited by any pattern.",
+  };
+  const driversGroup: RelatedGroup = {
+    heading: "Possible drivers",
+    kind: "driver",
+    items: resolveItems(signal.driverIds, drivers, (d) => d.name),
+    emptyNote: "No driver hypothesis draws on this signal yet.",
+  };
+
+  // Default trail: the objects an analyst reaches for first. Patterns and
+  // drivers earn a place only when actually linked; everything else waits
+  // behind the "Show full trail" disclosure.
+  const primaryGroups: RelatedGroup[] = [
     {
       heading: "Sources",
       kind: "source",
@@ -1008,29 +1104,24 @@ export default function SignalDetailPage() {
       emptyNote: "Captured directly as a signal — no originating observation.",
     },
     {
-      heading: "Related signals",
-      kind: "signal",
-      items: resolveItems(signal.relatedSignalIds, signals, (s) => s.title),
-      emptyNote: "No related signals connected yet. Evidence gains meaning through relationships.",
-    },
-    {
       heading: "Clusters",
       kind: "cluster",
       items: resolveItems(signal.clusterIds, clusters, (c) => c.name),
       emptyNote: "Not yet part of any cluster candidate.",
     },
+    ...(signal.patternIds.length > 0 ? [patternsGroup] : []),
+    ...(signal.driverIds.length > 0 ? [driversGroup] : []),
+  ];
+
+  const fullTrailGroups: RelatedGroup[] = [
     {
-      heading: "Patterns",
-      kind: "pattern",
-      items: resolveItems(signal.patternIds, patterns, (p) => p.name),
-      emptyNote: "Not yet cited by any pattern.",
+      heading: "Related signals",
+      kind: "signal",
+      items: resolveItems(signal.relatedSignalIds, signals, (s) => s.title),
+      emptyNote: "No related signals connected yet. Evidence gains meaning through relationships.",
     },
-    {
-      heading: "Possible drivers",
-      kind: "driver",
-      items: resolveItems(signal.driverIds, drivers, (d) => d.name),
-      emptyNote: "No driver hypothesis draws on this signal yet.",
-    },
+    ...(signal.patternIds.length === 0 ? [patternsGroup] : []),
+    ...(signal.driverIds.length === 0 ? [driversGroup] : []),
     {
       heading: "Contradictions",
       kind: "contradiction",
@@ -1061,7 +1152,11 @@ export default function SignalDetailPage() {
           label: "Scoring",
           content: <ScoringTab signal={signal} sources={sources} />,
         },
-        { id: "zooming", label: "Zooming", content: <ZoomingTab signal={signal} /> },
+        {
+          id: "zooming",
+          label: "Zooming",
+          content: <ZoomingTab signal={signal} contradictions={linkedContradictions} />,
+        },
         { id: "systems", label: "Systems", content: <SystemsTab signal={signal} /> },
         {
           id: "contradictions",
@@ -1074,10 +1169,17 @@ export default function SignalDetailPage() {
                 ))}
               </div>
             ) : (
-              <NoContradictionNote />
+              <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+                No contradiction linked yet. Check whether this signal has an opposing reading
+                before relying on it.
+              </p>
             ),
         },
-        { id: "review", label: "Review", content: <ReviewTab signal={signal} /> },
+        {
+          id: "review",
+          label: "Review",
+          content: <ReviewTab signal={signal} sources={sources} />,
+        },
       ]}
     />
   );
@@ -1118,7 +1220,18 @@ export default function SignalDetailPage() {
             {guidedMode ? <ReadingGuidePanel /> : null}
           </ViewGate>
           <ViewGate min="analyst">
-            <RelatedObjectsPanel groups={relatedGroups} />
+            <div>
+              <RelatedObjectsPanel groups={primaryGroups} />
+              <details className="mt-4">
+                <summary className="cursor-pointer text-[12px] text-ink-faint hover:text-ink-soft">
+                  Show full trail
+                </summary>
+                {/* The panel's own heading is redundant under the summary label. */}
+                <div className="mt-3 [&>section>h3]:hidden">
+                  <RelatedObjectsPanel groups={fullTrailGroups} />
+                </div>
+              </details>
+            </div>
           </ViewGate>
         </aside>
       </div>
