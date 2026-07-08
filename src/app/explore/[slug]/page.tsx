@@ -80,6 +80,12 @@ export default function ExploreTopicPage() {
         items={[{ label: "Explore", href: "/explore" }, { label: topic.title }]}
       />
       <PageHeader title={topic.title} description={topicDescription(topic)} />
+      {topic.plainSummary ? (
+        <p className="-mt-4 mb-8 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
+          <span className="text-ink-faint">In plain English — </span>
+          {topic.plainSummary}
+        </p>
+      ) : null}
     </>
   );
 

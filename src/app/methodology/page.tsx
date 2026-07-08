@@ -303,6 +303,11 @@ export default function MethodologyPage() {
         description="How Reading the Region turns scattered observation into defensible foresight."
       />
 
+      <p className="mb-10 max-w-2xl text-[14px] leading-relaxed text-ink-soft">
+        Reading the Region scans many sources, keeps the useful signals, groups them into
+        patterns, and turns those patterns into future directions and decisions.
+      </p>
+
       {/* Table of contents — a quiet list of text links */}
       <nav aria-label="Contents" className="mb-12">
         <p className="mb-3 text-[13px] font-medium text-ink">Contents</p>
@@ -335,7 +340,9 @@ export default function MethodologyPage() {
             Reading the Region is a structured foresight intelligence system for MENA. It exists to
             answer one question with discipline: given what can actually be observed today, which
             futures are becoming more plausible for the region, and what should be done about them
-            now? Every object in the system — observation, signal, cluster, pattern, contradiction,
+            now? For example: when long-stay visas expand, schools add capacity, and banks stretch
+            mortgage terms, the system connects those observations and asks whether the Gulf is
+            becoming a place people stay for life. Every object in the system — observation, signal, cluster, pattern, contradiction,
             driver, territory, scenario, implication, indicator — is a step in that argument, and
             every step keeps its evidence attached.
           </P>
@@ -358,7 +365,9 @@ export default function MethodologyPage() {
             Trend reporting describes the surface of the present: what is popular, what is growing,
             what is being talked about. It is useful, but it answers a backward-looking question —
             what has already become visible enough to name? By the time something is a named trend,
-            most of its strategic value has been priced in.
+            most of its strategic value has been priced in. For example: a trend report notes that
+            padel courts are opening everywhere; foresight asks what it means that young people are
+            building their social lives around sport rather than malls.
           </P>
           <P>
             Foresight asks a different question: what does today’s evidence make plausible tomorrow?
@@ -417,6 +426,10 @@ export default function MethodologyPage() {
         {/* 4 ------------------------------------------------------------- */}
         <Section num={4} id="signals" title="What a signal is">
           <Definition text={DEFINITIONS.signal} />
+          <P>
+            For example: a hotel opening a longevity clinic is a signal that hospitality may be
+            moving into healthcare.
+          </P>
           <P>
             A signal is not the event itself; it is what the event suggests. A new visa category, a
             museum opening, a startup pivot — these are observations. They become signals when a
@@ -478,9 +491,7 @@ export default function MethodologyPage() {
           <P>
             Evidence moves upward through twelve layers. Each layer admits less material than the
             one below it and asserts more meaning — scanning admits almost everything; strategic
-            action admits only what has survived every test in between. In plain terms: the system
-            scans many sources, keeps only useful signals, and groups them into bigger patterns.
-            Nothing may skip a layer:
+            action admits only what has survived every test in between. Nothing may skip a layer:
             a territory not built on drivers, or a driver not built on patterns, is an opinion
             wearing the costume of analysis.
           </P>

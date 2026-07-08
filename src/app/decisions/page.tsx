@@ -112,6 +112,11 @@ function TakeawayEntry({
           {firstSentence(stripIds(imp.recommendedAction))}
         </span>
       </p>
+      {imp.risk.trim().length > 0 ? (
+        <p className="mt-2 line-clamp-1 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
+          Risk — {firstSentence(stripIds(imp.risk))}
+        </p>
+      ) : null}
       <p className="mt-2 text-[11.5px] text-ink-faint">
         {audienceWords(imp)} · {HORIZON_WORDS[imp.timeHorizon]} ·{" "}
         {CONFIDENCE_WORDS[imp.confidence]}
@@ -127,40 +132,46 @@ function TakeawayEntry({
             {showEvidence ? "Hide evidence" : "Open evidence"}
           </button>
           {showEvidence ? (
-            <ul className="mt-2 space-y-1.5">
-              {signals.map((s) => (
-                <li key={s.id} className="text-[12px] leading-relaxed">
-                  <Link
-                    href={`/signals/${s.id}`}
-                    className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
-                  >
-                    {s.title}
-                  </Link>
-                </li>
-              ))}
-              {territory ? (
-                <li className="text-[12px] leading-relaxed">
-                  <Link
-                    href={`/territories/${territory.id}`}
-                    className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
-                  >
-                    {territory.name}
-                  </Link>
-                  <span className="text-ink-faint"> · the direction behind this</span>
-                </li>
-              ) : null}
-              {scenario ? (
-                <li className="text-[12px] leading-relaxed">
-                  <Link
-                    href={`/scenarios/${scenario.id}`}
-                    className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
-                  >
-                    {scenario.title}
-                  </Link>
-                  <span className="text-ink-faint"> · the future story behind this</span>
-                </li>
-              ) : null}
-            </ul>
+            <>
+              <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
+                How this supports the decision —{" "}
+                {firstSentence(stripIds(imp.whyItMatters))}
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {signals.map((s) => (
+                  <li key={s.id} className="text-[12px] leading-relaxed">
+                    <Link
+                      href={`/signals/${s.id}`}
+                      className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+                    >
+                      {s.title}
+                    </Link>
+                  </li>
+                ))}
+                {territory ? (
+                  <li className="text-[12px] leading-relaxed">
+                    <Link
+                      href={`/territories/${territory.id}`}
+                      className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+                    >
+                      {territory.name}
+                    </Link>
+                    <span className="text-ink-faint"> · the direction behind this</span>
+                  </li>
+                ) : null}
+                {scenario ? (
+                  <li className="text-[12px] leading-relaxed">
+                    <Link
+                      href={`/scenarios/${scenario.id}`}
+                      className="text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+                    >
+                      {scenario.title}
+                    </Link>
+                    <span className="text-ink-faint"> · the future story behind this</span>
+                  </li>
+                ) : null}
+              </ul>
+            </>
           ) : null}
         </div>
       ) : null}
