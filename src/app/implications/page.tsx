@@ -342,14 +342,14 @@ export default function ImplicationsPage() {
                 Traceability rule
               </h2>
               <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
-                Every implication must trace back down the pyramid: it is
-                anchored to a future territory or scenario, and it cites the
+                Every implication must be anchored and evidenced: it names the
+                future territory or scenario it responds to, and it cites the
                 evidence signals or drivers that make that future plausible. An
                 implication without an anchor answers no question; an
                 implication without evidence links is an opinion. The grounding
-                checklist behind each entry applies this rule — an implication
-                that fails it stays flagged as needing grounding and should not
-                drive decisions until evidence is linked.
+                checks behind each entry apply this rule — an implication that
+                fails them shows as needing more evidence and should not drive
+                decisions until the links exist.
               </p>
             </section>
           </ViewGate>

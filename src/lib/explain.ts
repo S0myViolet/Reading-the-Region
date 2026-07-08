@@ -280,9 +280,17 @@ export function explainTerritoryStatus(t: FutureTerritory): string {
 
 export function explainImplicationEvidence(imp: StrategicImplication): string {
   const result = validateImplication(imp);
-  const links = imp.evidenceSignalIds.length + imp.evidenceDriverIds.length;
   if (result.valid) {
-    return `Traces back to ${links} evidence link${links === 1 ? "" : "s"} down the pyramid.`;
+    const parts: string[] = [];
+    const s = imp.evidenceSignalIds.length;
+    const d = imp.evidenceDriverIds.length;
+    if (s > 0) parts.push(`${s} linked signal${s === 1 ? "" : "s"}`);
+    if (d > 0) parts.push(`${d} driver${d === 1 ? "" : "s"}`);
+    if (imp.territoryId) parts.push("1 future territory");
+    if (imp.scenarioId) parts.push("1 scenario");
+    return parts.length > 0
+      ? `Evidence: ${parts.join(", ")}.`
+      : "Evidence: none linked yet.";
   }
   return `Weakly grounded: ${summarizeValidation(result)}`;
 }
