@@ -565,8 +565,8 @@ function ValidationTab({
         />
         <p className="mt-3 text-[11.5px] text-ink-faint">
           The stronger threshold is optional — failing it does not invalidate
-          the pattern. Passing it marks a movement broad and deep enough to
-          anchor a driver hypothesis.
+          the pattern. Passing it marks a movement with enough sectors,
+          geographies and actor types behind it to anchor a driver hypothesis.
         </p>
       </section>
     </div>
