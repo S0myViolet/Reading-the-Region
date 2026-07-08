@@ -703,12 +703,12 @@ const EXISTING_TOPUPS: Array<{ clusterId: string; recipes: SignalRecipe[] }> = [
         count: [2, 3],
       },
       {
-        title: "Craft markets in {city} report premiums for verifiably handmade goods",
-        whatHappened: "Sellers at {city} craft markets reported sustained price premiums for goods with verifiable human making over comparable manufactured items.",
-        behaviour: "Buyers pay for proof of human authorship as synthetic goods become indistinguishable.",
-        system: "The consumption system is developing verification layers for human origin.",
-        future: "Human-made verification may become a formal certification economy.",
-        whyItMatters: "The premium quantifies trust scarcity in an age of synthetic abundance.",
+        title: "Handmade goods at {city} craft markets sell for more than factory items",
+        whatHappened: "Sellers at {city} craft markets reported steady higher prices for goods proven handmade over similar factory-made items.",
+        behaviour: "Buyers now pay extra for proof a person made the item, as machine-made goods look identical.",
+        system: "The retail system is developing ways to verify that a human actually made a product.",
+        future: "If this continues, handmade certification may grow into a formal industry with labels and inspectors.",
+        whyItMatters: "Craftspeople and shoppers are affected because the premium shows how scarce trust has become amid mass production.",
         sectors: ["retail_commerce", "culture_arts_heritage"],
         systems: ["trust", "creativity", "consumption"],
         actorTypes: ["sme", "consumer"],
@@ -727,11 +727,11 @@ const EXISTING_TOPUPS: Array<{ clusterId: string; recipes: SignalRecipe[] }> = [
     recipes: [
       {
         title: "International school waiting lists lengthen across {city} family districts",
-        whatHappened: "Admissions data across {city} family districts showed lengthening international-school waiting lists linked to long-visa family relocation.",
-        behaviour: "Families are making decade-horizon education commitments in Gulf cities.",
-        system: "The education system is scaling to a settling population rather than a rotating one.",
-        future: "School capacity may become the binding constraint on settlement-led growth.",
-        whyItMatters: "Education demand is the least reversible evidence of permanent settlement.",
+        whatHappened: "Admissions data across {city} family districts showed international-school waiting lists growing as families arrive on long visas.",
+        behaviour: "Families now commit to a decade of schooling in Gulf cities, not a two-year posting.",
+        system: "The education system is scaling for families who stay, not for workers who rotate.",
+        future: "If this continues, school places may become the main limit on how many families can settle.",
+        whyItMatters: "Families, schools and planners are affected because school enrolment is the hardest settlement evidence to reverse.",
         sectors: ["education_work", "migration_citizenship_belonging", "real_estate_urban"],
         systems: ["education", "family", "migration"],
         actorTypes: ["consumer", "corporation"],
@@ -745,11 +745,11 @@ const EXISTING_TOPUPS: Array<{ clusterId: string; recipes: SignalRecipe[] }> = [
       },
       {
         title: "Retirement and inheritance products launch for long-term residents in {country}",
-        whatHappened: "Financial institutions in {country} launched retirement savings and inheritance-planning products designed for long-term foreign residents.",
-        behaviour: "Residents are planning whole lives — not postings — inside Gulf jurisdictions.",
-        system: "The finance system is building the instruments of permanence.",
-        future: "A resident lifecycle economy may replace the expatriate rotation economy.",
-        whyItMatters: "Products with decade horizons are institutions voting on settlement.",
+        whatHappened: "Banks and insurers in {country} launched retirement savings and inheritance products designed for long-term foreign residents.",
+        behaviour: "Residents now plan whole lives in the Gulf, including old age, not just work postings.",
+        system: "The finance system is building products for people who stay for decades, not years.",
+        future: "If this continues, an economy serving residents for life may replace the old expatriate rotation economy.",
+        whyItMatters: "Residents and banks are affected because products with twenty-year horizons show institutions betting on people staying.",
         sectors: ["finance_banking_investment", "migration_citizenship_belonging"],
         systems: ["finance", "family", "migration"],
         actorTypes: ["corporation", "consumer"],
@@ -791,9 +791,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Imported Status to Authored Identity",
     patternType: "cultural",
     statement:
-      "Across fashion, media, museums and food, prestige is migrating from imported global symbols toward locally authored cultural work — the region increasingly confers status on what it makes, not what it buys in.",
+      "Across fashion, media, museums and food, status is moving from imported global brands to work made in the region. People increasingly respect what the region makes, not what it buys in.",
     strategicMeaning:
-      "Brands and institutions that author with the region will outcompete those that merely localise for it.",
+      "Brands that create work with the region will beat brands that only translate global products for it.",
     clusterIds: ["CLU-001", "CLU-106", "CLU-115"],
     validated: true,
   },
@@ -802,9 +802,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Temporary Presence to Permanent Belonging",
     patternType: "demographic",
     statement:
-      "Residency reform, education demand, retirement products and domiciled capital repeat one movement across unrelated sectors: presence in the Gulf is converting from rotation to settlement.",
+      "Residency reform, school demand, retirement products and locally registered companies all show the same shift. People who once came to the Gulf for a few years are now staying for good.",
     strategicMeaning:
-      "Institutions built for a rotating population must rebuild for a settling one — or lose it.",
+      "Institutions built for a rotating workforce must rebuild for families who stay, or they will lose them.",
     clusterIds: ["CLU-003", "CLU-105", "CLU-112"],
     validated: true,
   },
@@ -813,9 +813,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Hospitality as Stay to Hospitality as Lifestyle Infrastructure",
     patternType: "behavioural",
     statement:
-      "Hotels adding clinics, night economies formalising and second-tier destinations programming for residents show hospitality assets becoming everyday life infrastructure rather than episodic accommodation.",
+      "Hotels are adding clinics, night economies are becoming permanent, and smaller destinations now programme for residents. Hospitality venues are becoming part of everyday life, not just places to spend a night.",
     strategicMeaning:
-      "Hospitality operators are becoming infrastructure operators; the relevant competitor set is changing.",
+      "Hotel operators are becoming everyday-service providers, so gyms, clinics and clubs are now their competitors too.",
     clusterIds: ["CLU-104", "CLU-109", "CLU-116"],
     validated: false,
   },
@@ -824,9 +824,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Global Templates to Regional Systems of Meaning",
     patternType: "cultural",
     statement:
-      "Arabic-first media, regional cuisine canons and locally authored cultural production repeat the same movement: formats that once arrived as global templates are being rebuilt as regional systems of meaning.",
+      "Arabic-first media, regional cuisine and locally made culture all repeat the same movement. Formats that once arrived as global templates are being rebuilt from regional roots and meanings.",
     strategicMeaning:
-      "Localisation is no longer the winning move; origination is.",
+      "Translating global products for the region no longer wins; creating original regional work does.",
     clusterIds: ["CLU-106", "CLU-110", "CLU-115"],
     validated: false,
   },
@@ -835,9 +835,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Destination Tourism to Resident Ecosystems",
     patternType: "economic",
     statement:
-      "Transit-oriented districts, active third places, year-round night economies and distributed cultural centres are reorganising Gulf places around the daily lives of residents rather than the itineraries of visitors.",
+      "Metro districts, sports clubs, year-round night markets and spread-out cultural centres all serve people who live here. Gulf places are reorganising around residents' daily lives rather than around visitors' itineraries.",
     strategicMeaning:
-      "Strategies priced on arrivals will misread markets whose value is shifting to residency.",
+      "Strategies priced on tourist arrivals will misread markets whose value now comes from residents.",
     clusterIds: ["CLU-108", "CLU-114", "CLU-109", "CLU-116"],
     validated: true,
   },
@@ -846,9 +846,9 @@ const NEW_PATTERNS: PatternDef[] = [
     name: "From Convenience to Verification",
     patternType: "behavioural",
     statement:
-      "Paid human review, provenance labelling and accountability guarantees are growing fastest exactly where convenience is most saturated — consumers are re-pricing certainty above speed in decisions that matter.",
+      "Paid human review, origin labels and accountability guarantees are growing fastest where instant convenience is already everywhere. For decisions that matter, consumers now value being certain above being fast.",
     strategicMeaning:
-      "The next premium tier across categories is verification, not velocity.",
+      "The next premium consumers will pay for is verification and certainty, not more speed.",
     clusterIds: ["CLU-107", "CLU-002"],
     validated: false,
   },
@@ -873,22 +873,22 @@ const NEW_DRIVERS: DriverDef[] = [
     id: "DRV-103",
     name: "Settlement conversion",
     statement:
-      "Residency reform, family relocation, capital migration, education demand and lifestyle infrastructure are converting parts of the Gulf from temporary work destinations into long-term life platforms.",
+      "Longer visas, family relocation, school demand and long-term investment are pushing this change because staying is now practical and rewarding. Parts of the Gulf are turning from temporary work destinations into places where families build long-term lives.",
     whatItExplains:
-      "Why belonging is being productised, why presence is becoming permanent, and why places are reorganising around residents — one force underneath three repeated movements.",
+      "This explains why companies now sell products for people who stay, why families put down roots, and why cities reorganise around residents. One force sits underneath three repeated movements across unrelated sectors.",
     patternIds: ["PAT-104", "PAT-107", "PAT-001"],
     clusterIds: ["CLU-003", "CLU-105", "CLU-112", "CLU-108", "CLU-114"],
     systems: ["migration", "family", "education", "finance", "housing", "urban"],
     secondOrder: [
-      "Demand rises for schools, family healthcare, community space and long-horizon financial products.",
-      "Retail and hospitality re-price toward repeat residents over one-time visitors.",
+      "Demand rises for schools, family healthcare, community spaces and financial products that run for decades.",
+      "Shops and hotels reprice their offers for repeat residents instead of one-time visitors.",
     ],
     thirdOrder: [
-      "The Gulf's psychological contract shifts from career stopover to life platform, changing who comes and why.",
+      "People stop seeing the Gulf as a career stopover and start seeing it as home, changing who comes and why.",
     ],
     possibleFutures: [
-      "A resident lifecycle economy — education to retirement — operating inside Gulf jurisdictions.",
-      "Settlement-led urban value chains anchored on schools, transit and community infrastructure.",
+      "An economy that serves residents from their first school year to retirement, all inside Gulf countries.",
+      "Urban growth anchored on the schools, transit lines and community spaces where families settle.",
     ],
     contradictionIds: ["CON-003", "CON-002"],
   },
@@ -896,22 +896,22 @@ const NEW_DRIVERS: DriverDef[] = [
     id: "DRV-104",
     name: "Authored legitimacy",
     statement:
-      "Status is shifting from imported global symbols toward locally authored cultural legitimacy — the region increasingly trusts, buys and exports what it makes itself.",
+      "Confident local audiences and heavy cultural investment are pushing this change because regional work now matches imported quality. The region increasingly trusts, buys and exports the brands, media, spaces and symbols it creates itself.",
     whatItExplains:
-      "Why regional design languages, Arabic-first media and regional cuisine canons are rising together, and why imported prestige is losing pricing power across unrelated categories.",
+      "This explains why regional design, Arabic-first media and Gulf cuisine are all rising at the same time. It also explains why imported prestige brands are losing pricing power across unrelated categories.",
     patternIds: ["PAT-103", "PAT-106", "PAT-001"],
     clusterIds: ["CLU-001", "CLU-106", "CLU-110", "CLU-115", "CLU-116"],
     systems: ["identity", "cultural_production", "media", "luxury", "consumption"],
     secondOrder: [
-      "Commissioning, casting and retail-floor budgets reallocate toward regional authorship.",
-      "Institutions build canonising infrastructure — collections, prizes, curricula — for regional work.",
+      "Broadcasters, brands and stores move their budgets toward regional designers, creators and shows.",
+      "Museums and schools build the collections, prizes and courses that make regional work official.",
     ],
     thirdOrder: [
-      "The region becomes a net exporter of cultural reference points rather than an importer of them.",
+      "The region becomes a net exporter of culture and ideas rather than an importer of them.",
     ],
     possibleFutures: [
-      "Regional culture operating as strategic capital across tourism, luxury, media and diplomacy.",
-      "A distributed cultural map where second-tier cities hold recognised authorship niches.",
+      "Regional culture working as a strategic asset across tourism, luxury, media and diplomacy.",
+      "A spread-out cultural map where smaller cities hold recognised creative specialities of their own.",
     ],
     contradictionIds: ["CON-001", "CON-002"],
   },
@@ -936,32 +936,32 @@ const NEW_TERRITORY: TerritoryDef = {
   id: "TER-102",
   name: "The Authoring Region",
   oneLine:
-    "The Gulf's shift from importing culture, formats and legitimacy to authoring them — and exporting the results.",
+    "A future where the Gulf makes and exports its own culture, brands and media instead of importing them.",
   whyEmerging:
-    "Two drivers converge. Authored legitimacy (DRV-104) is re-pricing status toward locally made cultural work across fashion, media, food and institutions. The trust premium (DRV-001) makes verified human and regional authorship more valuable as synthetic and imported abundance grows. The strongest evidence sits in the identity-design cluster (CLU-001) and Arabic-first media cluster (CLU-110): regional authorship leading charts, floors and collections rather than filling quotas. The unresolved tension — global luxury aspiration versus rising regional identity (CON-001) — is what makes this a territory to monitor rather than a conclusion to act on blindly.",
+    "Two forces come together to make this future visible now. Authored legitimacy (DRV-104) is shifting status toward work made in the region across fashion, media, food and museums. The trust premium (DRV-001) makes verified human and regional work more valuable as imported and machine-made goods multiply. The strongest evidence sits in the identity-design cluster (CLU-001) and the Arabic-first media cluster (CLU-110). In both, regional work now leads charts, shop floors and collections rather than filling quotas. One tension remains unresolved: many consumers still aspire to global luxury brands (CON-001). That tension is why this future should be watched closely rather than acted on blindly.",
   driverIds: ["DRV-104", "DRV-001"],
   patternIds: ["PAT-103", "PAT-106"],
   clusterIds: ["CLU-001", "CLU-106", "CLU-110", "CLU-115", "CLU-116"],
   contradictionIds: ["CON-001"],
   whatItChanges:
-    "The direction of cultural trade. Brands stop asking how to localise global playbooks and start asking how to participate in regional authorship. Media commissioning, retail allocation, institutional collecting, casting, cuisine and education reorganise around origination. Prestige pricing shifts from provenance-by-import to provenance-by-authorship, and the export question changes from oil-adjacent goods to systems of meaning.",
+    "It changes the direction of cultural trade between the region and the world. Brands stop asking how to adapt global playbooks and start asking how to join regional creation. Media commissioning, retail floors, museum collecting, casting, cuisine and education reorganise around original regional work. Imported prestige loses its price premium to work made and named in the region. The region's export question shifts from oil-linked goods to culture, media and design.",
   whoItAffects: [
-    "Luxury and fashion houses whose regional strategies assume imported prestige",
-    "Broadcasters, platforms and studios deciding where original commissioning lives",
-    "Cultural institutions building collections and canons",
-    "Tourism boards selling place through culture",
-    "Creators and designers choosing where authorship is best rewarded",
-    "Investors pricing creative-economy infrastructure",
+    "Luxury and fashion houses whose regional plans assume imported prestige still wins",
+    "Broadcasters, platforms and studios deciding where to commission original shows",
+    "Museums and cultural institutions deciding whose work becomes part of the canon",
+    "Tourism boards selling places to visitors through culture",
+    "Creators and designers choosing where their work is best rewarded",
+    "Investors pricing creative infrastructure like studios, schools and venues",
   ],
   risks: [
-    "Boosterism inflating authorship claims faster than craft capacity grows",
-    "Canonisation concentrating in two cities and starving the wider map",
-    "Global houses re-capturing the movement through acquisition rather than participation",
+    "Hype inflating claims of regional creativity faster than real skills can grow",
+    "Recognition concentrating in two cities and starving the wider region",
+    "Global brands buying up the movement instead of genuinely joining it",
   ],
   opportunities: [
-    "First-mover credibility for brands that co-author rather than localise",
-    "Export formats — media, cuisine, design — built on regional systems of meaning",
-    "Creative-economy infrastructure: education, IP, production, distribution",
+    "Early credibility for brands that create with the region rather than translate for it",
+    "Exportable formats in media, cuisine and design built on regional meaning",
+    "Creative infrastructure: education, rights ownership, production and distribution",
   ],
 };
 
@@ -993,27 +993,27 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     horizon: "mid",
     scenarioType: "conservative",
     corePremise:
-      "Settlement conversion continues but slower than headline policy suggests: families anchor where schools and community exist, while cost pressure keeps a large rotational workforce alongside them.",
+      "Families keep settling in the Gulf, but more slowly than headline policy suggests. They put down roots where schools and community exist, while high costs keep a large short-stay workforce alongside them.",
     whatHasChanged:
-      "Long-visa uptake grows steadily rather than exponentially. Two housing markets coexist: settlement districts with schools and transit, and rotation districts optimised for short stays.",
+      "Long-visa numbers grow steadily each year rather than exploding as headlines predicted. Two housing markets sit side by side: family districts with schools and transit, and rotation districts built for short stays.",
     people:
-      "Settling families plan decade horizons; rotational workers remain transactional. The two populations use the same cities differently.",
+      "Settling families plan in decades, while rotating workers keep their arrangements temporary. The two groups use the same cities in very different ways.",
     institutions:
-      "Schools and healthcare expand where settlement clusters; regulators tune visa categories incrementally rather than radically.",
+      "Schools and clinics expand where families cluster, and regulators adjust visa rules step by step rather than radically.",
     brands:
-      "Winning operators run dual propositions — lifecycle products for settlers, convenience products for rotators — without confusing the two.",
-    winners: ["School and healthcare operators in settlement districts", "Developers with family-format supply", "Banks with resident-lifecycle products"],
-    losers: ["Operators pricing the whole market as settlers", "Investor-studio-heavy pipelines"],
-    risks: ["Cost-of-living pressure stalling family relocation", "Policy tightening after political cycles"],
-    opportunities: ["Dual-market product architectures", "Settlement-district land strategies"],
-    earlySigns: ["School waiting lists lengthening in specific districts", "Retirement products gaining uptake", "Family-format housing outperforming studios"],
+      "Winning companies run two offers at once: long-term products for settlers and convenience products for short-stay workers.",
+    winners: ["School and healthcare operators in family districts", "Developers building family-sized homes", "Banks with products for long-term residents"],
+    losers: ["Companies pricing the whole market as if everyone settles", "Developers with pipelines full of investor studio apartments"],
+    risks: ["Rising living costs stalling family relocation", "Visa policy tightening after political changes"],
+    opportunities: ["Product ranges that serve settlers and short-stay workers separately", "Land strategies focused on genuine family districts"],
+    earlySigns: ["School waiting lists growing in specific districts", "More residents buying retirement products", "Family-sized homes outperforming studio apartments"],
     strategicQuestions: [
-      "Which districts are actually settling, and which only look like it?",
-      "What share of our customer base is lifecycle versus rotation?",
+      "Which districts are genuinely settling, and which only look like it?",
+      "What share of our customers plan to stay for decades rather than years?",
     ],
     assumptions: [
-      { text: "Visa frameworks remain at least as open as today.", speculative: false },
-      { text: "Education capacity keeps pace in key districts.", speculative: true },
+      { text: "Visa rules stay at least as open as they are today.", speculative: false },
+      { text: "School capacity keeps pace with demand in key districts.", speculative: true },
     ],
   },
   {
@@ -1023,27 +1023,27 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     horizon: "long",
     scenarioType: "wildcard",
     corePremise:
-      "An external shock — a prolonged regional security crisis or global capital repricing — tests settlement: some anchored families deepen roots while newly arrived capital retreats, splitting the Permanent Gulf into committed cores and evaporating edges.",
+      "A major shock, such as a security crisis or a global financial downturn, tests who really settled. Rooted families stay and deepen their lives, while recently arrived money leaves quickly.",
     whatHasChanged:
-      "Settlement proves durable exactly where community infrastructure existed, and fragile where it was only paperwork. The territory mutates rather than dies.",
+      "Settlement holds where schools, transit and community existed, and collapses where residency was only paperwork. The long-term settlement story survives, but only in its committed districts.",
     people:
-      "Rooted families stay through the shock; speculative movers leave quickly, revealing which belonging was real.",
+      "Rooted families stay through the shock, while speculative movers leave fast, showing which belonging was real.",
     institutions:
-      "Governments double down on retention of committed residents; institutions with lifecycle relationships hold their base.",
+      "Governments work hard to keep committed residents, and institutions with long-term customer relationships hold onto their base.",
     brands:
-      "Operators discover their true resident base and rebuild propositions around demonstrated commitment.",
-    winners: ["Institutions with deep community roots", "Districts with schools, transit and third places"],
-    losers: ["Paper-residency programmes", "Speculative settlement plays without community infrastructure"],
-    risks: ["Overreaction pricing out the committed core", "Reading temporary retreat as structural reversal"],
-    opportunities: ["Acquiring durable positions during the retreat", "Retention products for committed residents"],
-    earlySigns: ["Divergence between visa issuance and school enrolment", "Community-district resilience during minor shocks"],
+      "Companies discover who their real long-term customers are and rebuild their offers around proven commitment.",
+    winners: ["Institutions with deep community roots", "Districts with schools, transit and social venues"],
+    losers: ["Residency programmes that were only paperwork", "Settlement bets made without schools or community nearby"],
+    risks: ["Panicked price rises or cuts that drive out committed families too", "Mistaking a temporary retreat for a permanent reversal"],
+    opportunities: ["Buying durable assets cheaply during the retreat", "Loyalty products for residents who prove they are staying"],
+    earlySigns: ["Visa numbers rising while school enrolment stalls", "Community districts holding up better during small shocks"],
     strategicQuestions: [
-      "Which parts of our settlement thesis survive a stress test?",
-      "What distinguishes rooted belonging from arbitraged residency in our data?",
+      "Which parts of our settlement bet would survive a crisis?",
+      "How do we tell rooted families from paper residents in our own data?",
     ],
     assumptions: [
-      { text: "A material external shock occurs within the horizon.", speculative: true },
-      { text: "Community infrastructure differentially retains settlers under stress.", speculative: true },
+      { text: "A serious external shock happens within this time frame.", speculative: true },
+      { text: "Community infrastructure keeps settlers in place better under stress.", speculative: true },
     ],
   },
   {
@@ -1053,27 +1053,27 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     horizon: "mid",
     scenarioType: "optimistic",
     corePremise:
-      "Regional authorship compounds: Arabic-first formats, Khaleeji design languages and regional cuisine canons become exportable systems, and the Gulf begins selling meaning abroad the way it once only bought it.",
+      "Regional creativity grows until the Gulf sells its culture abroad instead of only buying culture in. Arabic shows, Gulf design and regional cuisine become exports that other countries pay for.",
     whatHasChanged:
-      "Commissioning, collecting and casting decisions have made regional authorship the default; export deals carry formats outward with regional credibility intact.",
+      "Broadcasters, museums and brands now choose regional work by default, and export deals carry it abroad with its credibility intact.",
     people:
-      "Creators build global careers from regional bases; audiences treat regional work as first-choice culture, not civic duty.",
+      "Creators build global careers from regional bases, and audiences choose regional work first, not out of duty.",
     institutions:
-      "Cultural institutions operate as canon-makers with international pull; education pipelines feed authorship professions.",
+      "Museums and cultural bodies now define quality with international pull, while schools train the next generation of creators.",
     brands:
-      "Global houses co-author with regional talent to stay relevant; regional brands export with cultural confidence.",
-    winners: ["Regional creators and studios", "Institutions that canonised early", "Cities with authorship infrastructure"],
-    losers: ["Import-and-localise intermediaries", "Prestige models built on distance"],
-    risks: ["Authorship bubble inflating past craft capacity", "Export attention diluting regional specificity"],
-    opportunities: ["Format export businesses", "Authorship education and IP infrastructure", "Co-authoring partnerships"],
-    earlySigns: ["Regional formats licensed outward", "International institutions acquiring regional work", "Export revenue lines in creative-economy reporting"],
+      "Global brands create work with regional talent to stay relevant, while regional brands export with confidence.",
+    winners: ["Regional creators and studios", "Institutions that recognised regional work early", "Cities with creative schools and studios"],
+    losers: ["Middlemen who import and adapt foreign formats", "Prestige brands that relied on seeming foreign"],
+    risks: ["A creativity bubble growing faster than real skills", "Global attention flattening what makes regional work distinct"],
+    opportunities: ["Businesses that sell regional formats abroad", "Creative education and rights ownership", "Partnerships that create work jointly with regional talent"],
+    earlySigns: ["Regional formats licensed to foreign markets", "International museums buying regional work", "Export revenue appearing in creative-industry reports"],
     strategicQuestions: [
-      "What would our category look like exported from the region rather than imported into it?",
-      "Which regional authors should we be building with now?",
+      "What would our product look like exported from the region rather than imported into it?",
+      "Which regional creators should we be building with now?",
     ],
     assumptions: [
-      { text: "Creative-economy investment sustains through the horizon.", speculative: false },
-      { text: "External markets receive regional formats at scale.", speculative: true },
+      { text: "Investment in the creative economy continues through this period.", speculative: false },
+      { text: "Foreign markets buy regional formats at meaningful scale.", speculative: true },
     ],
   },
   {
@@ -1083,26 +1083,26 @@ const NEW_SCENARIOS: ScenarioDef[] = [
     horizon: "near",
     scenarioType: "pessimistic",
     corePremise:
-      "Authorship claims outrun authorship capacity: subsidised prestige, imported ghost-production and celebratory coverage inflate a legitimacy bubble that audiences quietly discount.",
+      "Claims about regional creativity grow faster than the actual creative skills behind them. Subsidised prestige, hidden foreign production and cheerleading coverage inflate a bubble that audiences quietly stop believing.",
     whatHasChanged:
-      "The vocabulary of regional authorship saturates marketing while craft pipelines lag; audiences learn to distinguish authored work from authored-washed work.",
+      "Marketing is saturated with regional-identity language while the skills pipeline lags well behind it. Audiences learn to tell genuinely regional work from work that only wears the label.",
     people:
-      "Consumers grow sceptical of regional-identity claims and reward only verifiable craft; creators resent dilution of the label.",
+      "Consumers grow sceptical of regional-identity claims and reward only work with visible craft, while creators resent the diluted label.",
     institutions:
-      "Institutions face credibility tests over what they canonise; some retreat to imported safety.",
+      "Museums face credibility tests over work they endorsed too quickly, and some retreat to safe international names.",
     brands:
-      "Brands that authored-washed pay a trust penalty; those with real regional craft gain by contrast.",
-    winners: ["Verifiably crafted regional work", "Verification and provenance layers for culture"],
-    losers: ["Authorship-washing campaigns", "Institutions that canonised too fast"],
-    risks: ["A visible failure discrediting the wider movement", "Talent exit if the label collapses"],
-    opportunities: ["Verification standards for cultural authorship", "Patient craft-first positioning"],
-    earlySigns: ["Audience sarcasm toward identity marketing", "Gap between authorship claims and named credits", "Discounting of regional-label premiums"],
+      "Brands that faked regional credentials pay a trust penalty, while brands with real regional craft gain by contrast.",
+    winners: ["Regional work with visible, verifiable craft", "Services that verify who made cultural work"],
+    losers: ["Campaigns that faked regional credentials", "Institutions that endorsed work too fast"],
+    risks: ["One visible failure discrediting the whole movement", "Talented creators leaving if the label collapses"],
+    opportunities: ["Standards that verify who really made cultural work", "Patient positioning built on craft before marketing"],
+    earlySigns: ["Audiences mocking identity marketing online", "Gap between creative claims and named credits in campaigns", "Regional labels no longer commanding higher prices"],
     strategicQuestions: [
-      "Can we evidence our authorship claims with named credits and process?",
-      "What is our exposure if the regional-authorship label gets discounted?",
+      "Can we back our regional claims with named people and a visible process?",
+      "How exposed are we if the regional label loses its value?",
     ],
     assumptions: [
-      { text: "Marketing adoption of authorship language continues to outpace craft investment.", speculative: true },
+      { text: "Marketing keeps adopting regional language faster than companies invest in real craft.", speculative: true },
     ],
   },
 ];
@@ -1127,16 +1127,16 @@ interface ImplicationDef {
 }
 
 const NEW_IMPLICATIONS: ImplicationDef[] = [
-  { territoryId: "TER-001", scenarioId: "SCN-103", sectors: ["education_work"], audiences: ["education_providers", "investors"], implicationType: "capability", implication: "School capacity in settlement districts is becoming the binding constraint on the settlement economy — whoever solves it captures the anchor tenant of permanence.", whyItMatters: "Education demand is the least reversible settlement evidence, and waiting lists are already lengthening.", opportunity: "Long-horizon education infrastructure with embedded community services.", risk: "Building for headline migration numbers rather than verified settlement districts.", action: "Map school waiting lists against long-visa uptake by district before the next land or expansion decision.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-001", scenarioId: "SCN-103", sectors: ["finance_banking_investment"], audiences: ["banks"], implicationType: "product", implication: "Resident-lifecycle finance — retirement, inheritance, education savings — is the settlement economy's product frontier while most banks still sell rotation products.", whyItMatters: "Institutions are already launching permanence instruments; the category will be claimed within a few product cycles.", opportunity: "Twenty-year customer relationships priced at settlement rather than posting horizons.", risk: "Regulatory divergence across GCC jurisdictions fragmenting the product set.", action: "Stand up a resident-lifecycle product line with named milestones tied to visa and education data.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-001", scenarioId: "SCN-104", sectors: ["real_estate_urban"], audiences: ["developers", "urban_planners"], implicationType: "risk", implication: "Settlement value is conditional on community infrastructure — paper residency without schools, transit and third places evaporates first under stress.", whyItMatters: "The wildcard scenario shows anchored and arbitraged residency diverging sharply in a shock.", opportunity: "Stress-resilient district strategies anchored on community assets.", risk: "Underwriting settlement demand that is actually rotation in disguise.", action: "Score the pipeline by community-infrastructure completeness, not visa-category demand alone.", confidence: "medium", horizon: "mid_term" },
-  { territoryId: "TER-001", scenarioId: null, sectors: ["mobility_transport", "retail_commerce"], audiences: ["retailers", "developers"], implicationType: "experience", implication: "Transit spines are becoming the organising geography of daily resident spending — retail formats built for car arrival will mis-locate.", whyItMatters: "Leasing premiums around stations are already measurable in early corridors.", opportunity: "Transit-adjacent daily-life formats: food, services, community retail.", risk: "Premiums inflating faster than footfall in unproven corridors.", action: "Re-weight the location model toward station catchments and test two transit-native formats.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-001", scenarioId: null, sectors: ["hospitality_tourism"], audiences: ["hotels", "tourism_boards"], implicationType: "innovation", implication: "The most valuable guest of the settlement era lives ten minutes away — hospitality assets need resident propositions, not only visitor ones.", whyItMatters: "Night-economy formalisation and lifestyle infrastructure are reorganising demand around residents.", opportunity: "Membership, clinics, co-working and programming layers on existing assets.", risk: "Diluting visitor economics before resident revenue matures.", action: "Pilot a resident membership across one flagship asset with clear cannibalisation metrics.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-102", scenarioId: "SCN-105", sectors: ["fashion_luxury"], audiences: ["luxury_brands", "brands"], implicationType: "brand", implication: "Co-authorship with regional designers is replacing localisation as the credible market-entry strategy — the window for first-mover partnerships is open but narrowing.", whyItMatters: "Retail floors, castings and collections are already re-ranking toward regional authorship.", opportunity: "Durable credibility through named regional co-authors and craft investment.", risk: "Authorship-washing detection — audiences increasingly check credits.", action: "Commit to multi-season co-authored lines with named credits and regional production.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-102", scenarioId: "SCN-105", sectors: ["media_entertainment_creator"], audiences: ["media_platforms", "entertainment"], implicationType: "media", implication: "Arabic-first origination is becoming the default attention economy — commissioning budgets anchored on imports will buy declining relevance.", whyItMatters: "Arabic-original formats are already out-drawing imports in key categories.", opportunity: "Regional format ownership with export upside.", risk: "Chasing volume of Arabic content without authorship quality.", action: "Shift the commissioning ratio toward Arabic-first originals with named regional creators.", confidence: "high", horizon: "immediate" },
-  { territoryId: "TER-102", scenarioId: "SCN-106", sectors: ["culture_arts_heritage"], audiences: ["cultural_institutions", "governments"], implicationType: "risk", implication: "Canonisation speed is a credibility risk — institutions that consecrate authorship faster than craft matures will pay in trust when the discount comes.", whyItMatters: "The pessimistic scenario turns on claims outrunning capacity.", opportunity: "Verification-grade curation: named credits, process transparency, craft standards.", risk: "A visible authorship-washing failure discrediting the wider movement.", action: "Adopt evidence standards for authorship claims in acquisitions and programming.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-102", scenarioId: null, sectors: ["food_beverage_third_places", "hospitality_tourism"], audiences: ["tourism_boards", "hotels"], implicationType: "experience", implication: "Regional cuisine is the fastest route from identity to visitor economy — a recognised Khaleeji canon converts authorship into bookings.", whyItMatters: "Chef-led movements are already earning critical acclaim and premium pricing.", opportunity: "Culinary tourism products anchored on named regional chefs and ingredients.", risk: "Flattening regional variety into one marketable cuisine.", action: "Build destination gastronomy programmes around named chefs and verifiable regional sourcing.", confidence: "medium", horizon: "near_term" },
-  { territoryId: "TER-102", scenarioId: null, sectors: ["education_work", "culture_arts_heritage"], audiences: ["education_providers", "governments"], implicationType: "capability", implication: "Authorship professions need pipelines — design, production, curation and craft education are the constraint on the authoring region's growth.", whyItMatters: "Every optimistic path through this territory assumes craft capacity that must be built now.", opportunity: "Regional creative-education infrastructure with employment-linked credentials.", risk: "Importing faculty and frameworks that reproduce template thinking.", action: "Fund authorship-track education with named industry partnerships and credential recognition.", confidence: "medium", horizon: "mid_term" },
+  { territoryId: "TER-001", scenarioId: "SCN-103", sectors: ["education_work"], audiences: ["education_providers", "investors"], implicationType: "capability", implication: "School places in family districts are becoming the main limit on settlement growth. Whoever builds them captures the families who anchor everything else.", whyItMatters: "School enrolment is the hardest settlement evidence to reverse, and waiting lists are already growing.", opportunity: "Long-term school investment with clinics and community services built in.", risk: "This may be overstated if migration headlines exaggerate how many families are actually settling.", action: "Map school waiting lists against long-visa uptake by district before the next land or expansion decision.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-001", scenarioId: "SCN-103", sectors: ["finance_banking_investment"], audiences: ["banks"], implicationType: "product", implication: "Retirement, inheritance and education savings for long-term residents are the next big banking products. Most banks still sell products designed for workers who leave.", whyItMatters: "Some institutions are already launching these products, and the category will be claimed within a few product cycles.", opportunity: "Twenty-year customer relationships priced for people who stay, not people on short postings.", risk: "This may be overstated if GCC countries regulate these products so differently that no regional offer works.", action: "Launch a product line for long-term residents, with milestones tied to visa and school enrolment data.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-001", scenarioId: "SCN-104", sectors: ["real_estate_urban"], audiences: ["developers", "urban_planners"], implicationType: "risk", implication: "Settlement value depends on schools, transit and social venues, not on visa paperwork. Districts with paperwork but no community infrastructure will empty first in a crisis.", whyItMatters: "The shock scenario shows rooted families and paper residents behaving very differently under stress.", opportunity: "District strategies anchored on schools and community assets that hold value through shocks.", risk: "This may be overstated if demand that looks like settlement is really short-stay rotation in disguise.", action: "Score every project in the pipeline by its community infrastructure, not by visa-category demand alone.", confidence: "medium", horizon: "mid_term" },
+  { territoryId: "TER-001", scenarioId: null, sectors: ["mobility_transport", "retail_commerce"], audiences: ["retailers", "developers"], implicationType: "experience", implication: "Daily spending is moving to metro corridors, so shops planned around car arrival will end up in the wrong places.", whyItMatters: "Rents near stations are already measurably higher in the first corridors with reliable data.", opportunity: "Food, services and community retail formats within walking distance of stations.", risk: "This may be overstated if station rents rise faster than actual foot traffic in unproven corridors.", action: "Re-weight the location model toward station catchments and test two formats built for metro customers.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-001", scenarioId: null, sectors: ["hospitality_tourism"], audiences: ["hotels", "tourism_boards"], implicationType: "innovation", implication: "The most valuable hotel guest now lives ten minutes away. Hotels need memberships and services for residents, not only rooms for visitors.", whyItMatters: "Year-round night economies and lifestyle demand are already shifting spending toward residents.", opportunity: "Memberships, clinics, co-working and events layered onto hotel assets that already exist.", risk: "This may be overstated if resident revenue grows too slowly to replace diluted visitor income.", action: "Pilot a resident membership at one flagship hotel and measure what it takes from visitor revenue.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-102", scenarioId: "SCN-105", sectors: ["fashion_luxury"], audiences: ["luxury_brands", "brands"], implicationType: "brand", implication: "Creating collections with regional designers now beats adapting global ones for the market. The window to be first in these partnerships is open but closing.", whyItMatters: "Shop floors, campaign castings and museum collections are already shifting toward regional designers.", opportunity: "Lasting credibility through named regional partners and real investment in local craft.", risk: "This may be overstated if audiences dismiss shallow partnerships, since they increasingly check who did the work.", action: "Commit to multi-season collections co-created with named regional designers and produced in the region.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-102", scenarioId: "SCN-105", sectors: ["media_entertainment_creator"], audiences: ["media_platforms", "entertainment"], implicationType: "media", implication: "Arabic-original shows are becoming the default choice for regional audiences. Commissioning budgets that stay anchored on imported formats will buy shrinking audiences.", whyItMatters: "Arabic-original formats already draw bigger audiences than imports in key categories.", opportunity: "Owning regional formats that can also be sold to other markets.", risk: "This may be overstated if the volume of Arabic content rises without the quality that keeps audiences.", action: "Shift the commissioning ratio toward Arabic-first originals made with named regional creators.", confidence: "high", horizon: "immediate" },
+  { territoryId: "TER-102", scenarioId: "SCN-106", sectors: ["culture_arts_heritage"], audiences: ["cultural_institutions", "governments"], implicationType: "risk", implication: "Museums that endorse regional work faster than the craft matures put their credibility at risk. Speed of recognition is now a trust decision, not a programming one.", whyItMatters: "The pessimistic scenario turns on creative claims growing faster than the creative skills behind them.", opportunity: "Curation with named credits, a visible process and craft standards audiences can check.", risk: "This may be overstated if audiences keep accepting claims without ever checking who made the work.", action: "Adopt evidence standards for authorship claims in every acquisition and programming decision.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-102", scenarioId: null, sectors: ["food_beverage_third_places", "hospitality_tourism"], audiences: ["tourism_boards", "hotels"], implicationType: "experience", implication: "Regional cuisine is the fastest way to turn local identity into visitor income. A recognised Gulf food tradition converts culture directly into bookings.", whyItMatters: "Chef-led menus built on regional ingredients are already winning acclaim and premium prices.", opportunity: "Food tourism built around named regional chefs and traceable local ingredients.", risk: "This may be overstated if marketing flattens the region's varied cuisines into one generic offer.", action: "Build destination food programmes around named chefs and ingredients whose origin can be verified.", confidence: "medium", horizon: "near_term" },
+  { territoryId: "TER-102", scenarioId: null, sectors: ["education_work", "culture_arts_heritage"], audiences: ["education_providers", "governments"], implicationType: "capability", implication: "The region's creative growth is limited by training, not by ambition. Schools for design, production, curation and craft are now the bottleneck.", whyItMatters: "Every optimistic path for regional culture assumes trained creators who must start learning now.", opportunity: "Regional creative schools whose credentials link directly to jobs in the industry.", risk: "This may be overstated if imported teachers and curricula simply reproduce global template thinking.", action: "Fund creative education tracks with named industry partners and officially recognised credentials.", confidence: "medium", horizon: "mid_term" },
 ];
 
 interface IndicatorDef {
@@ -1151,16 +1151,16 @@ interface IndicatorDef {
 }
 
 const NEW_INDICATORS: IndicatorDef[] = [
-  { name: "Long-visa issuance vs school enrolment divergence", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "demographic", description: "Tracks whether residency paperwork converts into education commitments — the settlement/arbitrage gap.", currentStatus: "Enrolment tracking issuance in core districts; gap widening in two speculative corridors.", trend: "strengthening", cadence: "quarterly" },
-  { name: "Resident-lifecycle financial product launches", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "investment", description: "Counts retirement, inheritance and education-savings products for long-term residents.", currentStatus: "Three institutions live; two more announced this half.", trend: "strengthening", cadence: "quarterly" },
-  { name: "Family-format housing share of new supply", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "infrastructure", description: "Share of three-bedroom-plus units in announced pipelines versus investor studios.", currentStatus: "Rising in transit districts; flat elsewhere.", trend: "stable", cadence: "quarterly" },
-  { name: "Station-catchment retail leasing premium", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "behaviour", description: "Leasing premium of transit-adjacent retail over car-access comparables.", currentStatus: "Premium measurable in two corridors; data thin elsewhere.", trend: "strengthening", cadence: "quarterly" },
-  { name: "Rotation-market wage cost pressure", territoryId: "TER-001", driverId: null, indicatorType: "resistance", description: "Cost pressure that could stall family relocation despite policy openness.", currentStatus: "Housing and schooling cost growth outpacing wage growth for mid-income families.", trend: "contradictory", cadence: "quarterly" },
-  { name: "Arabic-original share of top podcast charts", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "media", description: "Share of Arabic-first originals in top regional audio charts.", currentStatus: "Majority position held for third consecutive quarter.", trend: "strengthening", cadence: "monthly" },
-  { name: "Regional designer share of flagship retail floors", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "consumer", description: "Floor allocation to regional authorship in flagship retail.", currentStatus: "Two flagship reallocations this season; premium sustained.", trend: "strengthening", cadence: "quarterly" },
-  { name: "Named-credit density in authorship marketing", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "contradiction", description: "Whether regional-authorship claims carry named credits — the boosterism check.", currentStatus: "Claims growing faster than named credits in campaign sampling.", trend: "contradictory", cadence: "quarterly" },
-  { name: "Institutional acquisition of living regional designers", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "cultural", description: "Permanent-collection acquisitions of living regional designers.", currentStatus: "Two institutions acquired this year; pipeline visible.", trend: "strengthening", cadence: "biannual" },
-  { name: "Regional format export deals", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "investment", description: "Outbound licensing of regional media, cuisine and design formats.", currentStatus: "First outbound licences signed; volume still small.", trend: "stable", cadence: "biannual" },
+  { name: "Long-visa issuance vs school enrolment divergence", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "demographic", description: "Tracks whether residency paperwork turns into school enrolments — the gap between settling and speculating.", currentStatus: "Enrolment matches visa issuance in core districts; the gap is widening in two speculative corridors.", trend: "strengthening", cadence: "quarterly" },
+  { name: "Resident-lifecycle financial product launches", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "investment", description: "Counts retirement, inheritance and education-savings products launched for long-term residents.", currentStatus: "Three institutions have products live; two more announced launches this half-year.", trend: "strengthening", cadence: "quarterly" },
+  { name: "Family-format housing share of new supply", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "infrastructure", description: "Share of homes with three or more bedrooms in announced pipelines, versus studios built for investors.", currentStatus: "The share is rising in districts near transit and flat everywhere else.", trend: "stable", cadence: "quarterly" },
+  { name: "Station-catchment retail leasing premium", territoryId: "TER-001", driverId: "DRV-103", indicatorType: "behaviour", description: "Measures how much more retail tenants pay near stations than at similar car-access sites.", currentStatus: "A premium is measurable in two corridors; data remains thin elsewhere.", trend: "strengthening", cadence: "quarterly" },
+  { name: "Rotation-market wage cost pressure", territoryId: "TER-001", driverId: null, indicatorType: "resistance", description: "Tracks living costs that could stop families relocating even though visa policy is open.", currentStatus: "Housing and school costs are growing faster than wages for mid-income families.", trend: "contradictory", cadence: "quarterly" },
+  { name: "Arabic-original share of top podcast charts", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "media", description: "Share of Arabic-original shows in the region's top podcast charts.", currentStatus: "Arabic originals have held the majority position for three consecutive quarters.", trend: "strengthening", cadence: "monthly" },
+  { name: "Regional designer share of flagship retail floors", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "consumer", description: "Share of flagship store floor space given to regional designers.", currentStatus: "Two flagship stores reallocated floors this season; the price premium held.", trend: "strengthening", cadence: "quarterly" },
+  { name: "Named-credit density in authorship marketing", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "contradiction", description: "Checks whether claims of regional creativity name the actual people behind the work — the hype test.", currentStatus: "Claims are growing faster than named credits in sampled campaigns.", trend: "contradictory", cadence: "quarterly" },
+  { name: "Institutional acquisition of living regional designers", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "cultural", description: "Counts museum acquisitions of work by living regional designers for permanent collections.", currentStatus: "Two institutions acquired work this year; more acquisitions are visible in the pipeline.", trend: "strengthening", cadence: "biannual" },
+  { name: "Regional format export deals", territoryId: "TER-102", driverId: "DRV-104", indicatorType: "investment", description: "Counts deals licensing regional media, cuisine and design formats to foreign markets.", currentStatus: "The first outbound licences are signed; volume is still small.", trend: "stable", cadence: "biannual" },
 ];
 
 
@@ -1363,16 +1363,16 @@ for (const t of EXISTING_TOPUPS) {
 // --- Noise and needs-evidence observations ---------------------------------
 
 const NOISE_TEMPLATES: Array<{ title: string; desc: string; status: Observation["status"]; rationale: string; sectors: Sector[] }> = [
-  { title: "Celebrity visits {city} flagship opening", desc: "An international celebrity appeared at a {city} retail opening to significant social coverage.", status: "archived_noise", rationale: "Event coverage with no behaviour or system shift — publicity, not evidence.", sectors: ["retail_commerce"] },
-  { title: "Operator claims record quarter in {city} press release", desc: "A press release claimed record quarterly performance without published methodology or comparable figures.", status: "archived_noise", rationale: "Promotional claim without verifiable data; PR framing.", sectors: ["hospitality_tourism"] },
-  { title: "Viral thread predicts property boom in {city}", desc: "An anonymous viral thread predicted a property boom citing unnamed insiders.", status: "archived_noise", rationale: "Anonymous speculation; no credible source; recency-driven.", sectors: ["real_estate_urban"] },
-  { title: "Global trend piece maps Western retail format onto the Gulf", desc: "A trend article asserted a Western retail behaviour applies regionally without regional evidence.", status: "archived_noise", rationale: "Global trend treated as regional without regional evidence — guardrail archive.", sectors: ["retail_commerce"] },
-  { title: "Influencer review praises new {city} wellness studio", desc: "A sponsored influencer review praised a single new wellness studio opening.", status: "archived_noise", rationale: "Single sponsored anecdote; platform self-promotion; no wider implication.", sectors: ["health_wellness_longevity"] },
-  { title: "Restaurant week returns to {city}", desc: "An annual restaurant week returned with its usual programming.", status: "archived_noise", rationale: "Recurring calendar event; adds no new evidence of change.", sectors: ["food_beverage_third_places"] },
-  { title: "Startup announces app for {city} commuters", desc: "A startup announced a commuter app with no usage data or differentiation stated.", status: "needs_more_evidence", rationale: "Interesting space but no adoption evidence yet; revisit after launch data.", sectors: ["mobility_transport"] },
-  { title: "Survey hints at changing gift-giving among Gulf youth", desc: "A small-sample survey suggested shifting gift-giving preferences among young Gulf consumers.", status: "needs_more_evidence", rationale: "Sample too small to weight; novelty worth a follow-up scan.", sectors: ["retail_commerce"] },
-  { title: "Forum discussion on remote work visas grows", desc: "A community forum thread on remote-work visas drew sustained engagement.", status: "needs_more_evidence", rationale: "Anecdotal interest signal; needs policy or platform data before promotion.", sectors: ["education_work", "migration_citizenship_belonging"] },
-  { title: "Two outlets republish the same longevity clinic story", desc: "Two publications republished the same wire story on a clinic opening.", status: "duplicate", rationale: "Duplicate of an observation already in the base.", sectors: ["health_wellness_longevity"] },
+  { title: "Celebrity visits {city} flagship store opening", desc: "An international celebrity appeared at a {city} store opening and drew heavy social media coverage.", status: "archived_noise", rationale: "This is publicity, not evidence: nobody's behaviour changed and no system changed.", sectors: ["retail_commerce"] },
+  { title: "Operator claims record quarter in {city} press release", desc: "A press release claimed a record quarter without publishing its methods or any comparable figures.", status: "archived_noise", rationale: "A promotional claim with no verifiable data behind it; archived as public relations.", sectors: ["hospitality_tourism"] },
+  { title: "Viral thread predicts property boom in {city}", desc: "An anonymous viral thread predicted a property boom, citing unnamed insiders as its only evidence.", status: "archived_noise", rationale: "Anonymous speculation with no credible source; driven by the news cycle.", sectors: ["real_estate_urban"] },
+  { title: "Global trend piece maps Western retail habits onto the Gulf", desc: "A trend article claimed a Western shopping behaviour applies here without offering any regional evidence.", status: "archived_noise", rationale: "A global trend asserted as regional without regional evidence; archived on that guardrail.", sectors: ["retail_commerce"] },
+  { title: "Influencer review praises new {city} wellness studio", desc: "A paid influencer review praised a single newly opened wellness studio.", status: "archived_noise", rationale: "One sponsored review of one studio; self-promotion with no wider meaning.", sectors: ["health_wellness_longevity"] },
+  { title: "Restaurant week returns to {city}", desc: "An annual restaurant week returned with its usual programme of participating venues.", status: "archived_noise", rationale: "A recurring calendar event; it adds no new evidence that anything is changing.", sectors: ["food_beverage_third_places"] },
+  { title: "Startup announces app for {city} commuters", desc: "A startup announced a commuter app without sharing usage numbers or explaining what makes it different.", status: "needs_more_evidence", rationale: "An interesting area, but there is no adoption evidence yet; revisit after launch data.", sectors: ["mobility_transport"] },
+  { title: "Survey hints at changing gift-giving among Gulf youth", desc: "A small survey suggested young Gulf consumers are changing how they give gifts.", status: "needs_more_evidence", rationale: "The sample is too small to trust; the novelty is worth a follow-up scan.", sectors: ["retail_commerce"] },
+  { title: "Forum discussion on remote work visas grows", desc: "A community forum thread about remote-work visas kept drawing replies over several weeks.", status: "needs_more_evidence", rationale: "Anecdotal interest only; it needs policy or platform data before promotion.", sectors: ["education_work", "migration_citizenship_belonging"] },
+  { title: "Two outlets republish the same longevity clinic story", desc: "Two publications republished the same wire story about a clinic opening.", status: "duplicate", rationale: "A duplicate of an observation already recorded in the base.", sectors: ["health_wellness_longevity"] },
 ];
 
 const NOISE_COUNTRIES = ["UAE", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain", "Oman", "Egypt"];
@@ -1595,9 +1595,9 @@ const territory: FutureTerritory = {
   whatItChanges: NEW_TERRITORY.whatItChanges,
   whoItAffects: NEW_TERRITORY.whoItAffects,
   sectorImplications: [
-    { sector: "fashion_luxury", note: "Co-authorship replaces localisation as market-entry strategy." },
-    { sector: "media_entertainment_creator", note: "Commissioning shifts to Arabic-first origination with export upside." },
-    { sector: "culture_arts_heritage", note: "Canonising infrastructure becomes strategic capital." },
+    { sector: "fashion_luxury", note: "Creating with regional designers replaces adapting global products as the way into the market." },
+    { sector: "media_entertainment_creator", note: "Commissioning shifts to Arabic-first originals that can also be exported." },
+    { sector: "culture_arts_heritage", note: "Museums and collections that define regional work become strategic assets." },
   ],
   scenarioIds: ["SCN-105", "SCN-106"],
   risks: NEW_TERRITORY.risks,
