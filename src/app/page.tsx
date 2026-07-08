@@ -17,6 +17,7 @@ import { ConfidenceBadge, TerritoryStatusBadge } from "@/components/badges";
 import { useAppMode } from "@/components/ViewMode";
 import { EvidenceStatusLine } from "@/components/EvidenceCompression";
 import { indicatorOverdue } from "@/lib/derived";
+import { explainContradiction } from "@/lib/explain";
 import { signalStage } from "@/lib/pipeline";
 import OverviewCommandCenter from "./overview/page";
 import {
@@ -332,14 +333,13 @@ export default function TodayPage() {
             href={`/contradictions/${picks.contradiction.id}`}
           >
             <div className="flex flex-col gap-1.5">
-              <p className="line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
-                One side — {firstSentence(picks.contradiction.sideA)}
-              </p>
-              <p className="line-clamp-2 text-[12px] leading-relaxed text-ink-faint">
-                The other — {firstSentence(picks.contradiction.sideB)}
+              <p className="line-clamp-3 text-[12.5px] leading-relaxed text-ink-soft">
+                <span className="text-ink-faint">Tension — </span>
+                {explainContradiction(picks.contradiction)}
               </p>
               <p className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
-                Why it matters — {firstSentence(picks.contradiction.underlyingTension)}
+                <span className="text-ink-faint">Why it matters — </span>
+                {firstSentence(picks.contradiction.underlyingTension)}
               </p>
             </div>
           </PickCard>

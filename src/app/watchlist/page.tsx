@@ -5,18 +5,17 @@
  *
  * Personal and simple: saved signals first, then everything the platform
  * tracks, grouped by direction in plain words. The group heading carries the
- * direction, so rows stay quiet — a name, one explaining sentence, what it
- * tracks, and a gentle nudge when a check is due.
+ * direction, so rows stay quiet — a name, then two labeled micro-lines: what
+ * changed, and when the next check is due (plus what the indicator tracks).
  */
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { indicatorOverdue } from "@/lib/derived";
-import { explainIndicator } from "@/lib/explain";
 import { firstSentence, TREND_WORDS, watchlistGroups } from "@/lib/simple";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
-import type { MonitoringIndicator, Signal } from "@/lib/types";
+import type { MonitoringCadence, MonitoringIndicator, Signal } from "@/lib/types";
 
 const quietAction =
   "text-[12px] text-ink-faint underline-offset-2 hover:text-ink-soft";
@@ -70,6 +69,31 @@ function tracksLink(
   );
 }
 
+/**
+ * Cadence lengths in days, mirroring the overdue rule in lib/derived.ts
+ * (route-local copy — the lib map is not exported).
+ */
+const NEXT_CHECK_DAYS: Record<MonitoringCadence, number> = {
+  weekly: 7,
+  monthly: 31,
+  quarterly: 92,
+  biannual: 183,
+  annual: 366,
+};
+
+/** Short next-check phrase for the row's "Next —" micro-line. */
+function nextCheckPhrase(ind: MonitoringIndicator): string {
+  const due = new Date(
+    new Date(ind.dateLastChecked).getTime() + NEXT_CHECK_DAYS[ind.cadence] * 86_400_000,
+  );
+  const dueText = due.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return indicatorOverdue(ind) ? `check was due ${dueText}` : `check due ${dueText}`;
+}
+
 function IndicatorRow({
   ind,
   tracks,
@@ -102,8 +126,11 @@ function IndicatorRow({
           </button>
         </span>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
-        {firstSentence(explainIndicator(ind))}
+      <p className="mt-1 truncate text-[12px] leading-relaxed text-ink-faint">
+        What changed — {firstSentence(ind.currentStatus)}
+      </p>
+      <p className="mt-0.5 truncate text-[12px] leading-relaxed text-ink-faint">
+        Next — {nextCheckPhrase(ind)}
         {tracks ? (
           <>
             {" · Tracks "}
@@ -188,7 +215,7 @@ export default function WatchlistPage() {
         <h2 className="text-[15px] font-medium text-ink">Watching now</h2>
         {savedSignals.length === 0 ? (
           <p className="mt-3 text-[12.5px] text-ink-faint">
-            Save signals you care about and they will appear here.
+            Nothing saved yet. Save a signal or future direction to track it here.
           </p>
         ) : (
           <div className="mt-1">

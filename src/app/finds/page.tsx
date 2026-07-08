@@ -27,6 +27,13 @@ const VERDICT_TONE: Record<FindVerdict, "accent" | "caution" | "neutral"> = {
   noise: "neutral",
 };
 
+/** The verdict as a suggested decision in plain words — one short sentence. */
+const VERDICT_DECISION: Record<FindVerdict, string> = {
+  keep: "Keep — this looks worth developing.",
+  more_proof: "Keep an eye on it — look for more examples before relying on it.",
+  noise: "Probably noise — dismiss unless something new appears.",
+};
+
 const quietLink =
   "underline decoration-line-strong underline-offset-2 hover:text-ink-soft";
 
@@ -63,26 +70,38 @@ function FocusedFind({
 
   return (
     <article aria-label="Current find" className="card mb-8 px-7 py-6 sm:px-9 sm:py-8">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-        <h2 className="min-w-0 max-w-xl text-[16.5px] font-medium leading-snug text-ink">
-          {obs.title}
-        </h2>
-        <Pill tone={VERDICT_TONE[verdict]}>{FIND_VERDICT_WORDS[verdict]}</Pill>
-      </div>
+      <h2 className="max-w-xl text-[16.5px] font-medium leading-snug text-ink">
+        {obs.title}
+      </h2>
       <p className="mt-1.5 text-[12px] text-ink-faint">
         {obs.sourceName} · {fmtDate(obs.dateObserved)}
       </p>
 
-      <p className="mt-5 line-clamp-4 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-        {obs.description}
-      </p>
+      <div className="mt-5 max-w-2xl">
+        <p className="text-[11px] text-ink-faint">What was found</p>
+        <p className="mt-1 line-clamp-4 text-[13px] leading-relaxed text-ink-soft">
+          {obs.description}
+        </p>
+      </div>
 
       {obs.potentialFutureRelevance ? (
-        <p className="mt-4 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-          <span className="font-medium text-ink">Why it may matter — </span>
-          {firstSentence(obs.potentialFutureRelevance)}
-        </p>
+        <div className="mt-4 max-w-2xl">
+          <p className="text-[11px] text-ink-faint">Why it might matter</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+            {firstSentence(obs.potentialFutureRelevance)}
+          </p>
+        </div>
       ) : null}
+
+      <div className="mt-4 max-w-2xl">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <p className="text-[11px] text-ink-faint">Suggested decision</p>
+          <Pill tone={VERDICT_TONE[verdict]}>{FIND_VERDICT_WORDS[verdict]}</Pill>
+        </div>
+        <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+          {VERDICT_DECISION[verdict]}
+        </p>
+      </div>
 
       {obs.sectors.length > 0 ? (
         <p className="mt-4 text-[12px] text-ink-faint">
