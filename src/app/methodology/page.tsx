@@ -478,7 +478,9 @@ export default function MethodologyPage() {
           <P>
             Evidence moves upward through twelve layers. Each layer admits less material than the
             one below it and asserts more meaning — scanning admits almost everything; strategic
-            action admits only what has survived every test in between. Nothing may skip a layer:
+            action admits only what has survived every test in between. In plain terms: the system
+            scans many sources, keeps only useful signals, and groups them into bigger patterns.
+            Nothing may skip a layer:
             a territory not built on drivers, or a driver not built on patterns, is an opinion
             wearing the costume of analysis.
           </P>

@@ -67,11 +67,11 @@ function stripIds(text: string): string {
 }
 
 function audienceWords(imp: StrategicImplication): string {
-  if (imp.audiences.length === 0) return "For anyone acting in the region";
+  if (imp.audiences.length === 0) return "Who this is for — anyone acting in the region";
   const words = imp.audiences.map((a) =>
     IMPLICATION_AUDIENCE_LABELS[a].toLowerCase(),
   );
-  return `For ${joinWords(words)}`;
+  return `Who this is for — ${joinWords(words)}`;
 }
 
 /** Implications shown on this page — quietly leave out discarded ones. */
@@ -124,7 +124,7 @@ function TakeawayEntry({
             aria-expanded={showEvidence}
             className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
           >
-            {showEvidence ? "Hide evidence" : "Show evidence"}
+            {showEvidence ? "Hide evidence" : "Open evidence"}
           </button>
           {showEvidence ? (
             <ul className="mt-2 space-y-1.5">

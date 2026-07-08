@@ -89,7 +89,7 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
     commonMistake:
       "Do not call a signal a trend. A signal is only present-day evidence of a possible future.",
     nextStep:
-      "Open high-novelty or high-strategic-relevance signals and connect them to related signals, contradictions, or cluster candidates.",
+      "Open the most novel or most strategically relevant signals and connect them to related signals, contradictions, or cluster candidates.",
   },
   sources: {
     pageId: "sources",
@@ -135,7 +135,7 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   drivers: {
     pageId: "drivers",
     purpose: "Drivers explain why multiple patterns are emerging.",
-    recommendedAction: "Use drivers to move from description to explanation.",
+    recommendedAction: "Use drivers to explain why change is happening, not just describe it.",
     commonMistake:
       "Do not write drivers that merely describe consumer preferences. A driver must explain the deeper force behind change.",
     nextStep:
@@ -144,7 +144,7 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
   territories: {
     pageId: "territories",
     purpose:
-      "Future territories show larger strategic directions created by the convergence of several drivers.",
+      "Future territories show larger strategic directions that form when several drivers converge.",
     recommendedAction:
       "Use this page to understand what the region may be becoming.",
     commonMistake:
@@ -179,7 +179,7 @@ export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
     commonMistake:
       "Do not assume a future territory remains relevant forever. It must be checked through leading indicators.",
     nextStep:
-      "Update indicators weekly, monthly, quarterly, biannually, and annually depending on the intelligence layer.",
+      "Update each indicator on its own schedule — from weekly to annual, depending on its layer.",
   },
 };
 
@@ -193,7 +193,7 @@ export const DEFINITIONS: Record<string, string> = {
   cluster: "Signals grouped by shared underlying logic.",
   pattern: "A repeated movement across clusters.",
   contradiction: "A tension between two valid but opposing forces.",
-  driver: "A structural force explaining why patterns are emerging.",
+  driver: "An underlying force that explains why patterns are emerging.",
   territory: "A larger direction of change created by converging drivers.",
   scenario: "A plausible future world, not a prediction.",
   implication: "What should be done differently now.",

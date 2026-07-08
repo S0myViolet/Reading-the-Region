@@ -16,7 +16,7 @@ import { AppModeSwitch, ViewModeSwitch } from "@/components/ViewMode";
 import { WALKTHROUGHS } from "@/lib/copy";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/types";
-import { VIEW_MODE_DESCRIPTIONS, VIEW_MODE_LABELS } from "@/lib/viewMode";
+import { VIEW_MODE_LABELS } from "@/lib/viewMode";
 
 // ---------------------------------------------------------------------------
 // Reference copy
@@ -27,11 +27,15 @@ const ADVANCED_DEPTHS = ["analyst", "methodology"] as const;
 
 /** Product-mode framing for the settings page. */
 const PRODUCT_MODE_COPY = {
-  simple:
-    "The guided product surface. Shows Today, Explore, New Finds, Signals, Futures, Decisions, and Watchlist. The full methodology still works in the background.",
-  advanced:
-    "The full intelligence engine. Shows every methodology layer, score, threshold, validation rule, source structure, and evidence trail.",
+  simple: "Shows the main findings in plain language.",
+  advanced: "Shows the full evidence pipeline, scores, sources, and review rules.",
 } as const;
+
+/** Depth descriptions for the settings page, in plain language. */
+const ADVANCED_DEPTH_COPY: Record<(typeof ADVANCED_DEPTHS)[number], string> = {
+  analyst: "Shows scores and evidence quality.",
+  methodology: "Shows thresholds, validation rules, and audit trail.",
+};
 
 /** One-line meaning for each review status, shown in the reference list. */
 const REVIEW_STATUS_MEANINGS: Record<ReviewStatus, string> = {
@@ -269,7 +273,7 @@ export default function SettingsPage() {
                   {VIEW_MODE_LABELS[m]}
                 </dt>
                 <dd className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
-                  {VIEW_MODE_DESCRIPTIONS[m]}
+                  {ADVANCED_DEPTH_COPY[m]}
                 </dd>
               </div>
             ))}

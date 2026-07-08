@@ -78,7 +78,7 @@ function SideEvidence({
 }) {
   return (
     <div>
-      <p className="text-[11px] text-ink-faint">Side {side}</p>
+      <p className="text-[11px] text-ink-faint">{side === "A" ? "One side" : "The other"}</p>
       <p className="mt-1 text-[13px] leading-relaxed text-ink">{statement}</p>
       <ViewGate min="analyst">
         {evidenceText.trim() ? (
@@ -362,7 +362,7 @@ export default function ContradictionDetailPage() {
           </section>
 
           <section>
-            <SectionHeading>Next step</SectionHeading>
+            <SectionHeading>What to watch</SectionHeading>
             <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
               {nextStep}
             </p>

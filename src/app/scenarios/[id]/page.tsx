@@ -231,7 +231,7 @@ function SimpleReading({
   return (
     <div className="max-w-2xl space-y-8">
       <Section
-        title="Core premise"
+        title="What this future looks like"
         aside={<ProvenanceBadge label="speculative_possibility" />}
       >
         {scenario.corePremise.trim() ? (
@@ -257,17 +257,17 @@ function SimpleReading({
       <Section title="Behaviour in this world">
         <div className="space-y-2.5">
           <BehaviourLine
-            label="People"
+            label="Who feels the change"
             text={scenario.howPeopleBehave}
             note="Not recorded yet — describe everyday behaviour, not attitudes."
           />
           <BehaviourLine
-            label="Institutions"
+            label="How institutions respond"
             text={scenario.howInstitutionsBehave}
             note="Not recorded yet — governments, regulators, and public bodies."
           />
           <BehaviourLine
-            label="Brands and organizations"
+            label="How brands respond"
             text={scenario.howBrandsBehave}
             note="Not recorded yet — commercial and cultural organizations."
           />
@@ -398,7 +398,7 @@ function ConsequencesTab({ scenario }: { scenario: Scenario }) {
       </section>
 
       <section>
-        <h3 className="mb-2.5 text-[13px] font-medium text-ink">Early signs</h3>
+        <h3 className="mb-2.5 text-[13px] font-medium text-ink">Early signs to watch</h3>
         <PlainList
           items={scenario.earlySigns}
           emptyNote="No early signs recorded yet. Without them this scenario cannot be monitored — only believed or dismissed."
