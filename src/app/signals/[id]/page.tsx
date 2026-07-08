@@ -2,16 +2,18 @@
 
 /**
  * Signal detail — the full evidence record for one signal, disclosed through
- * visibility layers. Simple view is built for a 10-second read: hero line in
- * words, "Why this matters" bullets, "What this could mean" possibilities,
- * a compact "What it connects to" row, a "What you can do" action row
- * (save / explore / dismiss / note), and a collapsed "More detail"
- * disclosure that opens the full analyst tabs inline. Analyst view opens the
- * tabs directly: overview, evidence, scoring, the mandatory zooming ladder,
- * systems analysis, contradictions, and human review. Methodology view adds
- * rubric anchors, provenance labels, the audit trail, and the
- * zoom-completeness checklist. The right column holds the quiet reading
- * guide (Guided Mode) and the relationship trail in every mode.
+ * visibility layers. Simple view is built for a 10-second read, in order:
+ * hero line in words, "Why this matters" bullets, "What this could mean"
+ * possibilities, "Evidence" in one line with source names, "What could
+ * contradict it", a compact "What it connects to" row, a "What you can do"
+ * action row (save / explore / dismiss / note), and a collapsed "Show full
+ * method" disclosure that opens the full analyst tabs inline. Analyst view
+ * opens the tabs directly: overview, evidence, scoring, the mandatory
+ * zooming ladder, systems analysis, contradictions, and human review.
+ * Methodology view adds rubric anchors, provenance labels, the audit trail,
+ * and the zoom-completeness checklist. The right column — the quiet reading
+ * guide (Guided Mode) and the relationship trail — is analyst-and-up; the
+ * simple read keeps a single calm column.
  */
 
 import Link from "next/link";
@@ -180,7 +182,6 @@ function SimpleView({
   const shownContradictions = contradictions.slice(0, 2);
   const shownRelated = relatedSignals.slice(0, 3);
   const hasConnectionLinks = shownRelated.length > 0 || cluster !== null || territory !== null;
-  const nothingConnected = shownContradictions.length === 0 && !hasConnectionLinks;
   const firstSector = signal.sectors[0];
 
   function handleDismiss() {
@@ -202,14 +203,11 @@ function SimpleView({
 
   return (
     <div className="max-w-2xl space-y-8">
-      {/* Hero: one quiet line in words, then a one-sentence lede. */}
+      {/* Hero: one quiet line in words, then a one-sentence lede. The
+          evidence one-liner lives in its own "Evidence" section below. */}
       <section>
         <p className="text-[12px] text-ink-faint">
-          {[
-            importanceWords(signal),
-            CONFIDENCE_LABELS[signal.confidence],
-            evidenceWords(signal, linked.length),
-          ].join(" · ")}
+          {[importanceWords(signal), CONFIDENCE_LABELS[signal.confidence]].join(" · ")}
         </p>
         <div className="mt-2">
           <Prose>
@@ -235,7 +233,16 @@ function SimpleView({
         )}
       </Section>
 
-      <Section title="What it connects to">
+      <Section title="Evidence">
+        <Prose>{evidenceWords(signal, linked.length)}</Prose>
+        {linked.length > 0 ? (
+          <p className="mt-1.5 max-w-2xl text-[12px] text-ink-faint">
+            From {linked.map((s) => s.name).join(" · ")}
+          </p>
+        ) : null}
+      </Section>
+
+      <Section title="What could contradict it">
         {shownContradictions.length > 0 ? (
           <ul className="space-y-2">
             {shownContradictions.map((c) => (
@@ -251,16 +258,14 @@ function SimpleView({
               </li>
             ))}
           </ul>
-        ) : null}
-        {nothingConnected ? (
-          <FaintNote>Nothing else is connected to this yet.</FaintNote>
-        ) : null}
+        ) : (
+          <FaintNote>Nothing on record pushes against this reading yet.</FaintNote>
+        )}
+      </Section>
+
+      <Section title="What it connects to">
         {hasConnectionLinks ? (
-          <p
-            className={`flex flex-wrap gap-x-4 gap-y-1 ${
-              shownContradictions.length > 0 ? "mt-3" : ""
-            }`}
-          >
+          <p className="flex flex-wrap gap-x-4 gap-y-1">
             {shownRelated.map((r) => (
               <Link key={r.id} href={`/signals/${r.id}`} className={connectLink}>
                 {r.title}
@@ -277,7 +282,9 @@ function SimpleView({
               </Link>
             ) : null}
           </p>
-        ) : null}
+        ) : (
+          <FaintNote>Nothing else is connected to this yet.</FaintNote>
+        )}
       </Section>
 
       <Section title="What you can do">
@@ -352,7 +359,7 @@ function SimpleView({
           <span className="mr-1 inline-block w-2 text-[9px]">
             {detailOpen ? "▾" : "▸"}
           </span>
-          More detail — the full analysis behind this signal
+          Show full method
         </button>
         {detailOpen ? <div className="mt-4">{moreDetail}</div> : null}
       </section>
@@ -1104,9 +1111,15 @@ export default function SignalDetailPage() {
             analystTabs
           )}
         </div>
+        {/* Right rail is analyst-and-up. In simple mode the main column's
+            "What it connects to" section already covers connections plainly. */}
         <aside className="mt-10 space-y-8 lg:mt-0">
-          {guidedMode ? <ReadingGuidePanel /> : null}
-          <RelatedObjectsPanel groups={relatedGroups} />
+          <ViewGate min="analyst">
+            {guidedMode ? <ReadingGuidePanel /> : null}
+          </ViewGate>
+          <ViewGate min="analyst">
+            <RelatedObjectsPanel groups={relatedGroups} />
+          </ViewGate>
         </aside>
       </div>
     </>

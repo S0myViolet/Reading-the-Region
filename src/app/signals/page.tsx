@@ -6,10 +6,11 @@
  * trend. Layout has exactly four layers: header, one control bar, the signal
  * list, and the collapsed page guide.
  *
- * Simple view (the default product) renders insight cards: title, a
- * one-sentence summary, why it matters, one quiet meta line in words, and a
- * quiet action row (Open / Save / Dismiss). Filters shrink to search, sector,
- * country and a Saved toggle, and dismissed signals drop out of the list.
+ * Simple view (the default product) renders insight cards: title, labeled
+ * micro-lines (what happened / why it matters / what it may point to), one
+ * quiet meta line in words, and a quiet action row (Open / Save / Dismiss).
+ * Filters shrink to search, sector, country and a Saved toggle, and
+ * dismissed signals drop out of the list.
  * Analyst view keeps the full filter set, sort, and the list/table toggle;
  * methodology adds nothing extra here.
  */
@@ -244,9 +245,34 @@ function SignalRow({ signal }: { signal: Signal }) {
   );
 }
 
+/** Labeled micro-line for a simple card: faint inline prefix, one sentence. */
+function CardLine({
+  label,
+  text,
+  clamp = false,
+}: {
+  label: string;
+  text: string;
+  clamp?: boolean;
+}) {
+  return (
+    <p
+      className={`mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft${
+        clamp ? " line-clamp-2" : ""
+      }`}
+    >
+      <span className="text-[11.5px] text-ink-faint">{label}</span>
+      {" — "}
+      {text}
+    </p>
+  );
+}
+
 /**
- * Simple-view insight card: what it is, why it matters, how solid it is —
- * in words — and three quiet actions. No ids, no scores, no badges.
+ * Simple-view insight card, readable in under ten seconds: title, then
+ * labeled micro-lines (what happened, why it matters, what it may point
+ * to), one quiet meta line in words, and three quiet actions. No ids, no
+ * scores, no badges.
  */
 function SimpleSignalCard({ signal }: { signal: Signal }) {
   const savedSignalIds = useIntelligenceStore((s) => s.savedSignalIds);
@@ -268,14 +294,15 @@ function SimpleSignalCard({ signal }: { signal: Signal }) {
       >
         {signal.title}
       </Link>
-      <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-        {firstSentence(signal.description)}
-      </p>
-      <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-soft">
-        <span className="font-medium text-ink">Why it matters</span>
-        {" — "}
-        {firstSentence(signal.whyItMatters)}
-      </p>
+      <CardLine label="What happened" text={firstSentence(signal.description)} />
+      <CardLine label="Why it matters" text={firstSentence(signal.whyItMatters)} />
+      {signal.zoom.futurePlausible.trim() ? (
+        <CardLine
+          label="May point to"
+          text={firstSentence(signal.zoom.futurePlausible)}
+          clamp
+        />
+      ) : null}
       <p className="mt-2 text-[12px] text-ink-faint">
         {[
           CONFIDENCE_LABELS[signal.confidence],
