@@ -15,6 +15,7 @@
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { ScoreBar } from "@/components/ScorePanel";
@@ -277,6 +278,7 @@ export default function ContradictionDetailPage() {
         description={explainContradiction(contradiction)}
         actions={
           <div className="flex flex-col items-end gap-1">
+            <PipelineStageBadge stage="contradiction" />
             <span className="text-[11.5px] text-tension">
               Contradiction ·{" "}
               {CONTRADICTION_TYPE_LABELS[contradiction.contradictionType]}

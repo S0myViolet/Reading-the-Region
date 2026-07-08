@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
@@ -968,6 +969,7 @@ export default function ScenarioDetailPage() {
       <PageHeader
         title={scenario.title}
         description={`${SCENARIO_TYPE_LABELS[scenario.scenarioType]} scenario · ${SCENARIO_HORIZON_LABELS[scenario.horizon]}`}
+        actions={<PipelineStageBadge stage="scenario" />}
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">

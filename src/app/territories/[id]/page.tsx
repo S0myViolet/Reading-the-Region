@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
@@ -1015,7 +1016,7 @@ export default function TerritoryDetailPage() {
           { label: territory.name },
         ]}
       />
-      <PageHeader title={territory.name} />
+      <PageHeader title={territory.name} actions={<PipelineStageBadge stage="territory" />} />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         <div>{mode === "simple" ? simpleReading : <Tabs tabs={tabs} />}</div>

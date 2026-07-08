@@ -27,6 +27,7 @@ import { ContradictionPanel, NoContradictionNote } from "@/components/Contradict
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { ScoreGrid } from "@/components/ScorePanel";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { ConfidenceBadge, SignalStrengthBadge } from "@/components/badges";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
@@ -741,7 +742,12 @@ export default function ClusterDetailPage() {
       <PageHeader
         title={cluster.name}
         description={cluster.unifyingQuestion.trim() || undefined}
-        actions={simple ? undefined : <ClusterValidityPill result={result} />}
+        actions={
+          <>
+            <PipelineStageBadge stage="cluster" />
+            {simple ? null : <ClusterValidityPill result={result} />}
+          </>
+        }
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">

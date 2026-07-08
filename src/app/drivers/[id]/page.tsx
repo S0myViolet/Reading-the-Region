@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
 import { ValidationChecklist } from "@/components/ValidationChecklist";
@@ -816,12 +817,15 @@ export default function DriverDetailPage() {
       <PageHeader
         title={driver.name}
         actions={
-          <ViewGate min="analyst">
-            <div className="flex flex-col items-end gap-1">
-              <DriverStanding result={result} />
-              {recomputed ? <RecomputedNote /> : null}
-            </div>
-          </ViewGate>
+          <>
+            <PipelineStageBadge stage="driver" />
+            <ViewGate min="analyst">
+              <div className="flex flex-col items-end gap-1">
+                <DriverStanding result={result} />
+                {recomputed ? <RecomputedNote /> : null}
+              </div>
+            </ViewGate>
+          </>
         }
       />
 

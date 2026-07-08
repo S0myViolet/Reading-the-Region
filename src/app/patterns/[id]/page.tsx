@@ -28,6 +28,7 @@ import { BiasCheckPanel } from "@/components/BiasCheckPanel";
 import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
 import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import {
   ConfidenceBadge,
   Pill,
@@ -900,12 +901,15 @@ export default function PatternDetailPage() {
         title={pattern.name}
         description={PATTERN_TYPE_LABELS[pattern.patternType]}
         actions={
-          simple ? undefined : (
-            <div className="flex flex-col items-end gap-1">
-              <PatternValidationPill result={result} />
-              {recomputed ? <RecomputedNote /> : null}
-            </div>
-          )
+          <>
+            <PipelineStageBadge stage="pattern" />
+            {simple ? null : (
+              <div className="flex flex-col items-end gap-1">
+                <PatternValidationPill result={result} />
+                {recomputed ? <RecomputedNote /> : null}
+              </div>
+            )}
+          </>
         }
       />
 
