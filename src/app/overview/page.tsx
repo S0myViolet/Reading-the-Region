@@ -256,11 +256,6 @@ export default function OverviewPage() {
 
       {/* 1 · Pipeline movement ---------------------------------------------- */}
       <Section title="Pipeline movement">
-        <EvidenceCompressionSummary data={data} />
-        <p className="mb-8 mt-1.5 text-[12px] text-ink-faint">
-          Every layer reduces noise while increasing meaning — each count is a link into its
-          library.
-        </p>
         <div className="mb-8 flex flex-wrap gap-x-10 gap-y-6">
           {figures.map((f) => (
             <StageFigure key={f.label} label={f.label} value={f.value} href={f.href} />
@@ -269,6 +264,17 @@ export default function OverviewPage() {
         {/* compact: the caption above already carries the compression message,
             so the pipeline's own caption would double it. */}
         <IntelligencePipeline counts={derived.pipeline} compact />
+      </Section>
+
+      {/* 1b · Evidence base scale -------------------------------------------- */}
+      <Section
+        title="Evidence base scale"
+        caption="Every layer reduces noise while increasing meaning — each count is a link into its library."
+      >
+        <EvidenceCompressionSummary data={data} />
+        <p className="mt-2 text-[11px] text-ink-faint">
+          Demonstration corpus · scan window May 2025 – June 2026 · all sources demo-flagged.
+        </p>
       </Section>
 
       {/* 2 · Evidence triage -------------------------------------------------- */}

@@ -15,6 +15,7 @@ import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { ConfidenceBadge, TerritoryStatusBadge } from "@/components/badges";
 import { useAppMode } from "@/components/ViewMode";
+import { EvidenceStatusLine } from "@/components/EvidenceCompression";
 import { indicatorOverdue } from "@/lib/derived";
 import { signalStage } from "@/lib/pipeline";
 import OverviewCommandCenter from "./overview/page";
@@ -299,6 +300,7 @@ export default function TodayPage() {
 
       <section aria-label="Daily brief" className="mb-10">
         <p className="max-w-2xl text-[14px] leading-relaxed text-ink-soft">{brief}</p>
+        <EvidenceStatusLine data={data} />
       </section>
 
       <section aria-label="Today's picks" className="mb-10 grid gap-4 sm:grid-cols-3">
