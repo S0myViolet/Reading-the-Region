@@ -692,6 +692,8 @@ export interface Cluster {
   id: string;
   /** A sentence expressing shared logic — never a topic word. */
   name: string;
+  /** One sentence saying what the cluster means in normal language. */
+  plainMeaning?: string;
   unifyingQuestion: string;
   clusterStatement: string;
   signalIds: string[];
@@ -751,6 +753,8 @@ export type PatternValidationStatus = "hypothesis" | "partially_validated" | "va
 export interface Pattern {
   id: string;
   name: string;
+  /** One sentence saying what the pattern means in normal language. */
+  plainMeaning?: string;
   patternType: PatternType;
   patternStatement: string;
   evidenceSummary: string;

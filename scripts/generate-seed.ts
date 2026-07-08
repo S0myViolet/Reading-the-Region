@@ -166,6 +166,8 @@ interface SignalRecipe {
 interface ClusterTheme {
   id: string;
   name: string;
+  /** One sentence saying what the cluster means in normal language. */
+  plainMeaning: string;
   unifyingQuestion: string;
   statement: string;
   evidenceSummary: string;
@@ -177,6 +179,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-104",
     name: "Health services are being built into homes, hotels and offices",
+    plainMeaning:
+      "New homes, hotels and offices increasingly include clinics, recovery rooms and health tracking as standard features.",
     unifyingQuestion: "What changes when health services are built into buildings instead of sold separately?",
     statement:
       "Hotels now add clinics, homes add health tracking, and offices add recovery rooms as standard features. Health services are becoming part of the building itself, not extras sold on top.",
@@ -225,6 +229,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-105",
     name: "Investment firms are settling in the Gulf for the long term",
+    plainMeaning:
+      "Global investment firms are opening permanent Gulf offices and moving senior people in, instead of flying in for deals.",
     unifyingQuestion: "What do investors believe about the Gulf when they stop planning their exit?",
     statement:
       "Family offices are moving here, funds are opening permanent offices, and founders are registering companies locally. Money and investment firms now treat the Gulf as a home base, not a quick opportunity.",
@@ -273,6 +279,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-106",
     name: "The region is making its own culture instead of importing it",
+    plainMeaning:
+      "Gulf audiences are choosing music, design and stories made in the region over imported alternatives.",
     unifyingQuestion: "When will the region tell its own stories instead of buying them from abroad?",
     statement:
       "Broadcasters, museums and brands are spending on regional shows, art and campaigns instead of licensed international ones. Audiences are rewarding the shift with their attention and their money.",
@@ -321,6 +329,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-107",
     name: "Consumers now pay for certainty, not just for speed",
+    plainMeaning:
+      "Customers are paying extra for guarantees and verified quality, not only for faster delivery.",
     unifyingQuestion: "What do consumers pay for when everything is instantly available?",
     statement:
       "Verification services, human review options and origin labels are growing fastest where instant delivery is already everywhere. Consumers increasingly pay extra to be sure, not just to be fast.",
@@ -369,6 +379,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-108",
     name: "Young people now meet at sports venues and cafes, not malls",
+    plainMeaning:
+      "Young people increasingly spend their social time at sports venues, run clubs and cafés rather than in malls.",
     unifyingQuestion: "Where does a generation go when it stops going to malls first?",
     statement:
       "Padel courts, run clubs, climbing gyms, coffee shops and community sport leagues are where Gulf youth now meet. These places are active, easy to join and tied to identity, unlike malls built for shopping.",
@@ -399,6 +411,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-109",
     name: "Ramadan's night economy is becoming a year-round fixture",
+    plainMeaning:
+      "Late-night shopping, dining and events born in Ramadan are becoming a year-round part of city life.",
     unifyingQuestion: "What happens when a seasonal way of life becomes permanent city infrastructure?",
     statement:
       "Cities are extending night licences, programming night markets and building venues designed for evening life. The temporary rhythms of Ramadan are becoming permanent parts of how cities work and trade.",
@@ -429,6 +443,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-110",
     name: "Arabic-first media is becoming the default choice, not a niche",
+    plainMeaning:
+      "Arabic-language shows, podcasts and apps are becoming people's first choice, not a fallback.",
     unifyingQuestion: "What changes when the region's first language is also its first choice?",
     statement:
       "Arabic podcasts top the charts, assistants speak local dialects, and creators build whole businesses in Arabic. Arabic is becoming the language content starts in, not the language it gets translated into.",
@@ -459,6 +475,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-111",
     name: "Extreme heat is reshaping how Gulf cities plan daily life",
+    plainMeaning:
+      "Gulf cities are redesigning schedules, buildings and streets around summer heat instead of working against it.",
     unifyingQuestion: "How does a region redesign its days around heat it cannot ignore?",
     statement:
       "Cities are building shaded walkways, moving events to night hours, and writing heat rules into design codes. Coping with heat is becoming a normal part of urban design, not an emergency measure.",
@@ -489,6 +507,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-112",
     name: "Education and work are merging into lifelong skills systems",
+    plainMeaning:
+      "Employers and universities are building continuous training systems because one degree no longer lasts a career.",
     unifyingQuestion: "What replaces the degree when careers change faster than universities can teach?",
     statement:
       "Governments run national skills platforms, employers run their own academies, and visas now recognise short courses. Education and employment are merging into one continuous system that runs through a whole career.",
@@ -519,6 +539,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-113",
     name: "Governments are building gaming and esports into national youth programmes",
+    plainMeaning:
+      "Governments are funding gaming and esports as serious youth and economic policy, not as entertainment.",
     unifyingQuestion: "What does a country build when games are its youth's main cultural language?",
     statement:
       "Governments are funding gaming venues, school leagues and career paths for competitive players. Gaming is moving from private entertainment to national infrastructure for youth identity and skills.",
@@ -549,6 +571,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-114",
     name: "New metros are changing how people use Gulf cities daily",
+    plainMeaning:
+      "New metro lines are changing where people live, shop and meet in Gulf cities.",
     unifyingQuestion: "What does a car-built region become when the metro arrives?",
     statement:
       "Metro lines are opening, developers are building around stations, and shops are leasing space near transit. Daily life in cities built for cars is starting to reorganise around trains and stations.",
@@ -579,6 +603,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-115",
     name: "The Gulf is growing its own food and its own cuisine",
+    plainMeaning:
+      "The Gulf is growing more of its own food and defining its own restaurant culture at the same time.",
     unifyingQuestion: "Can the region feed itself and define its own cuisine at the same time?",
     statement:
       "Investors fund desert farms, governments write food-security plans, and chefs build menus around regional ingredients. The region is localising food both to be more secure and to express its own identity.",
@@ -609,6 +635,8 @@ const NEW_THEMES: ClusterTheme[] = [
   {
     id: "CLU-116",
     name: "Smaller cities are joining the region's cultural map",
+    plainMeaning:
+      "Cultural festivals, studios and venues are opening in smaller cities, not only in the region's biggest capitals.",
     unifyingQuestion: "What happens when the region's story stops being written in two cities?",
     statement:
       "Festivals, creative districts, film shoots and domestic tourism are bringing AlUla, Sharjah, Muscat, Manama and Dammam into cultural life. Dubai and Riyadh no longer hold a monopoly on the region's cultural story.",
@@ -778,6 +806,8 @@ export type { ClusterTheme, SignalRecipe, SourceBank };
 interface PatternDef {
   id: string;
   name: string;
+  /** One sentence saying what the pattern means in normal language. */
+  plainMeaning: string;
   patternType: PatternType;
   statement: string;
   strategicMeaning: string;
@@ -789,6 +819,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-103",
     name: "From Imported Status to Authored Identity",
+    plainMeaning:
+      "Regional brands and creators are becoming status symbols, not just global names.",
     patternType: "cultural",
     statement:
       "Across fashion, media, museums and food, status is moving from imported global brands to work made in the region. People increasingly respect what the region makes, not what it buys in.",
@@ -800,6 +832,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-104",
     name: "From Temporary Presence to Permanent Belonging",
+    plainMeaning:
+      "People who once came to work for a few years are now settling, and institutions are reorganising around them.",
     patternType: "demographic",
     statement:
       "Residency reform, school demand, retirement products and locally registered companies all show the same shift. People who once came to the Gulf for a few years are now staying for good.",
@@ -811,6 +845,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-105",
     name: "From Hospitality as Stay to Hospitality as Lifestyle Infrastructure",
+    plainMeaning:
+      "Hotels are becoming places residents use every week — for gyms, clinics and evenings out — not just places visitors sleep.",
     patternType: "behavioural",
     statement:
       "Hotels are adding clinics, night economies are becoming permanent, and smaller destinations now programme for residents. Hospitality venues are becoming part of everyday life, not just places to spend a night.",
@@ -822,6 +858,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-106",
     name: "From Global Templates to Regional Systems of Meaning",
+    plainMeaning:
+      "Media, food and culture formats are being rebuilt around regional language and habits instead of translated from global templates.",
     patternType: "cultural",
     statement:
       "Arabic-first media, regional cuisine and locally made culture all repeat the same movement. Formats that once arrived as global templates are being rebuilt from regional roots and meanings.",
@@ -833,6 +871,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-107",
     name: "From Destination Tourism to Resident Ecosystems",
+    plainMeaning:
+      "Gulf places are being reorganised around the daily lives of residents rather than the itineraries of visitors.",
     patternType: "economic",
     statement:
       "Metro districts, sports clubs, year-round night markets and spread-out cultural centres all serve people who live here. Gulf places are reorganising around residents' daily lives rather than around visitors' itineraries.",
@@ -844,6 +884,8 @@ const NEW_PATTERNS: PatternDef[] = [
   {
     id: "PAT-108",
     name: "From Convenience to Verification",
+    plainMeaning:
+      "For decisions that matter, customers now pay for proof and accountability, not for more speed.",
     patternType: "behavioural",
     statement:
       "Paid human review, origin labels and accountability guarantees are growing fastest where instant convenience is already everywhere. For decisions that matter, consumers now value being certain above being fast.",
@@ -1446,6 +1488,7 @@ const clusters: Cluster[] = NEW_THEMES.map((t) => {
   return {
     id: t.id,
     name: t.name,
+    plainMeaning: t.plainMeaning,
     unifyingQuestion: t.unifyingQuestion,
     clusterStatement: t.statement,
     signalIds: ids,
@@ -1490,6 +1533,7 @@ const patterns: Pattern[] = NEW_PATTERNS.map((p) => {
   return {
     id: p.id,
     name: p.name,
+    plainMeaning: p.plainMeaning,
     patternType: p.patternType,
     patternStatement: p.statement,
     evidenceSummary: `Drawn from ${p.clusterIds.length} cluster maps and ${members.length} key signals across the scan window.`,

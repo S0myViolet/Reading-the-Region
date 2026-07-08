@@ -186,6 +186,36 @@ export function explainContradiction(c: Contradiction): string {
 }
 
 // ---------------------------------------------------------------------------
+// Plain meaning (Connect pages) — one sentence in normal language
+// ---------------------------------------------------------------------------
+
+function firstSentenceOf(text: string): string {
+  const m = text.trim().match(/^[^.!?]*[.!?]/);
+  return (m ? m[0] : text).trim();
+}
+
+/**
+ * What the cluster means in normal language. Prefers the hand-written
+ * plainMeaning; for user-created clusters without one, falls back to the
+ * first sentence of the cluster statement with the grouping lead-in removed.
+ */
+export function clusterPlainMeaning(cluster: Cluster): string {
+  if (cluster.plainMeaning?.trim()) return cluster.plainMeaning.trim();
+  const s = firstSentenceOf(cluster.clusterStatement).replace(
+    /^These signals are grouped because they show (that )?/i,
+    "",
+  );
+  if (!s) return `${cluster.name.replace(/\.$/, "")}.`;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** What the pattern means in normal language, with the same fallback rule. */
+export function patternPlainMeaning(pattern: Pattern): string {
+  if (pattern.plainMeaning?.trim()) return pattern.plainMeaning.trim();
+  return firstSentenceOf(pattern.patternStatement);
+}
+
+// ---------------------------------------------------------------------------
 // Status explanations from validation results
 // ---------------------------------------------------------------------------
 

@@ -1,8 +1,9 @@
 /**
- * Demo clusters. Names are logic statements, never topics. All three sit at
- * status "candidate" — with only twelve signals in the dataset, none can
- * honestly meet the eight-signal validation threshold, and the platform
- * shows that shortfall rather than hiding it.
+ * Demo clusters. Names are logic statements, never topics. Each carries a
+ * plainMeaning — one sentence in normal language — used by the Connect
+ * pages before any methodology is shown. Validity is always computed live
+ * against the thresholds; these records store judgment, not verdicts.
+ * (Signal top-ups from the generated corpus are merged in seed/index.ts.)
  */
 
 import type { Cluster } from "../types";
@@ -11,6 +12,8 @@ export const seedClusters: Cluster[] = [
   {
     id: "CLU-001",
     name: "Regional identity is being expressed in contemporary forms, not nostalgia",
+    plainMeaning:
+      "Regional identity is showing up in modern culture — fashion, podcasts, cafés, campaigns — not only in heritage.",
     unifyingQuestion:
       "Why are young Gulf audiences choosing regional culture made now — in clothing, podcasts, gathering places, and campaigns — over imported global culture and museum-style heritage?",
     clusterStatement:
@@ -18,7 +21,7 @@ export const seedClusters: Cluster[] = [
     signalIds: ["SIG-001", "SIG-004", "SIG-005", "SIG-008", "SIG-012"],
     contradictionIds: ["CON-002"],
     evidenceSummary:
-      "Five signals cover five sectors: fashion and luxury, culture and heritage, media and the creator economy, food-and-beverage third places, and government policy. Nine distinct sources back them, including platform data, ethnographic field notes, an expert interview, and event calendars. Evidence quality is mixed. State-linked sources overstate success, and creator-panel sources are anecdotal. The cluster's strength is that unrelated source types all point the same way. It fails the eight-signal threshold, so candidate status is honest.",
+      "Five signals cover five sectors: fashion and luxury, culture and heritage, media and the creator economy, food-and-beverage third places, and government policy. Nine distinct sources back them, including platform data, ethnographic field notes, an expert interview, and event calendars. Evidence quality is mixed. State-linked sources overstate success, and creator-panel sources are anecdotal. The cluster's strength is that unrelated source types all point the same way. What is still missing: usage evidence that outlasts campaign cycles — the validation tab shows how the live signal count compares with each threshold.",
     scores: {
       breadth: 4,
       depth: 3,
@@ -43,6 +46,8 @@ export const seedClusters: Cluster[] = [
   {
     id: "CLU-002",
     name: "Hotels, malls and venues are rebuilding around repeat daily use, not one-off visits",
+    plainMeaning:
+      "Places that used to sell one-off visits are being rebuilt for regulars who come back every week.",
     unifyingQuestion:
       "Why are Gulf hotels, malls, and venues rebuilding around repeat daily use — memberships, clinics, programming — instead of one-off visits and transactions?",
     clusterStatement:
@@ -50,7 +55,7 @@ export const seedClusters: Cluster[] = [
     signalIds: ["SIG-002", "SIG-007", "SIG-008", "SIG-011"],
     contradictionIds: ["CON-003"],
     evidenceSummary:
-      "Four signals span hospitality, health and wellness, retail, real estate, and food and beverage. Eight distinct sources support them: trade press, a consulting survey, search trends, ethnographic notes, and operator announcements. The weakest link is SIG-011, which rests on developer-claimed premiums and scores 2 for evidence. The strongest is SIG-007, which has three independent source types. The cluster sits below the eight-signal threshold. The Ramadan night-economy and social-sport observations (OBS-011, OBS-013) are candidate additions.",
+      "Four signals span hospitality, health and wellness, retail, real estate, and food and beverage. Eight distinct sources support them: trade press, a consulting survey, search trends, ethnographic notes, and operator announcements. The weakest link is SIG-011, which rests on developer-claimed premiums and scores 2 for evidence. The strongest is SIG-007, which has three independent source types. What is still missing: usage evidence to replace announcement evidence. The Ramadan night-economy and social-sport observations (OBS-011, OBS-013) are candidate additions.",
     scores: {
       breadth: 3,
       depth: 3,
@@ -75,6 +80,8 @@ export const seedClusters: Cluster[] = [
   {
     id: "CLU-003",
     name: "Long-term residency is turning the Gulf from a temporary workplace into a permanent home",
+    plainMeaning:
+      "More people are treating the Gulf as a permanent home, and schools, banks and developers are starting to build around them.",
     unifyingQuestion:
       "What changes when the people who power Gulf cities stop planning to leave, and which institutions are already rebuilding around that assumption?",
     clusterStatement:
@@ -82,7 +89,7 @@ export const seedClusters: Cluster[] = [
     signalIds: ["SIG-003", "SIG-007", "SIG-010", "SIG-011"],
     contradictionIds: ["CON-003"],
     evidenceSummary:
-      "Four signals cover migration and belonging, real estate, education and work, mobility, retail, and health — the widest sector spread of any cluster. Nine distinct sources support them, including government policy data, academic ridership research, newspaper reporting, and consulting survey work. Two of the four signals are validated with high confidence (SIG-003 and SIG-010). Depth and source independence are the strongest in the dataset. Candidate status reflects only the eight-signal threshold. On every other dimension this cluster is closest to validation.",
+      "Four signals cover migration and belonging, real estate, education and work, mobility, retail, and health — the widest sector spread of any cluster. Nine distinct sources support them, including government policy data, academic ridership research, newspaper reporting, and consulting survey work. Two of the four signals are validated with high confidence (SIG-003 and SIG-010). Depth and source independence are the strongest in the dataset. The validation tab shows the live threshold readout; the open question is whether staying is belonging — contradiction CON-003 holds that tension.",
     scores: {
       breadth: 4,
       depth: 4,

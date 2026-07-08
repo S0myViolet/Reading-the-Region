@@ -12,6 +12,8 @@ export const seedPatterns: Pattern[] = [
   {
     id: "PAT-001",
     name: "Belonging is being turned into a product",
+    plainMeaning:
+      "Businesses keep finding ways to sell the feeling of belonging — through clothing, memberships, housing and community spaces.",
     patternType: "cultural",
     patternStatement:
       "Companies and institutions keep converting the need to belong into things people can buy. Heritage clothing sells identity for daily wear. Visa, schooling, and housing packages sell settlement. Malls and coffee houses sell hosted community. Creator campaigns sell regional credibility. We see this across fashion, migration services, housing, schools, malls, coffee houses, and media.",
@@ -37,6 +39,8 @@ export const seedPatterns: Pattern[] = [
   {
     id: "PAT-002",
     name: "Trust is becoming a paid premium in automated services",
+    plainMeaning:
+      "As services automate, people pay extra for a human or an accountable institution to check the result.",
     patternType: "behavioural",
     patternStatement:
       "Wherever services automate, customers and regulators keep asking for the same thing: a human or an accountable institution to verify the outcome. People will pay extra for that verification, so trust is becoming a separate premium layer on top of automation. We see this in bank credit decisions, buy-now-pay-later checkout finance, and wellness services that make clinical claims.",

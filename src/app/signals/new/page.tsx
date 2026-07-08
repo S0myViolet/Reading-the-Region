@@ -219,7 +219,7 @@ function SimpleCaptureExplainer({ fromObservation }: { fromObservation: string |
       <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
         Creating a signal is analyst work: each one is scored against the nine rubric
         dimensions and read through the mandatory four-level zooming method before it can
-        carry weight in the evidence base. The usual starting point is simpler — capture what
+        be used as evidence. The usual starting point is simpler — capture what
         you noticed as an observation in the Scan Inbox, and promote it to a signal once it
         earns its place.
       </p>

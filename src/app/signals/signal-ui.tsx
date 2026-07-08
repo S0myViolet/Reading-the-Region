@@ -155,7 +155,7 @@ export const SIGNAL_READING_GUIDE: Array<{ q: string; note: string }> = [
   },
   {
     q: "What could contradict this?",
-    note: "Check the linked contradictions before accepting the reading — unopposed conclusions invite overconfidence.",
+    note: "Check the linked contradictions before accepting the reading — if nothing opposes it yet, that may just mean nobody has looked for the other side.",
   },
   {
     q: "What should happen next?",

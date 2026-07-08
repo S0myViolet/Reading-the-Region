@@ -309,7 +309,7 @@ function IndicatorDetail({
           indicator.confidence,
           indicator.evidence.trim()
             ? "based on the evidence recorded at the last check."
-            : "no evidence recorded yet — record a check citing material before this trend carries weight.",
+            : "no evidence recorded yet — record a check citing material before relying on this trend.",
         )}
       </p>
 
