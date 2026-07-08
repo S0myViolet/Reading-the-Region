@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
+import { ViewGate } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { findTopic, topicContent, type ExploreTopic } from "@/lib/explore";
 import { explainContradiction } from "@/lib/explain";
@@ -124,6 +125,21 @@ export default function ExploreTopicPage() {
     .slice(0, MAX_SIGNALS);
   const moreSignals = content.signals.length - shownSignals.length;
 
+  // First three unique open questions recorded across the matched signals
+  // (advanced mode only — rendered behind the analyst gate below).
+  const openQuestions: string[] = [];
+  const seenQuestions = new Set<string>();
+  for (const s of content.signals) {
+    for (const q of s.openQuestions) {
+      const key = q.trim().toLowerCase();
+      if (!key || seenQuestions.has(key)) continue;
+      seenQuestions.add(key);
+      openQuestions.push(q.trim());
+      if (openQuestions.length === 3) break;
+    }
+    if (openQuestions.length === 3) break;
+  }
+
   return (
     <>
       {header}
@@ -225,6 +241,27 @@ export default function ExploreTopicPage() {
           </div>
         </Section>
       ) : null}
+
+      <ViewGate min="analyst">
+        <Section title="Open questions">
+          {openQuestions.length > 0 ? (
+            <ul className="mt-1 space-y-1.5">
+              {openQuestions.map((q) => (
+                <li
+                  key={q}
+                  className="max-w-2xl text-[13px] leading-relaxed text-ink-soft"
+                >
+                  {q}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-[12.5px] text-ink-faint">
+              No open questions recorded for this topic yet.
+            </p>
+          )}
+        </Section>
+      </ViewGate>
     </>
   );
 }
