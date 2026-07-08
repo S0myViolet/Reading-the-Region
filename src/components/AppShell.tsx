@@ -7,7 +7,7 @@ import { indicatorOverdue } from "@/lib/derived";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { OnboardingModal } from "./OnboardingModal";
 import { SearchOverlay } from "./SearchOverlay";
-import { ViewModeSwitch } from "./ViewMode";
+import { AppModeSwitch, useAppMode, ViewModeSwitch } from "./ViewMode";
 
 interface NavItem {
   href: string;
@@ -21,10 +21,39 @@ interface NavCounts {
   overdueIndicators: number;
 }
 
-const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
+interface NavGroup {
+  heading: string | null;
+  items: NavItem[];
+}
+
+/** The product menu: a simple journey, not a system map. */
+const SIMPLE_NAV: NavGroup[] = [
   {
     heading: null,
-    items: [{ href: "/", label: "Overview" }],
+    items: [
+      { href: "/", label: "Today" },
+      { href: "/explore", label: "Explore" },
+      { href: "/finds", label: "New Finds", badge: (c) => c.unreviewedObservations },
+      { href: "/signals", label: "Signals" },
+      { href: "/futures", label: "Futures" },
+      { href: "/decisions", label: "Decisions" },
+      { href: "/watchlist", label: "Watchlist", badge: (c) => c.overdueIndicators },
+    ],
+  },
+  {
+    heading: null,
+    items: [
+      { href: "/methodology", label: "Methodology" },
+      { href: "/settings", label: "Settings" },
+    ],
+  },
+];
+
+/** The full intelligence system, for Advanced mode. */
+const ADVANCED_NAV: NavGroup[] = [
+  {
+    heading: null,
+    items: [{ href: "/overview", label: "Overview" }],
   },
   {
     heading: "Scan",
@@ -69,9 +98,8 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
+  const appMode = useAppMode();
   const [searchOpen, setSearchOpen] = useState(false);
-  const guidedMode = useIntelligenceStore((s) => s.guidedMode);
-  const setGuidedMode = useIntelligenceStore((s) => s.setGuidedMode);
   const observations = useIntelligenceStore((s) => s.observations);
   const signals = useIntelligenceStore((s) => s.signals);
   const indicators = useIntelligenceStore((s) => s.indicators);
@@ -97,6 +125,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
     : { unreviewedObservations: 0, signalsNeedingReview: 0, overdueIndicators: 0 };
 
+  const nav = appMode === "advanced" ? ADVANCED_NAV : SIMPLE_NAV;
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -118,14 +148,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSearchOpen(true)}
             className="mx-6 mb-5 flex w-[calc(100%-3rem)] items-baseline justify-between text-[12px] text-ink-faint hover:text-ink-soft"
-            title="Search all intelligence layers (Ctrl/Cmd + K)"
+            title="Search everything (Ctrl/Cmd + K)"
           >
             Search
             <span className="font-mono text-[10px]">⌘K</span>
           </button>
 
-          {NAV_GROUPS.map((group, gi) => (
-            <div key={gi} className="mb-5 px-6">
+          {nav.map((group, gi) => (
+            <div key={gi} className={`px-6 ${gi === nav.length - 1 ? "mt-6" : "mb-5"}`}>
               {group.heading ? (
                 <p className="mb-1 text-[10.5px] text-ink-faint">{group.heading}</p>
               ) : null}
@@ -136,10 +166,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`-mx-2 flex items-baseline justify-between rounded-[4px] px-2 py-[5px] text-[13px] ${
-                      active
-                        ? "font-medium text-ink"
-                        : "text-ink-soft hover:text-ink"
+                    className={`-mx-2 flex items-baseline justify-between rounded-[4px] px-2 py-[6px] text-[13px] ${
+                      active ? "font-medium text-ink" : "text-ink-soft hover:text-ink"
                     }`}
                   >
                     <span className={active ? "border-b border-accent pb-px" : ""}>
@@ -157,28 +185,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="space-y-3 px-6 pb-6 pt-4">
           <div className="border-t border-line pt-4">
-            <ViewModeSwitch compact />
+            <AppModeSwitch />
           </div>
-          <label
-            className="flex cursor-pointer items-center justify-between text-[11.5px] text-ink-faint"
-            title="Guided Mode shows the page guide: purpose, recommended action, next step."
-          >
-            Guided mode
-            <button
-              role="switch"
-              aria-checked={hydrated ? guidedMode : true}
-              onClick={() => setGuidedMode(!guidedMode)}
-              className={`relative h-[14px] w-[26px] rounded-full transition-colors ${
-                hydrated && guidedMode ? "bg-accent" : "bg-line-strong"
-              }`}
-            >
-              <span
-                className={`absolute top-[2px] h-[10px] w-[10px] rounded-full bg-white transition-all ${
-                  hydrated && guidedMode ? "left-[14px]" : "left-[2px]"
-                }`}
-              />
-            </button>
-          </label>
+          {appMode === "advanced" ? <ViewModeSwitch compact /> : null}
         </div>
       </nav>
 
@@ -194,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             Search
           </button>
-          <MobileNav pathname={pathname} />
+          <MobileNav pathname={pathname} nav={nav} />
         </div>
       </div>
 
@@ -208,7 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MobileNav({ pathname }: { pathname: string }) {
+function MobileNav({ pathname, nav }: { pathname: string; nav: NavGroup[] }) {
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [pathname]);
   return (
@@ -222,7 +231,7 @@ function MobileNav({ pathname }: { pathname: string }) {
       </button>
       {open ? (
         <div className="card absolute right-0 top-8 z-50 max-h-[70vh] w-60 overflow-y-auto py-2">
-          {NAV_GROUPS.map((group, gi) => (
+          {nav.map((group, gi) => (
             <div key={gi} className="px-4 py-1.5">
               {group.heading ? (
                 <p className="pb-0.5 text-[10.5px] text-ink-faint">{group.heading}</p>
@@ -238,6 +247,9 @@ function MobileNav({ pathname }: { pathname: string }) {
               ))}
             </div>
           ))}
+          <div className="border-t border-line px-4 pb-1 pt-2.5">
+            <AppModeSwitch />
+          </div>
         </div>
       ) : null}
     </div>

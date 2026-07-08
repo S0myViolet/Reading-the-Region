@@ -13,6 +13,52 @@ export interface PageWalkthrough {
 }
 
 export const WALKTHROUGHS: Record<string, PageWalkthrough> = {
+  today: {
+    pageId: "today",
+    purpose: "Your daily briefing — what changed, what matters, what to look at next.",
+    recommendedAction:
+      "Read the three cards, then work through the review queue. A few minutes here keeps the whole picture current.",
+    commonMistake:
+      "Do not treat today's picks as conclusions — they are the strongest current material, not settled findings.",
+    nextStep: "Open anything that interests you, or review the new finds.",
+  },
+  explore: {
+    pageId: "explore",
+    purpose: "Browse what is changing — by question, place, or theme.",
+    recommendedAction: "Pick a question you actually care about and see what the region says.",
+    commonMistake: "Do not read one topic page as the full picture — topics overlap and evidence moves.",
+    nextStep: "Save anything worth tracking to your watchlist.",
+  },
+  finds: {
+    pageId: "finds",
+    purpose: "Things the platform noticed that may or may not matter.",
+    recommendedAction:
+      "Go through the queue one by one: keep what seems worth developing, dismiss what is noise.",
+    commonMistake:
+      "Keeping everything. Most finds are noise — dismissing them is the work, not a failure.",
+    nextStep: "Kept finds wait in Advanced mode to be developed into signals.",
+  },
+  futures: {
+    pageId: "futures",
+    purpose: "Where signals become bigger stories about where the region may be going.",
+    recommendedAction: "Read the stories and tensions; open one that could affect your decisions.",
+    commonMistake: "Do not read possibilities as predictions — they are directions, not forecasts.",
+    nextStep: "Turn a story you believe in into a decision, or add it to your watchlist.",
+  },
+  decisions: {
+    pageId: "decisions",
+    purpose: "What all of this means for action, now.",
+    recommendedAction: "Review the takeaways, opportunities and risks for your sector or audience.",
+    commonMistake: "Acting on a recommendation without opening its evidence first.",
+    nextStep: "Save or export what you will actually use.",
+  },
+  watchlist: {
+    pageId: "watchlist",
+    purpose: "The things you care about, and which way they are moving.",
+    recommendedAction: "Check what is getting stronger or weaker since you last looked.",
+    commonMistake: "Watching without ever revisiting — a stale watchlist is quiet noise.",
+    nextStep: "Open anything that changed direction.",
+  },
   overview: {
     pageId: "overview",
     purpose:
@@ -214,9 +260,9 @@ export const ONBOARDING_SCREENS: OnboardingScreen[] = [
   {
     title: "Where to start",
     body: [
-      "Start in the Scan Inbox.",
-      "Add or review raw observations.",
-      "Promote only the observations that show future relevance.",
+      "Start on Today — a short daily briefing of what changed and what needs a look.",
+      "Review New Finds: keep what seems worth developing, dismiss the noise.",
+      "Explore lets you browse what is changing by question, place, or theme.",
     ],
   },
   {
@@ -229,11 +275,10 @@ export const ONBOARDING_SCREENS: OnboardingScreen[] = [
     ],
   },
   {
-    title: "How to manage the platform",
+    title: "Simple on the surface, rigorous underneath",
     body: [
-      "Review new observations. Promote useful signals. Archive noise.",
-      "Check signals needing review. Update clusters. Look for contradictions.",
-      "Monitor leading indicators.",
+      "The default product keeps things human: Today, Explore, Signals, Futures, Decisions, Watchlist.",
+      "The full methodology — scores, thresholds, validation — runs in the background and opens in Advanced mode whenever you want to inspect the reasoning.",
     ],
   },
 ];

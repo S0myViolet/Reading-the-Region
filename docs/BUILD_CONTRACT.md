@@ -167,3 +167,46 @@ The exemplar page is `src/app/inbox/page.tsx` — match its calm exactly.
   ControlBar, form Field.
 - **Three-second test** before finishing a page: page purpose obvious; main action obvious;
   nothing competing for attention; anything removable removed or hidden behind disclosure.
+
+## Simple Mode product (binding — this is the default product)
+
+The platform is now user-journey-first. Simple Mode (default) is the product; Advanced
+Mode is the full methodology system (the existing 14 sections, unchanged).
+
+**Mode engine** (`@/lib/viewMode`, `@/components/ViewMode`):
+- `useAppMode()` → "simple" | "advanced" (hydration-safe, default "simple").
+- `useViewMode()` → resolves to "simple" in simple app mode; "analyst"/"methodology" in
+  advanced. ALL existing ViewGate gating keeps working.
+- `DepthHint` now reads "open deeper analysis" and switches to advanced mode.
+- Simple nav: Today (/), Explore (/explore), New Finds (/finds), Signals (/signals),
+  Futures (/futures), Decisions (/decisions), Watchlist (/watchlist) + Methodology, Settings.
+- Advanced nav: Overview (/overview) + the existing 13 sections.
+
+**Language rules in Simple Mode UI (hard bans):** never show — criteria fractions ("5/9"),
+score names (novelty/momentum/cross-sector relevance/…), "cluster", "pattern", "driver",
+"territory", "validation", "hypothesis", "review status", entity IDs (SIG-001…), source
+credibility scores. Use instead: "Why it matters", "What this could mean", "What it
+connects to", "Keep watching", "Needs more proof", "Getting stronger", "Recommended to
+keep", "Probably noise", "Open deeper analysis". Helpers in `@/lib/simple.ts`:
+`findVerdict`/`FIND_VERDICT_WORDS`, `TREND_WORDS`, `evidenceWords`, `importanceWords`,
+`todayPicks`, `todaySentence`, `todaysQueue`, `watchlistGroups`, `firstSentence`,
+`numberWord`. Explore taxonomy + matching in `@/lib/explore.ts` (`EXPLORE_QUESTIONS`,
+`EXPLORE_PLACES`, `EXPLORE_THEMES`, `findTopic`, `topicContent`).
+
+**Store support:** `savedSignalIds` + `toggleSavedSignal(id)`, `keptFindIds` +
+`keepFind(id)`/`unkeepFind(id)`. "Dismiss" on a find = `setObservationStatus(id,
+"archived_noise", "Dismissed during New Finds review.")`. "Need more proof" =
+`setObservationStatus(id, "needs_more_evidence", …)`. Keeping a find does NOT create a
+signal — kept finds await analyst development in Advanced mode; say so quietly.
+
+**Card idiom for Simple Mode pages:** insight cards, not database rows. Title (14–15px
+medium), one-sentence summary, optional "Why it matters" line, ONE quiet metadata line
+(confidence words · evidence words · place), 1–3 clear text actions (one primary). Use
+whitespace + `.list-row`-style hairlines; `.card` only when a card genuinely needs
+enclosure (e.g. the three Today picks may use very light cards). Every page: PageHeader +
+WalkthroughPanel(pageId) + ONE main thing. No tables in Simple Mode. No instructional
+paragraphs above the work area.
+
+**Linking downward:** simple cards link to existing detail routes (/signals/[id],
+/contradictions/[id], /territories/[id], /scenarios/[id]…). Those pages already render a
+calm simple view in simple mode. Do not rebuild them.

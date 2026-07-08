@@ -102,20 +102,20 @@ export function OnboardingModal() {
                 <button
                   onClick={() => {
                     finish();
-                    router.push("/");
+                    router.push("/explore");
                   }}
-                  className="border border-line bg-surface px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[2px] hover:border-line-strong"
+                  className="px-3 py-1.5 text-[12.5px] text-ink-soft rounded-[4px] bg-surface-muted hover:text-ink"
                 >
-                  View Intelligence Overview
+                  Explore the region
                 </button>
                 <button
                   onClick={() => {
                     finish();
-                    router.push("/inbox");
+                    router.push("/");
                   }}
-                  className="border border-accent bg-accent px-3 py-1.5 text-[12.5px] font-medium text-white rounded-[2px] hover:bg-accent-ink"
+                  className="bg-accent px-3.5 py-1.5 text-[12.5px] font-medium text-white rounded-[4px] hover:bg-accent-ink"
                 >
-                  Start in Scan Inbox
+                  Start with Today
                 </button>
               </>
             ) : (

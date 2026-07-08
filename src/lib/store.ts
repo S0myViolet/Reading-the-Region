@@ -51,6 +51,10 @@ interface UiState {
   dismissedWalkthroughs: string[];
   /** Pages whose guide has been seen once — after that it defaults collapsed. */
   seenWalkthroughs: string[];
+  /** Signals the user saved to their watchlist. */
+  savedSignalIds: string[];
+  /** New Finds the user chose to keep (worth developing into signals). */
+  keptFindIds: string[];
 }
 
 export interface IntelligenceStore extends IntelligenceData, UiState {
@@ -98,6 +102,9 @@ export interface IntelligenceStore extends IntelligenceData, UiState {
   dismissWalkthrough: (pageId: string) => void;
   restoreWalkthrough: (pageId: string) => void;
   markWalkthroughSeen: (pageId: string) => void;
+  toggleSavedSignal: (signalId: string) => void;
+  keepFind: (observationId: string) => void;
+  unkeepFind: (observationId: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -121,6 +128,8 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
       onboardingComplete: false,
       dismissedWalkthroughs: [],
       seenWalkthroughs: [],
+      savedSignalIds: [],
+      keptFindIds: [],
 
       addObservation: (obs) =>
         set((s) => ({ observations: [obs, ...s.observations] })),
@@ -200,6 +209,22 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
           seenWalkthroughs: s.seenWalkthroughs.includes(pageId)
             ? s.seenWalkthroughs
             : [...s.seenWalkthroughs, pageId],
+        })),
+      toggleSavedSignal: (signalId) =>
+        set((s) => ({
+          savedSignalIds: s.savedSignalIds.includes(signalId)
+            ? s.savedSignalIds.filter((id) => id !== signalId)
+            : [...s.savedSignalIds, signalId],
+        })),
+      keepFind: (observationId) =>
+        set((s) => ({
+          keptFindIds: s.keptFindIds.includes(observationId)
+            ? s.keptFindIds
+            : [...s.keptFindIds, observationId],
+        })),
+      unkeepFind: (observationId) =>
+        set((s) => ({
+          keptFindIds: s.keptFindIds.filter((id) => id !== observationId),
         })),
       resetToSeedData: () =>
         set({ ...seedData, guidedMode: get().guidedMode, onboardingComplete: true }),
