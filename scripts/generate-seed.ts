@@ -472,7 +472,7 @@ const NEW_THEMES: ClusterTheme[] = [
         behaviour: "Residents walk, gather and spend money where shade and cooling exist, and avoid places without them.",
         system: "The urban system now treats heat protection as a basic requirement, not a later fix.",
         future: "If this continues, shade and cooling may affect property prices as much as transport links do.",
-        whyItMatters: "Residents, developers and planners are affected because design codes lock in daily habits for decades.",
+        whyItMatters: "If shaded walkways become standard, they could change where people walk, shop, and spend time for years.",
         sectors: ["climate_energy_environment", "real_estate_urban", "mobility_transport"],
         systems: ["climate", "urban", "infrastructure"],
         actorTypes: ["government", "developer"],

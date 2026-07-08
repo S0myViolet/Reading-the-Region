@@ -52,7 +52,10 @@ export const TREND_WORDS: Record<IndicatorTrend, string> = {
 /** One-line evidence description without methodology vocabulary. */
 export function evidenceWords(signal: Signal, sourceCount: number): string {
   const e = signal.scores.evidence;
-  if (e >= 4) return `Well supported — ${sourceCount} independent sources agree.`;
+  if (e >= 4)
+    return sourceCount > 1
+      ? `Well supported — ${sourceCount} independent sources agree.`
+      : `Strong evidence on record — one credible source linked so far.`;
   if (e === 3)
     return sourceCount > 1
       ? `Credible sources, still early — worth watching.`
