@@ -1,18 +1,22 @@
 "use client";
 
 /**
- * Cluster detail — one cluster candidate or valid cluster, with its unifying
- * question, linked signals, live validation against the cluster thresholds,
- * contradictions, and review controls. Validity is always computed from the
- * evidence; the stored status is never presented on its own.
+ * Cluster detail — one cluster candidate or valid cluster, with its linked
+ * signals, live validation against the cluster thresholds, contradictions,
+ * and review controls. Validity is always computed from the evidence; the
+ * stored status is never presented on its own.
  *
  * Visibility layers: the simple view reads as one article — statement,
  * status in plain language with its evidence backing line, evidence
  * summary, what could contradict it, next step — separated by whitespace,
- * not boxes. Analyst view opens the full tabs (validation checklist,
- * nine-dimension scores, per-signal table, review controls) plus the
- * evidence trail from the cluster down to signals and sources; Methodology
- * view adds the threshold table and audit trail as plain definition lines.
+ * not boxes. Analyst view opens the full tabs: an Overview that moves from
+ * at-a-glance facts to plain meaning, what connects the signals, what the
+ * cluster may suggest, what could weaken it, and the next step; scannable
+ * signal rows with a per-signal reason for inclusion; a validation tab
+ * with each threshold's current value and purpose; structured tension
+ * blocks; and review controls. The right rail holds a short relationship
+ * trail (top signals, top sources, patterns, drivers). Methodology view
+ * adds the threshold table and audit trail as plain definition lines.
  */
 
 import Link from "next/link";
@@ -22,22 +26,30 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs } from "@/components/Tabs";
-import { ValidationChecklist } from "@/components/ValidationChecklist";
 import { BiasCheckPanel } from "@/components/BiasCheckPanel";
-import { ContradictionPanel, NoContradictionNote } from "@/components/ContradictionPanel";
-import { EntityLink, RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { NoContradictionNote } from "@/components/ContradictionPanel";
+import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { ScoreGrid } from "@/components/ScorePanel";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
-import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
+import { type TrailStep } from "@/components/EvidenceTrail";
 import { EvidenceBackingLine } from "@/components/EvidenceCompression";
-import { signalStage } from "@/lib/pipeline";
-import { ConfidenceBadge, SignalStrengthBadge } from "@/components/badges";
+import {
+  AtAGlance,
+  ConnectBlock,
+  IncompleteNote,
+  RelationshipTrail,
+  TensionBlock,
+  ValidationCheckRows,
+  type TrailGroup,
+} from "@/components/connect";
+import { STAGE_LABELS, signalStage } from "@/lib/pipeline";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
 import {
+  clusterPlainMeaning,
   explainClusterStatus,
   explainContradiction,
   nextStepForCluster,
@@ -46,6 +58,7 @@ import type {
   Cluster,
   ConfidenceLevel,
   Contradiction,
+  Pattern,
   ReviewStatus,
   Signal,
   Source,
@@ -55,15 +68,23 @@ import {
   CLUSTER_SCORE_LABELS,
   CLUSTER_THRESHOLDS,
   CONFIDENCE_LABELS,
+  CONTRADICTION_TYPE_LABELS,
   REVIEW_STATUS_LABELS,
+  SIGNAL_STRENGTH_LABELS,
 } from "@/lib/types";
 import {
   ClusterValidityPill,
   btnPrimary,
+  buildClusterCheckRows,
   clusterScoresRecord,
+  clusterStatusLine,
+  clusterWeaknesses,
   deriveClusterFacts,
+  dominantCountry,
+  firstSentence,
   fmtDate,
   signalsOfCluster,
+  whyIncluded,
 } from "../cluster-ui";
 
 /** Article-style section: small heading, prose underneath, no box. */
@@ -88,6 +109,23 @@ function Prose({ children }: { children: React.ReactNode }) {
 
 function MissingNote({ children }: { children: React.ReactNode }) {
   return <p className="text-[12px] text-ink-faint">{children}</p>;
+}
+
+/**
+ * Follow-on lines for a tension block, taken only from fields the
+ * contradiction actually records; an empty field contributes no row.
+ */
+function tensionRows(c: Contradiction): Array<{ label: string; text: string }> {
+  const rows: Array<{ label: string; text: string }> = [];
+  const why = c.strategicImplication.trim() || firstSentence(c.underlyingTension);
+  if (why) rows.push({ label: "Why this matters", text: why });
+  const watch =
+    c.scenarioRelevance.trim() ||
+    (c.possibleEscalation.trim()
+      ? `If it escalates: ${firstSentence(c.possibleEscalation)}`
+      : "");
+  if (watch) rows.push({ label: "What to watch", text: watch });
+  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,53 +212,154 @@ function SimpleView({
 // Overview tab (analyst)
 // ---------------------------------------------------------------------------
 
+function shortList(items: string[], max = 3): string {
+  if (items.length <= max) return items.join(", ");
+  return `${items.slice(0, max).join(", ")} +${items.length - max} more`;
+}
+
+const quietLink =
+  "underline decoration-line-strong underline-offset-2 hover:text-ink";
+
 function OverviewTab({
   cluster,
+  result,
   clusterSignals,
+  sources,
+  linkedContradictions,
+  linkedPatterns,
 }: {
   cluster: Cluster;
+  result: ValidationResult;
   clusterSignals: Signal[];
+  sources: Source[];
+  linkedContradictions: Contradiction[];
+  linkedPatterns: Pattern[];
 }) {
   const facts = deriveClusterFacts(clusterSignals);
+  const linkedSourceIds = new Set(clusterSignals.flatMap((s) => s.sourceIds));
+  const sourceCount = sources.filter((src) => linkedSourceIds.has(src.id)).length;
+  const status = clusterStatusLine(cluster, result, clusterSignals.length);
+  const weaknesses = clusterWeaknesses(cluster, result, clusterSignals);
+  const dominant = dominantCountry(clusterSignals);
+
+  // A more specific next step than the generic helper when the data
+  // supports one: a geographically lopsided candidate needs outside
+  // evidence more than anything else.
+  const nextStep =
+    !result.valid && dominant
+      ? `Look for the same behaviour outside ${dominant}. Evidence from a second market would broaden the base and test whether this is a regional logic or a ${dominant} story.`
+      : nextStepForCluster(cluster, result);
+
   return (
     <div className="space-y-8">
-      <Section heading="Unifying question">
-        {cluster.unifyingQuestion.trim() ? (
-          <p className="text-[14px] italic leading-relaxed text-ink">
-            {cluster.unifyingQuestion}
-          </p>
-        ) : (
-          <MissingNote>
-            No unifying question recorded. A cluster is organised around one
-            question, not a topic — add it in Review.
-          </MissingNote>
-        )}
-      </Section>
+      <section className="max-w-2xl">
+        <h3 className="mb-3 text-[13px] font-medium text-ink">
+          Cluster at a glance
+        </h3>
+        <AtAGlance
+          items={[
+            {
+              label: "Status",
+              value: status.valid ? (
+                <span className="font-medium text-accent-ink">{status.text}</span>
+              ) : (
+                status.text
+              ),
+            },
+            { label: "Signals", value: clusterSignals.length },
+            { label: "Sources", value: sourceCount },
+            { label: "Sectors", value: facts.sectors.length },
+            {
+              label: "Geographies",
+              value:
+                facts.countries.length > 0
+                  ? shortList(facts.countries)
+                  : "None yet",
+            },
+            { label: "Confidence", value: CONFIDENCE_LABELS[cluster.confidence] },
+            {
+              label: "Main tension",
+              value: linkedContradictions[0]?.name ?? "None linked yet",
+            },
+          ]}
+        />
+      </section>
 
-      <Section heading="Cluster statement">
+      <ConnectBlock heading="Plain meaning">
+        <p>{clusterPlainMeaning(cluster)}</p>
+      </ConnectBlock>
+
+      <ConnectBlock heading="What connects the signals">
         {cluster.clusterStatement.trim() ? (
-          <Prose>{cluster.clusterStatement}</Prose>
+          <p>{cluster.clusterStatement}</p>
         ) : (
           <MissingNote>No cluster statement recorded yet.</MissingNote>
         )}
-      </Section>
+      </ConnectBlock>
 
-      <Section heading="Evidence summary">
+      <ConnectBlock heading="Evidence summary">
         {cluster.evidenceSummary.trim() ? (
-          <Prose>{cluster.evidenceSummary}</Prose>
+          <p>{cluster.evidenceSummary}</p>
         ) : (
           <MissingNote>
             No evidence summary recorded yet. Summarise what the linked signals
             show — and where they disagree.
           </MissingNote>
         )}
-      </Section>
+      </ConnectBlock>
+
+      <ConnectBlock heading="What this cluster may suggest">
+        {linkedPatterns.length > 0 ? (
+          <p>
+            May feed the pattern{linkedPatterns.length === 1 ? "" : "s"}{" "}
+            {linkedPatterns.map((p, i) => (
+              <span key={p.id}>
+                {i > 0 ? (i === linkedPatterns.length - 1 ? " and " : ", ") : ""}
+                &ldquo;
+                <Link href={`/patterns/${p.id}`} className={quietLink}>
+                  {p.name}
+                </Link>
+                &rdquo;
+              </span>
+            ))}
+            . A pattern forms when the same movement repeats across clusters,
+            sectors and months — open the pattern to see how far this one has
+            got.
+          </p>
+        ) : (
+          <p>
+            No pattern link yet. If this cluster&rsquo;s logic starts repeating
+            in other clusters — across more sectors and over several months —
+            it would feed a pattern. Nothing supports that step today.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="What could weaken it">
+        {weaknesses.length > 0 ? (
+          <ul className="space-y-1.5">
+            {weaknesses.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            Nothing in the checks or the recorded notes flags a weakness. The
+            remaining risk is time — a cluster weakens when its evidence stops
+            repeating, so recheck after the next scan.
+          </p>
+        )}
+      </ConnectBlock>
+
+      <ConnectBlock heading="Next step">
+        <p>{nextStep}</p>
+      </ConnectBlock>
 
       <section className="max-w-2xl">
-        <h2 className="text-[13px] font-medium text-ink">Derived from linked signals</h2>
+        <h3 className="text-[13px] font-medium text-ink">What the evidence covers</h3>
         <p className="mt-0.5 text-[12px] text-ink-faint">
-          Sectors, geographies, actor types and systems come from the evidence —
-          they are never asserted.
+          Sectors, geographies, actor types and systems are read from the
+          linked signals — never asserted.
         </p>
         <dl className="mt-3 space-y-3.5">
           <div>
@@ -280,7 +419,8 @@ function OverviewTab({
 }
 
 // ---------------------------------------------------------------------------
-// Signals tab (analyst) — linked signals with per-signal scores
+// Signals tab (analyst) — stacked rows: title and stage, quiet figures,
+// then why the signal belongs in this group
 // ---------------------------------------------------------------------------
 
 function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
@@ -295,43 +435,38 @@ function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
   }
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Signal</th>
-              <th>Strength</th>
-              <th>Confidence</th>
-              <th>Evidence</th>
-              <th>Strategic relevance</th>
-              <th>Momentum</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clusterSignals.map((s) => (
-              <tr key={s.id}>
-                <td>
-                  <EntityLink kind="signal" id={s.id} title={s.title} />
-                </td>
-                <td>
-                  <SignalStrengthBadge strength={s.signalStrength} />
-                </td>
-                <td>
-                  <ConfidenceBadge level={s.confidence} />
-                </td>
-                <td className="font-mono text-[11.5px]">{s.scores.evidence}/5</td>
-                <td className="font-mono text-[11.5px]">
-                  {s.scores.strategicRelevance}/5
-                </td>
-                <td className="font-mono text-[11.5px]">{s.scores.momentum}/5</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ul className="divide-y divide-line">
+        {clusterSignals.map((s) => (
+          <li key={s.id} className="py-3.5 first:pt-0">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <Link
+                href={`/signals/${s.id}`}
+                className="text-[13px] font-medium leading-snug text-ink hover:text-accent-ink"
+              >
+                {s.title}
+              </Link>
+              <span className="text-[11px] text-ink-faint">
+                Stage: {STAGE_LABELS[signalStage(s)]}
+              </span>
+              <span className="text-[11px] text-ink-faint">
+                {SIGNAL_STRENGTH_LABELS[s.signalStrength]}
+              </span>
+            </div>
+            <p className="mt-1 font-mono text-[11px] text-ink-faint">
+              {CONFIDENCE_LABELS[s.confidence]} · evidence {s.scores.evidence}/5
+              · strategic relevance {s.scores.strategicRelevance}/5 · momentum{" "}
+              {s.scores.momentum}/5 · {s.country}
+            </p>
+            <p className="mt-1.5 max-w-2xl text-[12px] leading-relaxed text-ink-soft">
+              <span className="text-ink-faint">Why included — </span>
+              {whyIncluded(s, clusterSignals)}
+            </p>
+          </li>
+        ))}
+      </ul>
       <p className="text-[11.5px] text-ink-faint">
-        Per-signal scores are the analyst judgements recorded on each signal —
-        open a signal for its full scoring panel and rubric anchors.
+        Figures are the analyst judgements recorded on each signal — open a
+        signal for its full scoring panel and rubric anchors.
       </p>
     </div>
   );
@@ -344,19 +479,48 @@ function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
 function ValidationTab({
   cluster,
   result,
+  clusterSignals,
+  sources,
 }: {
   cluster: Cluster;
   result: ValidationResult;
+  clusterSignals: Signal[];
+  sources: Source[];
 }) {
-  const t = CLUSTER_THRESHOLDS;
+  const rows = buildClusterCheckRows(cluster, clusterSignals, sources);
+  const failing = rows.filter((r) => !r.passed);
   return (
     <div className="max-w-2xl space-y-8">
-      <ValidationChecklist
-        result={result}
-        title="Cluster validation thresholds"
-        passedLabel="Valid cluster"
-        failedLabel="Candidate — not yet valid"
-      />
+      <section>
+        <p className="text-[13px] text-ink">
+          Validation status:{" "}
+          {result.valid ? (
+            <span className="font-medium text-accent-ink">Valid cluster</span>
+          ) : (
+            "Cluster candidate"
+          )}{" "}
+          · passes {result.passedCount} of {result.totalCount} checks
+        </p>
+        <p className="mt-1 text-[12px] text-ink-faint">
+          Every value below is computed live from the linked records — the
+          stored status is never trusted on its own.
+        </p>
+        <div className="mt-4">
+          <ValidationCheckRows checks={rows} />
+        </div>
+        {failing.length > 0 ? (
+          <p className="mt-4 text-[12px] leading-relaxed text-ink-soft">
+            <span className="text-ink-faint">What is missing — </span>
+            {failing
+              .map(
+                (f) =>
+                  `${f.requirement.charAt(0).toLowerCase()}${f.requirement.slice(1)} (current ${f.current}, needs ${f.threshold})`,
+              )
+              .join("; ")}
+            .
+          </p>
+        ) : null}
+      </section>
       <section>
         <h3 className="mb-3 text-[13px] font-medium text-ink">
           Cluster scores — nine dimensions
@@ -366,11 +530,9 @@ function ValidationTab({
           labels={CLUSTER_SCORE_LABELS}
         />
         <p className="mt-3 text-[11.5px] text-ink-faint">
-          Validation benchmarks: breadth ≥ {t.minBreadth}, depth ≥ {t.minDepth},
-          coherence ≥ {t.minCoherence}, strategic relevance ≥{" "}
-          {t.minStrategicRelevance}. Scores are analyst judgements against the
-          1–5 rubric — they support validation, they do not replace the evidence
-          thresholds.
+          Analyst judgements on the 1–5 rubric. Four of them — breadth, depth,
+          coherence and strategic relevance — have minimums in the checklist
+          above; the rest inform review without gating validity.
         </p>
       </section>
     </div>
@@ -434,9 +596,9 @@ function MethodologyTab({
           </table>
         </div>
         <p className="mt-3 text-[11.5px] text-ink-faint">
-          A cluster is valid only when every requirement passes, plus a clear
-          unifying question. The score minimums support validation; they never
-          override the evidence thresholds. This cluster currently passes{" "}
+          A cluster is valid when enough independent signals point to the same
+          underlying logic. The thresholds stop one story, one outlet, or one
+          sector from becoming a false pattern. This cluster currently passes{" "}
           {result.passedCount} of {result.totalCount} checks.
         </p>
       </section>
@@ -494,8 +656,9 @@ function ReviewTab({ cluster }: { cluster: Cluster }) {
       <div>
         <h3 className="text-[13px] font-medium text-ink">Human review</h3>
         <p className="mt-0.5 text-[12px] text-ink-faint">
-          Review decisions are stored separately from computed validity and
-          never override it.
+          This judgment is separate from the computed validation in the
+          Validation tab — the checklist measures evidence; this records
+          interpretation. Neither overrides the other.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -520,7 +683,7 @@ function ReviewTab({ cluster }: { cluster: Cluster }) {
         </Field>
         <Field
           label="Confidence"
-          hint="How much weight the cluster interpretation should carry."
+          hint="How much trust to place in this reading of the evidence."
         >
           <Select
             value={cluster.confidence}
@@ -540,11 +703,12 @@ function ReviewTab({ cluster }: { cluster: Cluster }) {
       </div>
       <Field
         label="Human notes"
-        hint="Interpretation, doubts, and next evidence to look for."
+        hint="Interpretation, doubts, and the next evidence to look for."
       >
         <TextArea
           rows={5}
           value={notes}
+          placeholder="Add the analyst judgment here: what feels solid, what is still uncertain, and what evidence should be checked next."
           onChange={(e) => {
             setNotes(e.target.value);
             setSaved(false);
@@ -665,34 +829,52 @@ export default function ClusterDetailPage() {
   );
   const simple = mode === "simple";
 
-  // Evidence trail, assembled downward from links that actually exist:
-  // the cluster → up to four member signals → for two of those signals,
-  // their first source that still resolves in the store. No step is ever
-  // invented; a thin trail stays visibly thin.
-  const trailSignals = clusterSignals.slice(0, 4);
-  const trailSteps: TrailStep[] = [
-    { stage: "cluster", title: cluster.name },
-    ...trailSignals.map(
-      (s): TrailStep => ({
-        stage: signalStage(s),
-        title: s.title,
-        href: `/signals/${s.id}`,
-      }),
-    ),
-  ];
-  const trailSourceIds = new Set<string>();
-  for (const s of trailSignals.slice(0, 2)) {
-    const src = s.sourceIds
-      .map((sid) => sources.find((x) => x.id === sid))
-      .find((x): x is Source => Boolean(x));
-    if (!src || trailSourceIds.has(src.id)) continue;
-    trailSourceIds.add(src.id);
-    trailSteps.push({
-      stage: "source",
+  // Relationship trail, assembled only from links that resolve in the
+  // store. Top three per group by default; the toggle reveals the rest.
+  // No step is ever invented; a thin trail stays visibly thin.
+  const signalSteps: TrailStep[] = [...clusterSignals]
+    .sort(
+      (a, b) =>
+        b.scores.strategicRelevance - a.scores.strategicRelevance ||
+        b.scores.evidence - a.scores.evidence,
+    )
+    .map((s) => ({
+      stage: signalStage(s),
+      title: s.title,
+      href: `/signals/${s.id}`,
+    }));
+  const linkedSourceIds = new Set(clusterSignals.flatMap((s) => s.sourceIds));
+  const sourceSteps: TrailStep[] = sources
+    .filter((src) => linkedSourceIds.has(src.id))
+    .sort((a, b) => b.credibility - a.credibility)
+    .map((src) => ({
+      stage: "source" as const,
       title: src.name,
       href: `/sources/${src.id}`,
-    });
-  }
+    }));
+  const trailGroups: TrailGroup[] = [
+    { label: "Top signals", steps: signalSteps, previewCount: 3 },
+    { label: "Top sources", steps: sourceSteps, previewCount: 3 },
+    {
+      label: "Patterns this may feed",
+      steps: linkedPatterns.map((p) => ({
+        stage: "pattern" as const,
+        title: p.name,
+        href: `/patterns/${p.id}`,
+      })),
+      previewCount: 3,
+    },
+    {
+      label: "Drivers",
+      steps: linkedDrivers.map((d) => ({
+        stage: "driver" as const,
+        title: d.name,
+        href: `/drivers/${d.id}`,
+      })),
+      previewCount: 3,
+    },
+  ];
+  const trailHasSteps = trailGroups.some((g) => g.steps.length > 0);
 
   const crumbs: Array<{ label: string; href?: string }> = [
     { label: "Signal Clusters", href: "/clusters" },
@@ -737,7 +919,16 @@ export default function ClusterDetailPage() {
     {
       id: "overview",
       label: "Overview",
-      content: <OverviewTab cluster={cluster} clusterSignals={clusterSignals} />,
+      content: (
+        <OverviewTab
+          cluster={cluster}
+          result={result}
+          clusterSignals={clusterSignals}
+          sources={sources}
+          linkedContradictions={linkedContradictions}
+          linkedPatterns={linkedPatterns}
+        />
+      ),
     },
     {
       id: "signals",
@@ -747,20 +938,45 @@ export default function ClusterDetailPage() {
     {
       id: "validation",
       label: "Validation",
-      content: <ValidationTab cluster={cluster} result={result} />,
+      content: (
+        <ValidationTab
+          cluster={cluster}
+          result={result}
+          clusterSignals={clusterSignals}
+          sources={sources}
+        />
+      ),
     },
     {
       id: "contradictions",
       label: `Contradictions (${linkedContradictions.length})`,
       content:
         linkedContradictions.length > 0 ? (
-          <div className="space-y-6">
+          <div className="max-w-2xl space-y-8">
             {linkedContradictions.map((c) => (
-              <ContradictionPanel key={c.id} contradiction={c} />
+              <TensionBlock
+                key={c.id}
+                name={c.name}
+                href={`/contradictions/${c.id}`}
+                typeLabel={CONTRADICTION_TYPE_LABELS[c.contradictionType]}
+                sideA={{
+                  claim: c.sideA,
+                  support: c.evidenceSideA.trim() || undefined,
+                }}
+                sideB={{
+                  claim: c.sideB,
+                  support: c.evidenceSideB.trim() || undefined,
+                }}
+                rows={tensionRows(c)}
+              />
             ))}
           </div>
         ) : (
-          <NoContradictionNote />
+          <IncompleteNote
+            missing="No contradiction linked yet."
+            whyItMatters="A cluster nobody has argued against has not been tested — the reading may be one-sided."
+            nextStep="Look for evidence that cuts against this group before using it in a pattern."
+          />
         ),
     },
     {
@@ -802,26 +1018,28 @@ export default function ClusterDetailPage() {
               sources={sources}
             />
           ) : (
-            <>
-              <Tabs tabs={tabs} />
-              <ViewGate min="analyst">
-                <section className="mt-10 max-w-2xl">
-                  <h2 className="mb-1 text-[13px] font-medium text-ink">
-                    Evidence trail
-                  </h2>
-                  <p className="mb-3 text-[12px] text-ink-faint">
-                    From this cluster down to member signals and their sources
-                    — every step is a live link, none is asserted.
-                  </p>
-                  <EvidenceTrail steps={trailSteps} />
-                </section>
-              </ViewGate>
-            </>
+            <Tabs tabs={tabs} />
           )}
         </div>
 
         <aside className="mt-10 space-y-8 lg:mt-0">
-          <RelatedObjectsPanel groups={relatedGroups} />
+          {simple ? (
+            <RelatedObjectsPanel groups={relatedGroups} />
+          ) : (
+            <section>
+              <h3 className="mb-3 text-[13px] font-medium text-ink">
+                Relationship trail
+              </h3>
+              {trailHasSteps ? (
+                <RelationshipTrail groups={trailGroups} />
+              ) : (
+                <p className="text-[11.5px] text-ink-faint">
+                  No linked records yet. Connect signals from the Signal
+                  Library to build this trail.
+                </p>
+              )}
+            </section>
+          )}
           <ViewGate min="analyst">
             {!result.valid ? <CandidateGuidance result={result} /> : null}
           </ViewGate>

@@ -9,10 +9,10 @@
  *
  * Two registers. The simple view keeps the calm list rows: one primary
  * line, one plain-language status line. The advanced view renders the
- * clusters as a grid of quiet map tiles — name, unifying question, a live
- * evidence line (signals · sources · sectors), computed validity in plain
- * words, and the linked tension when one exists. Valid maps sort first,
- * then by evidence weight.
+ * clusters as a grid of quiet map tiles — name, plain meaning, what
+ * connects the signals, a live evidence line (signals · sources · sectors),
+ * an honest status line, and the linked tension when one exists. Valid maps
+ * sort first, then by signal count.
  */
 
 import Link from "next/link";
@@ -29,13 +29,16 @@ import {
 import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
+import { clusterPlainMeaning } from "@/lib/explain";
 import { DEFINITIONS } from "@/lib/copy";
 import type { Cluster, Contradiction, Sector, Signal } from "@/lib/types";
 import { SECTOR_LABELS } from "@/lib/types";
 import {
   btnPrimary,
+  clusterStatusLine,
   countInWords,
   deriveClusterFacts,
+  firstSentence,
   shortClusterStatus,
   signalsOfCluster,
   type DerivedClusterFacts,
@@ -111,9 +114,13 @@ function ClusterRow({
  * Advanced view — one cluster-map tile. Quiet by design: no shadows, no
  * colour flood; accent appears only on the two words a cluster has earned.
  * All figures are computed live from resolved members, never stored counts.
+ * Reads top to bottom: name, plain meaning, what connects the signals,
+ * evidence line, status, tension, and a quiet open affordance.
  */
 function ClusterMapCard({ row }: { row: ClusterRowData }) {
   const { cluster, result, linked, facts, sourceCount, tension } = row;
+  const connects = firstSentence(cluster.clusterStatement);
+  const status = clusterStatusLine(cluster, result, linked.length);
   return (
     <Link
       href={`/clusters/${cluster.id}`}
@@ -122,9 +129,12 @@ function ClusterMapCard({ row }: { row: ClusterRowData }) {
       <p className="text-[14px] font-medium leading-snug text-ink group-hover:text-accent-ink">
         {cluster.name}
       </p>
-      {cluster.unifyingQuestion.trim() ? (
-        <p className="mt-1.5 line-clamp-2 text-[12px] italic leading-relaxed text-ink-faint">
-          {cluster.unifyingQuestion}
+      <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
+        {clusterPlainMeaning(cluster)}
+      </p>
+      {connects ? (
+        <p className="mt-2 line-clamp-3 text-[12px] leading-relaxed text-ink-faint">
+          {connects}
         </p>
       ) : null}
       <div className="mt-auto pt-4">
@@ -134,13 +144,10 @@ function ClusterMapCard({ row }: { row: ClusterRowData }) {
           {facts.sectors.length === 1 ? "" : "s"}
         </p>
         <p className="mt-1.5 text-[12px]">
-          {result.valid ? (
-            <span className="font-medium text-accent-ink">Valid cluster</span>
+          {status.valid ? (
+            <span className="font-medium text-accent-ink">{status.text}</span>
           ) : (
-            <span className="text-ink-faint">
-              Candidate — passes {result.passedCount} of {result.totalCount}{" "}
-              checks
-            </span>
+            <span className="text-ink-faint">{status.text}</span>
           )}
         </p>
         {tension ? (
@@ -148,6 +155,9 @@ function ClusterMapCard({ row }: { row: ClusterRowData }) {
             Tension: {tension}
           </p>
         ) : null}
+        <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-ink-faint group-hover:text-accent-ink">
+          Open cluster
+        </p>
       </div>
     </Link>
   );
@@ -212,7 +222,7 @@ export default function ClustersPage() {
       return false;
     if (
       q &&
-      !`${r.cluster.name} ${r.cluster.unifyingQuestion} ${r.cluster.clusterStatement}`
+      !`${r.cluster.name} ${r.cluster.plainMeaning ?? ""} ${r.cluster.unifyingQuestion} ${r.cluster.clusterStatement}`
         .toLowerCase()
         .includes(q)
     )
@@ -220,7 +230,7 @@ export default function ClustersPage() {
     return true;
   });
 
-  // Grid order: earned validity first, then evidence weight (signal count).
+  // Grid order: earned validity first, then signal count.
   const gridRows = [...filtered].sort((a, b) => {
     if (a.result.valid !== b.result.valid) return a.result.valid ? -1 : 1;
     return b.linked.length - a.linked.length;
