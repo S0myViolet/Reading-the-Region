@@ -24,10 +24,13 @@ import {
   ControlSelect,
 } from "@/components/ControlBar";
 import { useViewMode } from "@/components/ViewMode";
+import { Age } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
+import { checkedReading, contradictionEvidenceWindows } from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { explainContradiction } from "@/lib/explain";
 import { DEFINITIONS } from "@/lib/copy";
-import type { Contradiction, ContradictionType } from "@/lib/types";
+import type { Contradiction, ContradictionType, Signal } from "@/lib/types";
 import { CONTRADICTION_TYPE_LABELS } from "@/lib/types";
 import {
   CONTRADICTION_SORT_OPTIONS,
@@ -61,7 +64,16 @@ function ContradictionsHeader() {
   );
 }
 
-function ContradictionRow({ contradiction }: { contradiction: Contradiction }) {
+/** More than a month between the two sides' newest evidence. */
+const SIDE_GAP_MS = 30 * 24 * 60 * 60 * 1000;
+
+function ContradictionRow({
+  contradiction,
+  signals,
+}: {
+  contradiction: Contradiction;
+  signals: Signal[];
+}) {
   const advanced = useViewMode() !== "simple";
 
   if (!advanced) {
@@ -88,6 +100,14 @@ function ContradictionRow({ contradiction }: { contradiction: Contradiction }) {
   const why = whyItMattersLine(contradiction);
   const signalCount = linkedSignalCount(contradiction);
   const strength = contradiction.scores.tensionStrength;
+
+  // Live evidence ages per side, plus the honest checked/updated reading.
+  const { sideA, sideB } = contradictionEvidenceWindows(contradiction, signals);
+  const reading = checkedReading(contradiction);
+  const underScanned =
+    sideA.latest !== null &&
+    sideB.latest !== null &&
+    Math.abs(Date.parse(sideA.latest) - Date.parse(sideB.latest)) > SIDE_GAP_MS;
 
   return (
     <Link
@@ -119,6 +139,30 @@ function ContradictionRow({ contradiction }: { contradiction: Contradiction }) {
         </p>
       ) : null}
       <p className="mt-1.5 text-[11.5px] text-ink-faint">
+        {sideA.latest ? (
+          <>
+            Side A latest evidence <Age iso={sideA.latest} />
+          </>
+        ) : (
+          <>Side A has no dated evidence linked</>
+        )}
+        {" · "}
+        {sideB.latest ? (
+          <>
+            Side B latest evidence <Age iso={sideB.latest} />
+          </>
+        ) : (
+          <>Side B has no dated evidence linked</>
+        )}
+        {" · "}
+        <Age iso={reading.date} prefix={reading.verb} />
+        {underScanned ? (
+          <span title="The two sides' newest evidence is more than a month apart.">
+            {" · one side is under-scanned"}
+          </span>
+        ) : null}
+      </p>
+      <p className="mt-1.5 text-[11.5px] text-ink-faint">
         Tension strength: {TENSION_STRENGTH_WORDS[strength]}{" "}
         <span className="font-mono text-[10.5px]">{strength}/5</span>
         {" · "}
@@ -136,6 +180,7 @@ export default function ContradictionsPage() {
   const hydrated = useHydrated();
   const mode = useViewMode();
   const contradictions = useIntelligenceStore((s) => s.contradictions);
+  const signals = useIntelligenceStore((s) => s.signals);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sort, setSort] = useState<ContradictionSort>("tension");
@@ -169,6 +214,8 @@ export default function ContradictionsPage() {
     <>
       <ContradictionsHeader />
       <WalkthroughPanel pageId="contradictions" />
+
+      {mode !== "simple" ? <RefreshBar /> : null}
 
       <ControlBar
         right={
@@ -215,7 +262,7 @@ export default function ContradictionsPage() {
       ) : (
         <section aria-label="Contradictions">
           {rows.map((c) => (
-            <ContradictionRow key={c.id} contradiction={c} />
+            <ContradictionRow key={c.id} contradiction={c} signals={signals} />
           ))}
         </section>
       )}

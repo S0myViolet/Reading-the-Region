@@ -47,6 +47,13 @@ import {
   SignalStrengthBadge,
 } from "@/components/badges";
 import { Field, Select, TextArea } from "@/components/form";
+import { Age } from "@/components/freshness";
+import {
+  fullDate,
+  patternEvidenceWindow,
+  signalEvidenceAt,
+  type EvidenceWindow,
+} from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { signalStage } from "@/lib/pipeline";
 import {
@@ -91,7 +98,6 @@ import {
   contradictionEffectOnPattern,
   derivePatternFacts,
   evidenceLeadInSentence,
-  evidenceWindowLabel,
   failingTestSentences,
   findCheck,
   fmtDate,
@@ -107,6 +113,7 @@ import {
   splitSentences,
   statusDisagrees,
   whySignalBelongs,
+  windowLabelFromDates,
 } from "../pattern-ui";
 
 /** Cluster record plus its own live validation result, for the Evidence tab. */
@@ -307,6 +314,11 @@ function OverviewTab({
   const sourceFigure = independentSourceFigure(pattern, patternSignals, linkedSources);
   const weaknesses = patternWeaknesses(pattern, result, patternSignals, linkedSources);
 
+  // Live evidence window: the key signals' own dates merged with the
+  // recorded first/latest evidence dates. The stored dates stay visible in
+  // Methodology when they differ.
+  const liveWindow = patternEvidenceWindow(pattern, patternSignals);
+
   // Strategic meaning trimmed to its essentials: the first sentences carry
   // the reading; the rest stays available behind a quiet disclosure.
   const meaningSentences = splitSentences(pattern.strategicMeaning);
@@ -340,7 +352,27 @@ function OverviewTab({
               label: "Independent sources",
               value: <span className="font-mono">{sourceFigure}</span>,
             },
-            { label: "Evidence window", value: evidenceWindowLabel(pattern) },
+            {
+              label: "Evidence window",
+              value:
+                liveWindow.oldest && liveWindow.latest ? (
+                  <span
+                    title={`${fullDate(liveWindow.oldest)} → ${fullDate(liveWindow.latest)}`}
+                  >
+                    {windowLabelFromDates(liveWindow.oldest, liveWindow.latest)}
+                  </span>
+                ) : (
+                  "No dated evidence yet"
+                ),
+            },
+            {
+              label: "Latest evidence",
+              value: liveWindow.latest ? (
+                <Age iso={liveWindow.latest} />
+              ) : (
+                "No dated evidence yet"
+              ),
+            },
             { label: "Confidence", value: CONFIDENCE_LABELS[pattern.confidence] },
             {
               label: "Main tension",
@@ -511,6 +543,7 @@ function ValidationTab({
 }) {
   const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
   const minMonths = PATTERN_THRESHOLDS.minMonthsPersistence;
+  const liveWindow = patternEvidenceWindow(pattern, patternSignals);
   return (
     <div className="max-w-2xl space-y-8">
       <section>
@@ -530,6 +563,16 @@ function ValidationTab({
               <RecomputedNote />
             </>
           ) : null}
+        </p>
+        <p className="mt-1 text-[11.5px] text-ink-faint">
+          {liveWindow.latest ? (
+            <>
+              Latest evidence <Age iso={liveWindow.latest} /> — computed live
+              from the key signals and the recorded evidence dates.
+            </>
+          ) : (
+            <>No dated evidence linked yet.</>
+          )}
         </p>
         <div className="mt-4 border-t border-line pt-3">
           <ValidationCheckRows checks={patternCheckRows(pattern, result, patternSignals)} />
@@ -655,6 +698,9 @@ function EvidenceTab({
                     <SignalStrengthBadge strength={s.signalStrength} />
                     <ConfidenceBadge level={s.confidence} />
                     <span className="text-[11px] text-ink-faint">{s.country}</span>
+                    <span className="text-[11px] text-ink-faint">
+                      <Age iso={signalEvidenceAt(s)} prefix="evidence" />
+                    </span>
                   </span>
                 </div>
                 <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-ink-soft">
@@ -760,10 +806,16 @@ function AuditLine({ label, value }: { label: string; value: React.ReactNode }) 
 function MethodologyTab({
   pattern,
   result,
+  liveWindow,
 }: {
   pattern: Pattern;
   result: ValidationResult;
+  /** Live window from the key signals — shown against the stored dates. */
+  liveWindow: EvidenceWindow;
 }) {
+  const liveDiffers =
+    liveWindow.oldest !== pattern.firstEvidenceDate ||
+    liveWindow.latest !== pattern.latestEvidenceDate;
   const t = PATTERN_THRESHOLDS;
   const months = monthsBetween(pattern.firstEvidenceDate, pattern.latestEvidenceDate);
   const thresholdRows: Array<[string, string]> = [
@@ -859,6 +911,14 @@ function MethodologyTab({
           (minimum {t.minMonthsPersistence}). Extending the window requires new
           evidence, not a new claim.
         </p>
+        {liveDiffers && liveWindow.oldest && liveWindow.latest ? (
+          <p className="mt-1 text-[11.5px] text-ink-faint">
+            The stored dates above are the recorded first and latest evidence
+            dates; the window computed live from the linked key signals is{" "}
+            {fmtDate(liveWindow.oldest)}{" "}
+            <span aria-hidden>→</span> {fmtDate(liveWindow.latest)}.
+          </p>
+        ) : null}
       </section>
 
       <section>
@@ -1302,7 +1362,13 @@ export default function PatternDetailPage() {
     tabs.push({
       id: "methodology",
       label: "Methodology",
-      content: <MethodologyTab pattern={pattern} result={result} />,
+      content: (
+        <MethodologyTab
+          pattern={pattern}
+          result={result}
+          liveWindow={patternEvidenceWindow(pattern, patternSignals)}
+        />
+      ),
     });
   }
 

@@ -26,6 +26,14 @@ import {
   ControlSelect,
 } from "@/components/ControlBar";
 import { useViewMode } from "@/components/ViewMode";
+import { Age, FreshnessWord } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
+import {
+  checkedReading,
+  patternEvidenceWindow,
+  patternStaleReason,
+  type EvidenceWindow,
+} from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validatePattern, type ValidationResult } from "@/lib/validation";
 import { patternPlainMeaning } from "@/lib/explain";
@@ -60,6 +68,8 @@ function PatternRow({
   plainMeaning,
   sourceCount,
   mainTensionName,
+  window,
+  staleReason,
 }: {
   pattern: Pattern;
   result: ValidationResult;
@@ -68,7 +78,12 @@ function PatternRow({
   plainMeaning: string;
   sourceCount: number;
   mainTensionName: string | null;
+  /** Live evidence window from key signals plus recorded dates. */
+  window: EvidenceWindow;
+  /** One plain sentence when the pattern has gone stale, else null. */
+  staleReason: string | null;
 }) {
+  const reading = checkedReading(pattern);
   const clusterCount = pattern.clusterIds.length;
 
   if (!advanced) {
@@ -135,6 +150,28 @@ function PatternRow({
           Open pattern
         </span>
       </div>
+      <p className="mt-1 text-[11.5px] text-ink-faint">
+        <FreshnessWord date={window.latest} />
+        {window.latest && window.oldest ? (
+          <>
+            {" · Evidence window "}
+            <Age iso={window.oldest} />{" "}
+            <span aria-hidden>→</span> <Age iso={window.latest} />
+          </>
+        ) : (
+          <> · no dated evidence linked</>
+        )}
+        {" · "}
+        <Age iso={reading.date} prefix={reading.verb} />
+        {staleReason ? (
+          <>
+            {" · "}
+            <span className="text-caution" title={staleReason}>
+              Stale
+            </span>
+          </>
+        ) : null}
+      </p>
       {mainTensionName ? (
         <p className="mt-1 text-[12px] text-ink-faint">
           Main tension: {mainTensionName}
@@ -169,6 +206,8 @@ export default function PatternsPage() {
             sourceCount: independentSourceFigure(pattern, linkedSignals, sources),
             mainTensionName:
               mainTensionOfPattern(pattern, contradictions)?.name ?? null,
+            window: patternEvidenceWindow(pattern, signals),
+            staleReason: patternStaleReason(pattern, signals),
           };
         }),
     [patterns, signals, sources, contradictions],
@@ -209,6 +248,8 @@ export default function PatternsPage() {
     <>
       <PatternsHeader />
       <WalkthroughPanel pageId="patterns" />
+
+      {mode !== "simple" ? <RefreshBar /> : null}
 
       <ControlBar
         more={
@@ -272,6 +313,8 @@ export default function PatternsPage() {
               plainMeaning={r.plainMeaning}
               sourceCount={r.sourceCount}
               mainTensionName={r.mainTensionName}
+              window={r.window}
+              staleReason={r.staleReason}
             />
           ))}
         </section>

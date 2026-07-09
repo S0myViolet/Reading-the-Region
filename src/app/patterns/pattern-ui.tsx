@@ -207,6 +207,12 @@ export function evidenceWindowLabel(pattern: Pattern): string {
   return `${monthYear(pattern.firstEvidenceDate)} – ${monthYear(pattern.latestEvidenceDate)}`;
 }
 
+/** The same "Sep 2025 – Jun 2026" label from any two dates — used for the
+ * live window computed from the linked key signals. */
+export function windowLabelFromDates(oldest: string, latest: string): string {
+  return `${monthYear(oldest)} – ${monthYear(latest)}`;
+}
+
 /** First linked contradiction that resolves to a record — the main tension. */
 export function mainTensionOfPattern(
   pattern: Pattern,

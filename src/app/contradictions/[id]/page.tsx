@@ -32,7 +32,9 @@ import {
 } from "@/components/connect";
 import { ReviewStatusBadge } from "@/components/badges";
 import { Field, Select } from "@/components/form";
+import { Age, FreshnessLine } from "@/components/freshness";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { checkedReading, newestDate, windowFromSignals } from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { explainContradiction } from "@/lib/explain";
@@ -141,6 +143,7 @@ function SideColumn({
     .filter((s): s is Signal => Boolean(s));
   const missing = signalIds.filter((sid) => !signals.some((s) => s.id === sid));
   const strength = sideEvidenceStrength(resolved);
+  const sideWindow = windowFromSignals(signalIds, signals);
 
   return (
     <div>
@@ -173,7 +176,15 @@ function SideColumn({
       ) : null}
 
       {strength ? (
-        <p className="mt-2 font-mono text-[11px] text-ink-faint">{strength}</p>
+        <p className="mt-2 font-mono text-[11px] text-ink-faint">
+          {strength}
+          {sideWindow.latest ? (
+            <>
+              {" · latest evidence "}
+              <Age iso={sideWindow.latest} />
+            </>
+          ) : null}
+        </p>
       ) : (
         <p className="mt-2 text-[11.5px] text-ink-faint">
           No signals linked to this side yet — its evidence lives in the text
@@ -262,6 +273,29 @@ function ReviewSection({ contradiction }: { contradiction: Contradiction }) {
           </Select>
         </Field>
       </div>
+      <p className="mt-3 text-[11.5px] text-ink-faint">
+        {contradiction.lastCheckedAt ? (
+          <>
+            Last checked <Age iso={contradiction.lastCheckedAt} />.{" "}
+          </>
+        ) : (
+          <>
+            No check recorded yet — freshness falls back to the last edit,{" "}
+            <Age iso={contradiction.updatedAt} />.{" "}
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() =>
+            updateContradiction(contradiction.id, {
+              lastCheckedAt: new Date().toISOString(),
+            })
+          }
+          className="text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+        >
+          Mark as checked now
+        </button>
+      </p>
     </section>
   );
 }
@@ -320,6 +354,14 @@ export default function ContradictionDetailPage() {
   const sideBSignals = contradiction.sideBSignalIds
     .map((sid) => signals.find((s) => s.id === sid))
     .filter((s): s is Signal => Boolean(s));
+
+  // Whole-tension freshness (advanced register): the newest evidence across
+  // both sides, with the honest checked/updated reading for the record.
+  const overallLatest = newestDate([
+    windowFromSignals(contradiction.sideASignalIds, signals).latest,
+    windowFromSignals(contradiction.sideBSignalIds, signals).latest,
+  ]);
+  const reading = checkedReading(contradiction);
 
   // Reverse lookups — every layer that declares this tension as shaping it.
   const linkedClusters = clusters.filter((c) => c.contradictionIds.includes(id));
@@ -512,6 +554,12 @@ export default function ContradictionDetailPage() {
                   />
                 </div>
               </div>
+              <FreshnessLine
+                latest={overallLatest}
+                checkedAt={reading.date}
+                checkedVerb={reading.verb}
+                className="mt-2.5 text-[11.5px] text-ink-faint"
+              />
             </section>
 
             <ConnectBlock heading="Underlying tension">

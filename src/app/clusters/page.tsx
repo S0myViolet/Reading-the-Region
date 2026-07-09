@@ -27,6 +27,13 @@ import {
   ControlSelect,
 } from "@/components/ControlBar";
 import { useViewMode } from "@/components/ViewMode";
+import { Age } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
+import {
+  clusterEvidenceWindow,
+  clusterStaleReason,
+  type EvidenceWindow,
+} from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
 import { clusterPlainMeaning } from "@/lib/explain";
@@ -59,6 +66,10 @@ interface ClusterRowData {
   facts: DerivedClusterFacts;
   sourceCount: number;
   tension: string | null;
+  /** Live evidence window from the member signals — advanced register only. */
+  window: EvidenceWindow;
+  /** One plain sentence when the cluster has gone stale, else null. */
+  staleReason: string | null;
 }
 
 function ClustersHeader() {
@@ -118,7 +129,8 @@ function ClusterRow({
  * evidence line, status, tension, and a quiet open affordance.
  */
 function ClusterMapCard({ row }: { row: ClusterRowData }) {
-  const { cluster, result, linked, facts, sourceCount, tension } = row;
+  const { cluster, result, linked, facts, sourceCount, tension, window, staleReason } =
+    row;
   const connects = firstSentence(cluster.clusterStatement);
   const status = clusterStatusLine(cluster, result, linked.length);
   return (
@@ -142,6 +154,28 @@ function ClusterMapCard({ row }: { row: ClusterRowData }) {
           {linked.length} signal{linked.length === 1 ? "" : "s"} · {sourceCount}{" "}
           source{sourceCount === 1 ? "" : "s"} · {facts.sectors.length} sector
           {facts.sectors.length === 1 ? "" : "s"}
+          {window.latest ? (
+            <>
+              {" · latest signal "}
+              <Age iso={window.latest} />
+              {window.oldest && window.oldest !== window.latest ? (
+                <>
+                  {" · oldest "}
+                  <Age iso={window.oldest} />
+                </>
+              ) : null}
+            </>
+          ) : (
+            <> · no dated evidence linked</>
+          )}
+          {staleReason ? (
+            <>
+              {" · "}
+              <span className="text-caution" title={staleReason}>
+                Stale
+              </span>
+            </>
+          ) : null}
         </p>
         <p className="mt-1.5 text-[12px]">
           {status.valid ? (
@@ -194,7 +228,16 @@ export default function ClustersPage() {
             cluster.contradictionIds
               .map((cid) => contradictions.find((c) => c.id === cid))
               .find((c): c is Contradiction => Boolean(c))?.name ?? null;
-          return { cluster, result, linked, facts, sourceCount, tension };
+          return {
+            cluster,
+            result,
+            linked,
+            facts,
+            sourceCount,
+            tension,
+            window: clusterEvidenceWindow(cluster, signals),
+            staleReason: clusterStaleReason(cluster, signals),
+          };
         }),
     [clusters, signals, sources, contradictions],
   );
@@ -243,6 +286,8 @@ export default function ClustersPage() {
     <>
       <ClustersHeader />
       <WalkthroughPanel pageId="clusters" />
+
+      {advanced ? <RefreshBar /> : null}
 
       {advanced && rows.length > 0 ? (
         <p className="mb-6 text-[12px] text-ink-faint">

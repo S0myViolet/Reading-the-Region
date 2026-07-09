@@ -46,6 +46,8 @@ import {
 import { STAGE_LABELS, signalStage } from "@/lib/pipeline";
 import { PlainTags, SectorTags, SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
+import { Age } from "@/components/freshness";
+import { clusterEvidenceWindow, signalEvidenceAt } from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateCluster, type ValidationResult } from "@/lib/validation";
 import {
@@ -239,6 +241,8 @@ function OverviewTab({
   const linkedSourceIds = new Set(clusterSignals.flatMap((s) => s.sourceIds));
   const sourceCount = sources.filter((src) => linkedSourceIds.has(src.id)).length;
   const status = clusterStatusLine(cluster, result, clusterSignals.length);
+  // Live evidence window from the member signals — never a stored figure.
+  const evidenceWindow = clusterEvidenceWindow(cluster, clusterSignals);
   const weaknesses = clusterWeaknesses(cluster, result, clusterSignals);
   const dominant = dominantCountry(clusterSignals);
 
@@ -269,6 +273,22 @@ function OverviewTab({
             { label: "Signals", value: clusterSignals.length },
             { label: "Sources", value: sourceCount },
             { label: "Sectors", value: facts.sectors.length },
+            {
+              label: "Latest evidence",
+              value: evidenceWindow.latest ? (
+                <Age iso={evidenceWindow.latest} />
+              ) : (
+                "No dated evidence yet"
+              ),
+            },
+            {
+              label: "Oldest evidence",
+              value: evidenceWindow.oldest ? (
+                <Age iso={evidenceWindow.oldest} />
+              ) : (
+                "No dated evidence yet"
+              ),
+            },
             {
               label: "Geographies",
               value:
@@ -451,6 +471,9 @@ function SignalsTab({ clusterSignals }: { clusterSignals: Signal[] }) {
               <span className="text-[11px] text-ink-faint">
                 {SIGNAL_STRENGTH_LABELS[s.signalStrength]}
               </span>
+              <span className="text-[11px] text-ink-faint">
+                <Age iso={signalEvidenceAt(s)} prefix="evidence" />
+              </span>
             </div>
             <p className="mt-1 font-mono text-[11px] text-ink-faint">
               {CONFIDENCE_LABELS[s.confidence]} · evidence {s.scores.evidence}/5
@@ -489,6 +512,14 @@ function ValidationTab({
 }) {
   const rows = buildClusterCheckRows(cluster, clusterSignals, sources);
   const failing = rows.filter((r) => !r.passed);
+
+  // Evidence recency, computed live from the member signals' own dates.
+  const evidenceWindow = clusterEvidenceWindow(cluster, clusterSignals);
+  const now = Date.now();
+  const recentCount = clusterSignals.filter(
+    (s) => now - Date.parse(signalEvidenceAt(s)) <= 30 * 24 * 60 * 60 * 1000,
+  ).length;
+
   return (
     <div className="max-w-2xl space-y-8">
       <section>
@@ -500,6 +531,29 @@ function ValidationTab({
             "Cluster candidate"
           )}{" "}
           · passes {result.passedCount} of {result.totalCount} checks
+        </p>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-soft">
+          <span className="text-ink-faint">Evidence recency — </span>
+          {evidenceWindow.latest ? (
+            recentCount > 0 ? (
+              <>
+                newest member signal <Age iso={evidenceWindow.latest} />;{" "}
+                {recentCount} of {clusterSignals.length} member signal
+                {clusterSignals.length === 1 ? "" : "s"}{" "}
+                {recentCount === 1 ? "is" : "are"} from the last 30 days.
+              </>
+            ) : (
+              <>
+                All member evidence is older than 30 days (newest{" "}
+                <Age iso={evidenceWindow.latest} />) —{" "}
+                {result.valid
+                  ? "the cluster is valid but currently historical."
+                  : "the evidence is currently historical, not live."}
+              </>
+            )
+          ) : (
+            <>no member signal carries a dated observation yet.</>
+          )}
         </p>
         <p className="mt-1 text-[12px] text-ink-faint">
           Every value below is computed live from the linked records — the
