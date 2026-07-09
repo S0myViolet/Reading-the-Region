@@ -34,6 +34,8 @@ import {
 } from "@/components/badges";
 import { PlainTags, SectorTags, SourceBiasTags, SystemTags } from "@/components/tags";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
+import { Age, FreshnessLine, FreshnessWord, SourceLine } from "@/components/freshness";
+import { AtAGlance } from "@/components/connect";
 import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
 import { EvidenceTrail, type TrailStep } from "@/components/EvidenceTrail";
 import { SignalScorePanel } from "@/components/ScorePanel";
@@ -44,6 +46,16 @@ import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { ExplainedConfidence, ExplainedScore } from "@/components/Explained";
 import { Select, TextArea } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import {
+  checkedReading,
+  freshnessOf,
+  fullDate,
+  newestDate,
+  oldestDate,
+  relativeAge,
+  signalEvidenceAt,
+  signalStaleReason,
+} from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import { zoomComplete } from "@/lib/validation";
 import { explainContradiction, nextStepForSignal } from "@/lib/explain";
@@ -123,6 +135,42 @@ function linkedSources(signal: Signal, sources: Source[]): Source[] {
   return signal.sourceIds
     .map((id) => sources.find((s) => s.id === id))
     .filter((s): s is Source => Boolean(s));
+}
+
+/**
+ * Freshness additions are advanced-register only: the analyst tabs also
+ * render inside the simple view's "Show full method" disclosure, and the
+ * simple product must stay exactly as it was.
+ */
+function useAdvanced(): boolean {
+  return useViewMode() !== "simple";
+}
+
+/** The most recently active linked source: newest dateAdded / lastCheckedAt. */
+function newestLinkedSource(signal: Signal, sources: Source[]): Source | null {
+  let best: Source | null = null;
+  let bestAt: string | null = null;
+  for (const src of linkedSources(signal, sources)) {
+    const at = newestDate([src.dateAdded, src.lastCheckedAt]);
+    if (!best || (at && bestAt && Date.parse(at) > Date.parse(bestAt)) || (at && !bestAt)) {
+      best = src;
+      bestAt = at;
+    }
+  }
+  return best;
+}
+
+/**
+ * The oldest evidence date behind this signal, from real fields only: its
+ * own observed/event dates plus the originating observation's, when linked.
+ */
+function oldestEvidenceAt(signal: Signal, observation: Observation | null): string | null {
+  return oldestDate([
+    signal.dateObserved,
+    signal.eventDate,
+    observation?.dateObserved,
+    observation?.eventDate,
+  ]);
 }
 
 /** Split prose into sentences, keeping at most `max` — for short bullet lists. */
@@ -382,9 +430,98 @@ function SimpleView({
 // Tabs (analyst view and deeper)
 // ---------------------------------------------------------------------------
 
-function OverviewTab({ signal }: { signal: Signal }) {
+/**
+ * Advanced-only freshness header for the Overview tab: status word + real
+ * ages, the most recently active linked source, the stale reason when one
+ * exists, the evidence-freshness facts, and the honest "mark as checked"
+ * action. Every date comes from a field on the record.
+ */
+function OverviewFreshness({
+  signal,
+  sources,
+  observation,
+}: {
+  signal: Signal;
+  sources: Source[];
+  observation: Observation | null;
+}) {
+  const updateSignal = useIntelligenceStore((s) => s.updateSignal);
+  const evidenceAt = signalEvidenceAt(signal);
+  const oldestAt = oldestEvidenceAt(signal, observation);
+  const newestSource = newestLinkedSource(signal, sources);
+  const staleReason = signalStaleReason(signal);
+
+  return (
+    <section className="space-y-4">
+      <div className="space-y-1.5">
+        <FreshnessLine latest={evidenceAt} checkedAt={signal.lastCheckedAt ?? null} />
+        <SourceLine source={newestSource} checkedAt={newestSource?.lastCheckedAt ?? null} />
+        {staleReason ? <p className="text-[11.5px] text-caution">{staleReason}</p> : null}
+      </div>
+
+      <div>
+        <h3 className="text-[13px] font-medium text-ink">Evidence freshness</h3>
+        <div className="mt-2.5">
+          <AtAGlance
+            items={[
+              { label: "Latest evidence", value: <Age iso={evidenceAt} /> },
+              {
+                label: "Oldest evidence",
+                value: oldestAt ? <Age iso={oldestAt} /> : "no dated evidence",
+              },
+              {
+                label: "Independent sources",
+                value: `${signal.sourceIds.length}`,
+              },
+              {
+                label: "Last checked",
+                value: signal.lastCheckedAt ? (
+                  <Age iso={signal.lastCheckedAt} />
+                ) : (
+                  <span className="text-ink-soft">
+                    not yet checked — dates above come from the record
+                  </span>
+                ),
+              },
+              { label: "Freshness", value: <FreshnessWord date={evidenceAt} /> },
+            ]}
+          />
+        </div>
+        <p className="mt-3 text-[12px]">
+          <button
+            type="button"
+            onClick={() =>
+              updateSignal(signal.id, { lastCheckedAt: new Date().toISOString() })
+            }
+            className="text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+          >
+            Mark as checked now
+          </button>
+          <span className="ml-2 text-[11px] text-ink-faint">
+            Records that a human looked at this record just now — it fetches nothing.
+          </span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function OverviewTab({
+  signal,
+  sources,
+  observation,
+}: {
+  signal: Signal;
+  sources: Source[];
+  observation: Observation | null;
+}) {
+  const advanced = useAdvanced();
   return (
     <div className="max-w-2xl space-y-8">
+      {advanced ? (
+        <OverviewFreshness signal={signal} sources={sources} observation={observation} />
+      ) : null}
+
       <Section title="Why it matters">
         <Prose>{signal.whyItMatters}</Prose>
       </Section>
@@ -508,6 +645,7 @@ function EvidenceTab({
   sources: Source[];
   observation: Observation | null;
 }) {
+  const advanced = useAdvanced();
   const linked = linkedSources(signal, sources);
 
   // What the evidence base still lacks — derived honestly from the record,
@@ -564,6 +702,18 @@ function EvidenceTab({
                     ? ` · ${src.roles.map((r) => SOURCE_ROLE_LABELS[r]).join(" · ")}`
                     : null}
                 </p>
+                {advanced ? (
+                  // The clickable source line: external link in a new tab,
+                  // checked age when a real check exists. Sources carry no
+                  // published date — only the day they entered the registry —
+                  // so the age says "added", never "published".
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-1">
+                    <SourceLine source={src} checkedAt={src.lastCheckedAt ?? null} />
+                    <p className="text-[11.5px] text-ink-faint">
+                      · <Age iso={src.dateAdded} prefix="added" />
+                    </p>
+                  </div>
+                ) : null}
                 {src.biasTags.length > 0 ? (
                   <div className="mt-1.5">
                     <SourceBiasTags tags={src.biasTags} />
@@ -647,8 +797,40 @@ const EXPLAINED_DIMS: Array<keyof SignalScores> = [
 const SCORE_STEPS: Score[] = [1, 2, 3, 4, 5];
 
 function ScoringTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
+  const advanced = useAdvanced();
+  const evidenceAt = signalEvidenceAt(signal);
+  // freshnessOf turns "archived" exactly at the 90-day mark — the same
+  // boundary the high-confidence review rule uses.
+  const highConfidenceOnOldEvidence =
+    signal.confidence === "high" && freshnessOf(evidenceAt) === "archived";
   return (
     <div className="space-y-8">
+      {advanced ? (
+        <div className="max-w-2xl space-y-1">
+          <p className="text-[11.5px] text-ink-faint" title={fullDate(signal.updatedAt)}>
+            Scores last updated {relativeAge(signal.updatedAt)}.
+          </p>
+          {signal.lastConfidenceChangeAt ? (
+            <p
+              className="text-[11.5px] text-ink-faint"
+              title={fullDate(signal.lastConfidenceChangeAt)}
+            >
+              Confidence last changed {relativeAge(signal.lastConfidenceChangeAt)}.
+            </p>
+          ) : (
+            <p className="text-[11.5px] text-ink-faint">
+              Confidence unchanged since this record was created.
+            </p>
+          )}
+          {highConfidenceOnOldEvidence ? (
+            <p className="text-[12px] leading-relaxed text-caution">
+              High confidence resting on evidence from {relativeAge(evidenceAt)} — review
+              before relying on it.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="max-w-2xl">
         <Section title="Nine-dimension scoring">
           <SignalScorePanel scores={signal.scores} />
@@ -753,6 +935,7 @@ function ZoomingTab({
   signal: Signal;
   contradictions: Contradiction[];
 }) {
+  const advanced = useAdvanced();
   const firstContradiction = contradictions[0];
   const weakenText = firstContradiction
     ? `An opposing reading is on record: ${firstContradiction.name}.`
@@ -762,6 +945,12 @@ function ZoomingTab({
 
   return (
     <div className="space-y-8">
+      {advanced ? (
+        <p className="max-w-2xl text-[11.5px] text-ink-faint">
+          Level 1 describes the sourced event; levels 2–4 are analyst interpretation, not
+          sourced facts.
+        </p>
+      ) : null}
       <p className="max-w-2xl text-[12px] leading-relaxed text-ink-faint">
         The zooming ladder is mandatory for every signal. The reading must climb from event to
         behaviour to system before any future is stated — a jump from Level 1 straight to Level
@@ -871,10 +1060,15 @@ function SystemsTab({ signal }: { signal: Signal }) {
 }
 
 function ReviewTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
+  const advanced = useAdvanced();
   const updateSignal = useIntelligenceStore((s) => s.updateSignal);
   const [status, setStatus] = useState<ReviewStatus>(signal.reviewStatus);
   const [notes, setNotes] = useState(signal.humanNotes);
   const [saved, setSaved] = useState(false);
+
+  // Real per-signal timestamps only — the browser-wide refresh time belongs
+  // to the library page, not to any one record.
+  const checked = checkedReading(signal);
 
   function handleSave() {
     updateSignal(signal.id, { reviewStatus: status, humanNotes: notes });
@@ -888,6 +1082,25 @@ function ReviewTab({ signal, sources }: { signal: Signal; sources: Source[] }) {
           <h3 className="text-[13px] font-medium text-ink">Review status</h3>
           <ReviewStatusBadge status={signal.reviewStatus} />
         </div>
+        {advanced ? (
+          <div className="mt-2 space-y-0.5">
+            {signal.lastHumanReviewAt ? (
+              <p
+                className="text-[11.5px] text-ink-faint"
+                title={fullDate(signal.lastHumanReviewAt)}
+              >
+                Last human review {relativeAge(signal.lastHumanReviewAt)}.
+              </p>
+            ) : (
+              <p className="text-[11.5px] text-ink-faint">
+                No human review recorded on this signal yet.
+              </p>
+            )}
+            <p className="text-[11.5px] text-ink-faint" title={fullDate(checked.date)}>
+              Record {checked.verb} {relativeAge(checked.date)}.
+            </p>
+          </div>
+        ) : null}
         <label className="mt-3 block max-w-sm">
           <span className="block text-[11px] text-ink-faint">Change review status</span>
           <span className="mt-1 block">
@@ -1139,7 +1352,13 @@ export default function SignalDetailPage() {
   const analystTabs = (
     <Tabs
       tabs={[
-        { id: "overview", label: "Overview", content: <OverviewTab signal={signal} /> },
+        {
+          id: "overview",
+          label: "Overview",
+          content: (
+            <OverviewTab signal={signal} sources={sources} observation={observation} />
+          ),
+        },
         {
           id: "evidence",
           label: "Evidence",
@@ -1168,6 +1387,11 @@ export default function SignalDetailPage() {
                   <ContradictionPanel key={c.id} contradiction={c} />
                 ))}
               </div>
+            ) : mode !== "simple" ? (
+              <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
+                No strong contradiction found yet. This does not mean none exists — check
+                whether this signal has an opposing reading before relying on it.
+              </p>
             ) : (
               <p className="max-w-xl text-[12.5px] leading-relaxed text-ink-soft">
                 No contradiction linked yet. Check whether this signal has an opposing reading

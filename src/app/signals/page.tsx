@@ -28,8 +28,11 @@ import {
 } from "@/components/ControlBar";
 import { ConfidenceBadge, ReviewStatusBadge, SignalStrengthBadge } from "@/components/badges";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
+import { Age, FreshnessWord } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
 import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { checkedReading, signalEvidenceAt, signalStaleReason } from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import { zoomComplete } from "@/lib/validation";
 import { evidenceWords, firstSentence } from "@/lib/simple";
@@ -227,6 +230,11 @@ function SignalsHeader() {
 const MEANINGFUL_STRENGTHS: SignalStrength[] = ["weak", "contradictory", "established"];
 
 function SignalRow({ signal }: { signal: Signal }) {
+  // Freshness reading, from real fields only: the signal's own evidence date
+  // and its honest checked/updated timestamp (see lib/freshness).
+  const evidenceAt = signalEvidenceAt(signal);
+  const checked = checkedReading(signal);
+  const staleReason = signalStaleReason(signal);
   return (
     <Link href={`/signals/${signal.id}`} className="list-row group">
       <div className="flex items-baseline justify-between gap-6">
@@ -251,6 +259,23 @@ function SignalRow({ signal }: { signal: Signal }) {
           evidenceWords(signal, signal.sourceIds.length),
           signal.country,
         ].join(" · ")}
+      </p>
+      <p className="mt-0.5 text-[11.5px] text-ink-faint">
+        <FreshnessWord date={evidenceAt} />
+        {" · "}
+        <Age iso={evidenceAt} prefix="latest evidence" />
+        {" · "}
+        {signal.sourceIds.length} source{signal.sourceIds.length === 1 ? "" : "s"}
+        {" · "}
+        <Age iso={checked.date} prefix={checked.verb} />
+        {staleReason ? (
+          <>
+            {" · "}
+            <span className="text-caution" title={staleReason}>
+              Needs a check
+            </span>
+          </>
+        ) : null}
       </p>
     </Link>
   );
@@ -531,6 +556,7 @@ function SignalsContent() {
     <>
       <SignalsHeader />
       <WalkthroughPanel pageId="signals" />
+      {!simple ? <RefreshBar /> : null}
 
       {simple ? (
         <ControlBar
