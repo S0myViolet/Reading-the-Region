@@ -27,6 +27,7 @@ import {
 } from "@/components/ControlBar";
 import { SourceCredibilityBadge } from "@/components/badges";
 import { useViewMode } from "@/components/ViewMode";
+import { LiveScanStatus } from "@/components/LiveScanSync";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { promotionCriteriaMet } from "@/lib/validation";
 import {
@@ -127,6 +128,7 @@ function ObservationRow({
   const ready = met >= PROMOTION_MIN_CRITERIA;
 
   const metaParts = [obs.sourceName, fmtDate(obs.dateObserved)];
+  if (obs.origin === "live_scan") metaParts.splice(1, 0, "from live scan");
   if (advanced) {
     metaParts.push(obs.city ? `${obs.country}, ${obs.city}` : obs.country);
     if (obs.sectors.length > 0) {
@@ -151,7 +153,7 @@ function ObservationRow({
         </span>
       </div>
       <p className="mt-1 text-[12px] text-ink-faint">
-        {metaParts.join(" · ")}
+        {metaParts.filter(Boolean).join(" · ")}
         {obs.status === "promoted" && obs.promotedSignalId ? (
           <span className="text-accent-ink"> · promoted to {obs.promotedSignalId}</span>
         ) : null}
@@ -242,9 +244,12 @@ function InboxContent() {
     <>
       <InboxHeader />
       {advanced ? (
-        <p className="-mt-4 mb-6 text-[12.5px] text-ink-faint">
-          Is this noise, an observation, a signal candidate, or a valid signal?
-        </p>
+        <div className="-mt-4 mb-6 space-y-1.5">
+          <p className="text-[12.5px] text-ink-faint">
+            Is this noise, an observation, a signal candidate, or a valid signal?
+          </p>
+          <LiveScanStatus />
+        </div>
       ) : null}
       <WalkthroughPanel pageId="inbox" />
 

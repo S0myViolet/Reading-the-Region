@@ -1,0 +1,55 @@
+{
+  "enabled": true,
+  "minMinutesBetweenScans": 360,
+  "maxNewItemsPerScan": 12,
+  "feeds": [
+    {
+      "name": "Google News — Gulf long-term visas & settlement",
+      "url": "https://news.google.com/rss/search?q=(%22golden%20visa%22%20OR%20%22long-term%20residency%22)%20(UAE%20OR%20Saudi%20OR%20Qatar)&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["migration_citizenship_belonging", "government_policy"],
+      "region": "GCC"
+    },
+    {
+      "name": "Google News — Gulf real estate & family housing",
+      "url": "https://news.google.com/rss/search?q=(Dubai%20OR%20Riyadh%20OR%20%22Abu%20Dhabi%22)%20(housing%20OR%20%22real%20estate%22)%20families&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["real_estate_urban"],
+      "region": "GCC"
+    },
+    {
+      "name": "Google News — regional culture, media & creators",
+      "url": "https://news.google.com/rss/search?q=(Gulf%20OR%20Saudi%20OR%20UAE)%20(Arabic%20drama%20OR%20%22regional%20designers%22%20OR%20museum%20OR%20podcast)&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["culture_arts_heritage", "media_entertainment_creator"],
+      "region": "GCC"
+    },
+    {
+      "name": "Google News — Gulf metro, transit & urban life",
+      "url": "https://news.google.com/rss/search?q=(Riyadh%20OR%20Dubai%20OR%20Doha)%20(metro%20OR%20transit%20OR%20ridership)&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["mobility_transport", "real_estate_urban"],
+      "region": "GCC"
+    },
+    {
+      "name": "Google News — Gulf hospitality, wellness & longevity",
+      "url": "https://news.google.com/rss/search?q=(Gulf%20OR%20UAE%20OR%20Saudi)%20(hotel%20membership%20OR%20wellness%20clinic%20OR%20longevity)&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["hospitality_tourism", "health_wellness_longevity"],
+      "region": "GCC"
+    },
+    {
+      "name": "Google News — Gulf education, skills & work",
+      "url": "https://news.google.com/rss/search?q=(UAE%20OR%20Saudi)%20(school%20enrolment%20OR%20universities%20OR%20%22skills%20training%22)&hl=en-US&gl=US&ceid=US:en",
+      "sectors": ["education_work"],
+      "region": "GCC"
+    },
+    {
+      "name": "The National — UAE",
+      "url": "https://www.thenationalnews.com/arc/outboundfeeds/rss/",
+      "sectors": [],
+      "region": "UAE"
+    },
+    {
+      "name": "Arabian Business",
+      "url": "https://www.arabianbusiness.com/feed",
+      "sectors": [],
+      "region": "GCC"
+    }
+  ]
+}

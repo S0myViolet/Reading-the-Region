@@ -410,6 +410,8 @@ export interface Source {
   dateAdded: string; // ISO date
   notes: string;
   isDemo: boolean; // sample/demo sources are labelled, never presented as real citations
+  /** Set when the record was created by the automated live scan. */
+  origin?: "live_scan";
 }
 
 // ---------------------------------------------------------------------------
@@ -491,6 +493,10 @@ export interface Observation {
   triageRationale: string | null;
   checklist: PromotionChecklist;
   promotedSignalId: string | null;
+  /** Set when the record was created by the automated live scan. */
+  origin?: "live_scan";
+  /** Stable dedupe key for live-scanned items (hash of the article link). */
+  externalKey?: string;
   createdAt: string;
   updatedAt: string;
 }

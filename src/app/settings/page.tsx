@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ReviewStatusBadge } from "@/components/badges";
+import { LiveScanStatus } from "@/components/LiveScanSync";
 import { PageHeader } from "@/components/PageHeader";
 import { AppModeSwitch, ViewModeSwitch } from "@/components/ViewMode";
 import { WALKTHROUGHS } from "@/lib/copy";
@@ -339,6 +340,16 @@ export default function SettingsPage() {
               </button>
             }
           />
+        </div>
+      </SettingsSection>
+
+      {/* Live updates -------------------------------------------------------- */}
+      <SettingsSection
+        title="Live updates"
+        description="The platform can pull new material from real news feeds while it is running."
+      >
+        <div className="max-w-2xl">
+          <LiveScanStatus detailed />
         </div>
       </SettingsSection>
 

@@ -55,6 +55,8 @@ interface UiState {
   savedSignalIds: string[];
   /** New Finds the user chose to keep (worth developing into signals). */
   keptFindIds: string[];
+  /** Whether the client pulls new live-scan material while the app is open. */
+  liveScanEnabled: boolean;
 }
 
 export interface IntelligenceStore extends IntelligenceData, UiState {
@@ -105,6 +107,14 @@ export interface IntelligenceStore extends IntelligenceData, UiState {
   toggleSavedSignal: (signalId: string) => void;
   keepFind: (observationId: string) => void;
   unkeepFind: (observationId: string) => void;
+  setLiveScanEnabled: (on: boolean) => void;
+  /**
+   * Merge live-scan records fetched from the server. Insert-only: records
+   * whose id or externalKey already exist are skipped, so triage decisions
+   * and edits made in this browser are never overwritten. Returns the number
+   * of new observations added.
+   */
+  importLiveRecords: (sources: Source[], observations: Observation[]) => number;
   resetToSeedData: () => void;
 }
 
@@ -130,6 +140,7 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
       seenWalkthroughs: [],
       savedSignalIds: [],
       keptFindIds: [],
+      liveScanEnabled: true,
 
       addObservation: (obs) =>
         set((s) => ({ observations: [obs, ...s.observations] })),
@@ -226,6 +237,25 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
         set((s) => ({
           keptFindIds: s.keptFindIds.filter((id) => id !== observationId),
         })),
+      setLiveScanEnabled: (on) => set({ liveScanEnabled: on }),
+      importLiveRecords: (sources, observations) => {
+        const s = get();
+        const sourceIds = new Set(s.sources.map((x) => x.id));
+        const obsIds = new Set(s.observations.map((x) => x.id));
+        const obsKeys = new Set(
+          s.observations.map((x) => x.externalKey).filter(Boolean),
+        );
+        const newSources = sources.filter((src) => !sourceIds.has(src.id));
+        const newObservations = observations.filter(
+          (o) => !obsIds.has(o.id) && !(o.externalKey && obsKeys.has(o.externalKey)),
+        );
+        if (newSources.length === 0 && newObservations.length === 0) return 0;
+        set((prev) => ({
+          sources: [...newSources, ...prev.sources],
+          observations: [...newObservations, ...prev.observations],
+        }));
+        return newObservations.length;
+      },
       resetToSeedData: () =>
         set({ ...seedData, guidedMode: get().guidedMode, onboardingComplete: true }),
     }),

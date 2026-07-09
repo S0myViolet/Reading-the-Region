@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { indicatorOverdue } from "@/lib/derived";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { LiveScanSync } from "./LiveScanSync";
 import { OnboardingModal } from "./OnboardingModal";
 import { SearchOverlay } from "./SearchOverlay";
 import { AppModeSwitch, useAppMode, ViewModeSwitch } from "./ViewMode";
@@ -133,6 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      <LiveScanSync />
       <nav className="fixed inset-y-0 left-0 z-40 hidden w-[224px] flex-col bg-paper lg:flex">
         <div className="px-6 pb-5 pt-6">
           <Link href="/" className="block">

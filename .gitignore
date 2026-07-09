@@ -28,3 +28,6 @@ next-env.d.ts
 
 # seed integrity check output
 /.seedcheck/
+
+# live-scan runtime state (accumulated feed items — machine-local)
+/data/
