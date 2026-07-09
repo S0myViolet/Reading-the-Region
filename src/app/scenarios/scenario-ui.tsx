@@ -13,9 +13,12 @@
 
 import Link from "next/link";
 import { IdChip } from "@/components/badges";
+import { Age } from "@/components/freshness";
 import { ViewGate } from "@/components/ViewMode";
 import { explainScenarioEvidence } from "@/lib/explain";
+import { checkedReading, scenarioEvidenceWindow } from "@/lib/freshness";
 import { firstSentence } from "@/lib/simple";
+import { useIntelligenceStore } from "@/lib/store";
 import { scenarioAssumptionHeavy } from "@/lib/validation";
 import type { Scenario, ScenarioHorizon, ScenarioQualityChecks } from "@/lib/types";
 import {
@@ -192,13 +195,20 @@ function RowLabel({ children }: { children: React.ReactNode }) {
 /**
  * The advanced list row: plain English first — core idea, what makes it
  * different, quality status, key uncertainty — with the id and link counts
- * as small secondary metadata at the bottom.
+ * as small secondary metadata at the bottom. The freshness line beneath is
+ * computed live: the record's own last edit ("updated" — "checked" only if a
+ * real check was recorded) and the newest supporting signal's evidence date.
+ * The declared-assumption count already sits in the evidence sentence above
+ * it, so it is not repeated here.
  */
 export function ScenarioRowAdvanced({ scenario }: { scenario: Scenario }) {
+  const signals = useIntelligenceStore((s) => s.signals);
   const assumptionHeavy = scenarioAssumptionHeavy(scenario);
   const passed = qualityPassCount(scenario.qualityChecks);
   const allPass = passed === QUALITY_TEST_TOTAL;
   const keyUncertainty = scenario.strategicQuestions[0];
+  const reading = checkedReading(scenario);
+  const latestSupport = scenarioEvidenceWindow(scenario, signals).latest;
 
   return (
     <Link href={`/scenarios/${scenario.id}`} className="list-row group">
@@ -247,6 +257,18 @@ export function ScenarioRowAdvanced({ scenario }: { scenario: Scenario }) {
       </div>
       <p className="mt-1.5 text-[11px] text-ink-faint">
         <IdChip id={scenario.id} /> · {evidenceFirstSentence(scenario)}
+      </p>
+      <p className="mt-1 text-[11px] text-ink-faint">
+        <Age
+          prefix={reading.verb === "checked" ? "Checked" : "Updated"}
+          iso={reading.date}
+        />
+        {" · "}
+        {latestSupport ? (
+          <Age prefix="latest supporting signal" iso={latestSupport} />
+        ) : (
+          "no dated supporting signal linked"
+        )}
       </p>
     </Link>
   );

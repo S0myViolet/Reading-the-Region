@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { ControlBar, ControlSelect } from "@/components/ControlBar";
+import { RefreshBar } from "@/components/RefreshControls";
 import { useViewMode } from "@/components/ViewMode";
 import { IdChip } from "@/components/badges";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
@@ -237,6 +238,7 @@ export default function ScenariosPage() {
     <>
       <ScenariosHeader advanced={advanced} />
       <WalkthroughPanel pageId="scenarios" />
+      {advanced ? <RefreshBar /> : null}
 
       {scenarios.length === 0 ? (
         <EmptyState

@@ -27,7 +27,10 @@ import {
   ControlSearch,
   ControlSelect,
 } from "@/components/ControlBar";
+import { RefreshBar } from "@/components/RefreshControls";
+import { Age, FreshnessWord } from "@/components/freshness";
 import { useViewMode } from "@/components/ViewMode";
+import { driverEvidenceWindow } from "@/lib/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { validateDriver } from "@/lib/validation";
 import { explainDriverStatus } from "@/lib/explain";
@@ -82,11 +85,13 @@ function DriverRow({
   }
 
   // Advanced row: meaning first, then live counts, standing in plain words,
-  // and — for a hypothesis — the first requirement it still fails.
+  // and — for a hypothesis — the first requirement it still fails. Evidence
+  // age is computed live from the linked signals' own dates, never stored.
   const missing = driverMissingPhrases(driver, signalsOfDriver(driver, signals), result);
   const needed = signalsStillNeeded(driver);
   const patterns = driver.patternIds.length;
   const linked = driver.signalIds.length;
+  const evidenceWindow = driverEvidenceWindow(driver, signals);
 
   return (
     <Link href={`/drivers/${driver.id}`} className="list-row group">
@@ -106,6 +111,8 @@ function DriverRow({
         signal{linked === 1 ? "" : "s"}.
       </p>
       <p className="mt-1 text-[12px] leading-relaxed">
+        <FreshnessWord date={evidenceWindow.latest} />
+        <span className="text-ink-faint"> · </span>
         {result.valid ? (
           <>
             <span className="font-medium text-accent-ink">Validated driver</span>
@@ -123,6 +130,15 @@ function DriverRow({
               : ""}
           </span>
         )}
+        <span className="text-ink-faint">
+          {" "}
+          ·{" "}
+          {evidenceWindow.latest ? (
+            <Age prefix="latest evidence" iso={evidenceWindow.latest} />
+          ) : (
+            "no dated evidence linked"
+          )}
+        </span>
       </p>
       {!result.valid && missing.length > 0 ? (
         <p className="mt-1 text-[12px] leading-relaxed text-caution">
@@ -225,6 +241,7 @@ export default function DriversPage() {
     <>
       <DriversHeader />
       <WalkthroughPanel pageId="drivers" />
+      {mode !== "simple" ? <RefreshBar /> : null}
 
       <ControlBar
         right={

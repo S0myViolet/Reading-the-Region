@@ -15,6 +15,7 @@
 
 import type { CheckRowData } from "@/components/connect";
 import { explainTerritoryStatus } from "@/lib/explain";
+import { freshnessOf, relativeAge } from "@/lib/freshness";
 import { firstSentence } from "@/lib/simple";
 import type { ValidationResult } from "@/lib/validation";
 import type {
@@ -153,6 +154,24 @@ const STATUS_TONE_CLASSES: Record<StatusTone, string> = {
 /** Text class for the movement word on list rows. */
 export function statusToneClass(status: TerritoryMonitoringStatus): string {
   return STATUS_TONE_CLASSES[STATUS_TONES[status]];
+}
+
+/**
+ * Status-strip item for the newest evidence behind the territory, computed
+ * live from its signals' and indicators' own dates. Neutral while under a
+ * month old; caution once older — old evidence must look old. A territory
+ * with no dated evidence says so.
+ */
+export function latestEvidenceStripItem(latest: string | null): {
+  text: string;
+  tone?: "accent" | "caution" | "tension" | "neutral";
+} {
+  if (!latest) return { text: "no dated evidence linked", tone: "caution" };
+  const status = freshnessOf(latest);
+  return {
+    text: `latest evidence ${relativeAge(latest)}`,
+    tone: status === "stale" || status === "archived" ? "caution" : "neutral",
+  };
 }
 
 /** Split prose into trimmed sentences, for rendering long fields as bullets. */

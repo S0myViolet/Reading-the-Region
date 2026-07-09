@@ -19,10 +19,17 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
+import { RefreshBar } from "@/components/RefreshControls";
+import { Age, FreshnessLine } from "@/components/freshness";
 import { useViewMode, ViewGate } from "@/components/ViewMode";
 import { TerritoryStatusBadge } from "@/components/badges";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { DEFINITIONS } from "@/lib/copy";
+import {
+  checkedReading,
+  newestDate,
+  territoryEvidenceWindow,
+} from "@/lib/freshness";
 import type { Contradiction, FutureTerritory } from "@/lib/types";
 import { TERRITORY_MONITORING_LABELS } from "@/lib/types";
 import {
@@ -191,15 +198,23 @@ function TerritoryEntry({ territory }: { territory: FutureTerritory }) {
 /**
  * Advanced entry: the one-line future, why it is visible now (live counts),
  * which way it is moving (accent tone earned by strengthening evidence only),
- * and the first contradiction still standing against it.
+ * and the first contradiction still standing against it. Evidence ages are
+ * computed live from the record's own dates: the newest indicator check, the
+ * newest evidence behind the territory, and the record's own last edit
+ * ("updated" — "checked" only if a real check was recorded).
  */
 function AdvancedTerritoryEntry({
   territory,
   challengedBy,
+  latestEvidence,
+  latestIndicatorCheck,
 }: {
   territory: FutureTerritory;
   challengedBy: Contradiction | null;
+  latestEvidence: string | null;
+  latestIndicatorCheck: string | null;
 }) {
+  const reading = checkedReading(territory);
   return (
     <Link href={`/territories/${territory.id}`} className="list-row group">
       <div className="flex items-baseline justify-between gap-6">
@@ -226,12 +241,25 @@ function AdvancedTerritoryEntry({
 
       <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
         {backedByLine(territory)}{" "}
+        {latestIndicatorCheck ? (
+          <>
+            Latest indicator{" "}
+            <Age prefix="checked" iso={latestIndicatorCheck} />.{" "}
+          </>
+        ) : null}
         {challengedBy ? (
           <>Still challenged by {challengedBy.name}.</>
         ) : territory.contradictionIds.length === 0 ? (
           <>No contradiction acknowledged yet.</>
         ) : null}
       </p>
+
+      <FreshnessLine
+        className="mt-1.5 text-[11.5px] text-ink-faint"
+        latest={latestEvidence}
+        checkedAt={reading.date}
+        checkedVerb={reading.verb}
+      />
 
       <p className="mt-2 text-[11.5px] text-ink-faint">
         <span className="underline decoration-line-strong underline-offset-2 group-hover:text-ink-soft">
@@ -247,6 +275,8 @@ export default function TerritoriesPage() {
   const mode = useViewMode();
   const territories = useIntelligenceStore((s) => s.territories);
   const contradictions = useIntelligenceStore((s) => s.contradictions);
+  const signals = useIntelligenceStore((s) => s.signals);
+  const indicators = useIntelligenceStore((s) => s.indicators);
   const advanced = mode !== "simple";
 
   if (!hydrated) {
@@ -271,6 +301,12 @@ export default function TerritoriesPage() {
     return null;
   };
 
+  /** Indicators of a territory — linked by id or pointing back at it. */
+  const indicatorsOf = (t: FutureTerritory) =>
+    indicators.filter(
+      (i) => t.leadingIndicatorIds.includes(i.id) || i.territoryId === t.id,
+    );
+
   return (
     <>
       <TerritoriesHeader advanced={advanced} />
@@ -281,6 +317,7 @@ export default function TerritoriesPage() {
         </p>
       ) : null}
       <WalkthroughPanel pageId="territories" />
+      {advanced ? <RefreshBar /> : null}
 
       {ordered.length === 0 ? (
         <EmptyState
@@ -297,6 +334,10 @@ export default function TerritoriesPage() {
                   key={t.id}
                   territory={t}
                   challengedBy={firstChallenge(t)}
+                  latestEvidence={territoryEvidenceWindow(t, signals, indicators).latest}
+                  latestIndicatorCheck={newestDate(
+                    indicatorsOf(t).map((i) => i.dateLastChecked),
+                  )}
                 />
               ) : (
                 <TerritoryEntry key={t.id} territory={t} />

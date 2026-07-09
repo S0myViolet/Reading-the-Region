@@ -13,6 +13,7 @@
 
 import { Pill } from "@/components/badges";
 import type { CheckRowData } from "@/components/connect";
+import { freshnessOf, relativeAge } from "@/lib/freshness";
 import { firstSentence } from "@/lib/simple";
 import type {
   ActorType,
@@ -339,6 +340,23 @@ export function driverStatusStripItems(
     });
   }
   return items;
+}
+
+/**
+ * Status-strip item for the newest evidence behind the record, computed live.
+ * Neutral while the evidence is under a month old; caution once it is older —
+ * old evidence must look old. A record with no dated evidence says so.
+ */
+export function latestEvidenceStripItem(latest: string | null): {
+  text: string;
+  tone?: "accent" | "caution" | "tension" | "neutral";
+} {
+  if (!latest) return { text: "no dated evidence linked", tone: "caution" };
+  const status = freshnessOf(latest);
+  return {
+    text: `latest evidence ${relativeAge(latest)}`,
+    tone: status === "stale" || status === "archived" ? "caution" : "neutral",
+  };
 }
 
 /**

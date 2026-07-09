@@ -48,7 +48,9 @@ import {
   TrendBadge,
 } from "@/components/badges";
 import { Field, Select } from "@/components/form";
+import { Age } from "@/components/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { signalEvidenceAt, territoryEvidenceWindow } from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import {
   clusterPlainMeaning,
@@ -87,6 +89,7 @@ import {
   countInWords,
   evidenceStrengthReading,
   fmtDate,
+  latestEvidenceStripItem,
   HORIZON_PLAIN,
   MONITORING_STATUS_EXPLANATIONS,
   scenarioQualityLine,
@@ -695,6 +698,9 @@ function EvidenceTab({
                   <span className="flex shrink-0 items-center gap-2">
                     <SignalStrengthBadge strength={s.signalStrength} />
                     <span className="text-[11px] text-ink-faint">{s.country}</span>
+                    <span className="text-[11px] text-ink-faint">
+                      <Age prefix="evidence" iso={signalEvidenceAt(s)} />
+                    </span>
                   </span>
                 </div>
               ))}
@@ -926,7 +932,10 @@ function MonitoringTab({
                     <TrendBadge trend={ind.trend} />
                   </td>
                   <td className="whitespace-nowrap text-[12px] text-ink-soft">
-                    {fmtDate(ind.dateLastChecked)}
+                    {fmtDate(ind.dateLastChecked)}{" "}
+                    <span className="text-[11px] text-ink-faint">
+                      (<Age iso={ind.dateLastChecked} />)
+                    </span>
                   </td>
                   <td className="whitespace-nowrap text-[12px] text-ink-soft">
                     {CADENCE_LABELS[ind.cadence]}
@@ -1499,6 +1508,9 @@ export default function TerritoryDetailPage() {
                 tone: STATUS_TONES[territory.monitoringStatus],
               },
               { text: CONFIDENCE_LABELS[territory.confidence] },
+              latestEvidenceStripItem(
+                territoryEvidenceWindow(territory, signals, indicators).latest,
+              ),
               linkedContradictions.length > 0
                 ? {
                     text: `${countInWords(linkedContradictions.length, "contradiction")} acknowledged`,

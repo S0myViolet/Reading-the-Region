@@ -46,8 +46,10 @@ import {
 } from "@/components/badges";
 import { SystemTags } from "@/components/tags";
 import { Field, Select, TextArea } from "@/components/form";
+import { Age } from "@/components/freshness";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { driverEvidenceWindow, signalEvidenceAt } from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import { validateDriver, type ValidationResult } from "@/lib/validation";
 import {
@@ -87,6 +89,7 @@ import {
   driverWhyItMatters,
   firstOrderEffectSentence,
   fmtDate,
+  latestEvidenceStripItem,
   mainContradictionOfDriver,
   signalsOfDriver,
   sourcesOfDriver,
@@ -535,6 +538,9 @@ function ValidationTab({
   recomputed: boolean;
 }) {
   const missing = driverMissingPhrases(driver, driverSignals, result);
+  // The window of evidence the live checks were read against, from the
+  // linked signals' own dates — recomputed on every render, never stored.
+  const evidenceWindow = driverEvidenceWindow(driver, driverSignals);
   return (
     <div className="max-w-2xl space-y-8">
       <section>
@@ -557,6 +563,18 @@ function ValidationTab({
               <RecomputedNote />
             </>
           ) : null}
+        </p>
+        <p className="mt-1 text-[11.5px] text-ink-faint">
+          Last validation reading computed live —{" "}
+          {evidenceWindow.latest ? (
+            <>
+              evidence window{" "}
+              <Age iso={evidenceWindow.oldest ?? evidenceWindow.latest} /> →{" "}
+              <Age iso={evidenceWindow.latest} />
+            </>
+          ) : (
+            "no dated evidence linked yet"
+          )}
         </p>
         <div className="mt-4 border-t border-line pt-3">
           <ValidationCheckRows
@@ -770,6 +788,9 @@ function EvidenceTab({
                     <span className="flex shrink-0 items-center gap-2">
                       <SignalStrengthBadge strength={s.signalStrength} />
                       <span className="text-[11px] text-ink-faint">{s.country}</span>
+                      <span className="text-[11px] text-ink-faint">
+                        <Age prefix="evidence" iso={signalEvidenceAt(s)} />
+                      </span>
                     </span>
                   </div>
                 ))}
@@ -1148,6 +1169,7 @@ export default function DriverDetailPage() {
   const trailHasSteps = trailGroups.some((g) => g.steps.length > 0);
 
   const stripItems = driverStatusStripItems(driver, result);
+  stripItems.push(latestEvidenceStripItem(driverEvidenceWindow(driver, signals).latest));
   if (recomputed) stripItems.push({ text: "status recomputed from evidence" });
 
   return (

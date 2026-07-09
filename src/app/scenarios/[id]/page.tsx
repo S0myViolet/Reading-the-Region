@@ -43,7 +43,15 @@ import {
 } from "@/components/connect";
 import { IdChip, Pill, ProvenanceBadge } from "@/components/badges";
 import { Field, Select } from "@/components/form";
+import { Age } from "@/components/freshness";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import {
+  checkedReading,
+  fullDate,
+  relativeAge,
+  scenarioEvidenceWindow,
+  signalEvidenceAt,
+} from "@/lib/freshness";
 import { signalStage } from "@/lib/pipeline";
 import {
   explainContradiction,
@@ -641,6 +649,13 @@ function WhatHasToBeTrueTab({ scenario }: { scenario: Scenario }) {
           Anything not linked to evidence is an assumption, and assumptions are
           the first thing to monitor.
         </p>
+        <p className="mt-2 text-[11.5px] text-ink-faint">
+          <span title={fullDate(scenario.updatedAt)}>
+            Assumptions last revisited {relativeAge(scenario.updatedAt)}
+          </span>{" "}
+          (the record&rsquo;s last update) — if supporting evidence has moved
+          since, review them.
+        </p>
       </Section>
     </div>
   );
@@ -728,7 +743,8 @@ function EvidenceTab({
         {s.title}
       </Link>
       <span className="shrink-0 text-[11.5px] text-ink-faint">
-        {SIGNAL_STRENGTH_LABELS[s.signalStrength]} · {s.country}
+        {SIGNAL_STRENGTH_LABELS[s.signalStrength]} · {s.country} ·{" "}
+        <Age prefix="evidence" iso={signalEvidenceAt(s)} />
       </span>
     </div>
   ));
@@ -863,7 +879,13 @@ function EvidenceTab({
 // Quality check tab (analyst) — nine analyst judgements, honestly shown
 // ---------------------------------------------------------------------------
 
-function QualityTab({ checks }: { checks: ScenarioQualityChecks }) {
+function QualityTab({
+  checks,
+  updatedAt,
+}: {
+  checks: ScenarioQualityChecks;
+  updatedAt: string;
+}) {
   const passed = qualityPassCount(checks);
   const allPass = passed === QUALITY_TEST_TOTAL;
   return (
@@ -876,6 +898,13 @@ function QualityTab({ checks }: { checks: ScenarioQualityChecks }) {
         <span className={allPass ? "text-accent-ink" : "text-ink"}>
           {passed} of {QUALITY_TEST_TOTAL} checks passed
         </span>
+      </p>
+      <p className="text-[11.5px] text-ink-faint">
+        Tally counted live on this page ·{" "}
+        <span title={fullDate(updatedAt)}>
+          quality judgements recorded {relativeAge(updatedAt)}
+        </span>{" "}
+        (with the record&rsquo;s last update).
       </p>
       <ul className="divide-y divide-line border-t border-line">
         {QUALITY_KEYS.map((k) => (
@@ -1351,7 +1380,12 @@ export default function ScenarioDetailPage() {
     {
       id: "quality",
       label: "Quality check",
-      content: <QualityTab checks={scenario.qualityChecks} />,
+      content: (
+        <QualityTab
+          checks={scenario.qualityChecks}
+          updatedAt={scenario.updatedAt}
+        />
+      ),
     },
     {
       id: "review",
@@ -1387,6 +1421,17 @@ export default function ScenarioDetailPage() {
   if (assumptionHeavy) {
     statusItems.push({ text: "Assumption-heavy", tone: "caution" });
   }
+  // Freshness, from real fields computed live: the record's own last edit
+  // ("updated" — "checked" only when a real check was recorded) and the
+  // newest supporting signal's evidence date.
+  const reading = checkedReading(scenario);
+  statusItems.push({ text: `${reading.verb} ${relativeAge(reading.date)}` });
+  const latestSupport = scenarioEvidenceWindow(scenario, signals).latest;
+  statusItems.push(
+    latestSupport
+      ? { text: `latest supporting evidence ${relativeAge(latestSupport)}` }
+      : { text: "no dated supporting evidence linked", tone: "caution" },
+  );
 
   return (
     <>
