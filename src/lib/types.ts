@@ -412,6 +412,11 @@ export interface Source {
   isDemo: boolean; // sample/demo sources are labelled, never presented as real citations
   /** Set when the record was created by the automated live scan. */
   origin?: "live_scan";
+  /** When a human or the live scan last verified this source. Absent = never checked; the UI falls back to "added". */
+  lastCheckedAt?: string;
+  /** Live-scan fetch outcomes — only ever set on feed sources. */
+  lastSuccessfulFetchAt?: string;
+  lastFailedFetchAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -497,6 +502,8 @@ export interface Observation {
   origin?: "live_scan";
   /** Stable dedupe key for live-scanned items (hash of the article link). */
   externalKey?: string;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -660,6 +667,12 @@ export interface Signal {
   aiNotes: string;
   aiNotesLabel: ProvenanceLabel | null;
   reviewStatus: ReviewStatus;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
+  /** Set by the store whenever the confidence level actually changes. */
+  lastConfidenceChangeAt?: string;
+  /** Set by the store whenever a human review status is applied. */
+  lastHumanReviewAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -712,6 +725,8 @@ export interface Cluster {
   status: ClusterStatus;
   reviewStatus: ReviewStatus;
   humanNotes: string;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -778,6 +793,8 @@ export interface Pattern {
   validationStatus: PatternValidationStatus;
   reviewStatus: ReviewStatus;
   humanNotes: string;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -856,6 +873,8 @@ export interface Contradiction {
   scenarioRelevance: string;
   scores: ContradictionScores;
   reviewStatus: ReviewStatus;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -912,6 +931,8 @@ export interface Driver {
   status: DriverStatus;
   reviewStatus: ReviewStatus;
   humanNotes: string;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -977,6 +998,8 @@ export interface FutureTerritory {
   monitoringStatus: TerritoryMonitoringStatus;
   confidence: ConfidenceLevel;
   reviewStatus: ReviewStatus;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1067,6 +1090,8 @@ export interface Scenario {
   qualityChecks: ScenarioQualityChecks;
   confidence: ConfidenceLevel;
   reviewStatus: ReviewStatus;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1159,6 +1184,8 @@ export interface StrategicImplication {
   confidence: ConfidenceLevel;
   timeHorizon: TimeHorizon;
   reviewStatus: ReviewStatus;
+  /** When a human last checked this record. Absent = the UI falls back to "updated". */
+  lastCheckedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -8,7 +8,12 @@
  */
 
 import { NextResponse } from "next/server";
-import { readConfig, readState, runScan } from "@/lib/livescan/scanner";
+import {
+  readConfig,
+  readRefreshLog,
+  readState,
+  runScan,
+} from "@/lib/livescan/scanner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +28,7 @@ export async function GET() {
     minMinutesBetweenScans: config.minMinutesBetweenScans,
     lastScanAt: state.lastScanAt,
     lastResult: state.lastResult,
+    refreshLog: readRefreshLog().slice(0, 10),
     sources: state.sources,
     observations: state.observations,
   });
@@ -41,6 +47,7 @@ export async function POST(request: Request) {
     skipped,
     result,
     lastScanAt: state.lastScanAt,
+    refreshLog: readRefreshLog().slice(0, 10),
     sources: state.sources,
     observations: state.observations,
   });

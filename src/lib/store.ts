@@ -57,6 +57,21 @@ interface UiState {
   keptFindIds: string[];
   /** Whether the client pulls new live-scan material while the app is open. */
   liveScanEnabled: boolean;
+  /** Outcome of the most recent refresh run from this browser. */
+  lastRefresh: RefreshOutcome | null;
+}
+
+/** What the last refresh actually did — real counts only. */
+export interface RefreshOutcome {
+  at: string;
+  ok: boolean;
+  feedsChecked: number;
+  newObservations: number;
+  failedFeeds: number;
+  /** Stale items counted across the base at refresh time. */
+  staleFound: number;
+  /** The last successful refresh before a failed one, for honest error copy. */
+  lastSuccessAt: string | null;
 }
 
 export interface IntelligenceStore extends IntelligenceData, UiState {
@@ -108,6 +123,7 @@ export interface IntelligenceStore extends IntelligenceData, UiState {
   keepFind: (observationId: string) => void;
   unkeepFind: (observationId: string) => void;
   setLiveScanEnabled: (on: boolean) => void;
+  setLastRefresh: (outcome: RefreshOutcome) => void;
   /**
    * Merge live-scan records fetched from the server. Insert-only: records
    * whose id or externalKey already exist are skipped, so triage decisions
@@ -141,6 +157,7 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
       savedSignalIds: [],
       keptFindIds: [],
       liveScanEnabled: true,
+      lastRefresh: null,
 
       addObservation: (obs) =>
         set((s) => ({ observations: [obs, ...s.observations] })),
@@ -174,7 +191,27 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
         })),
       addSignal: (sig) => set((s) => ({ signals: [sig, ...s.signals] })),
       updateSignal: (id, patch) =>
-        set((s) => ({ signals: patchById(s.signals, id, patch) })),
+        set((s) => {
+          // Honest change-tracking: stamp confidence changes and human
+          // reviews only when they actually happen.
+          const before = s.signals.find((x) => x.id === id);
+          const stamped = { ...patch };
+          const now = new Date().toISOString();
+          if (
+            patch.confidence !== undefined &&
+            before &&
+            patch.confidence !== before.confidence
+          ) {
+            stamped.lastConfidenceChangeAt = now;
+          }
+          if (
+            patch.reviewStatus !== undefined &&
+            ["human_reviewed", "validated", "rejected"].includes(patch.reviewStatus)
+          ) {
+            stamped.lastHumanReviewAt = now;
+          }
+          return { signals: patchById(s.signals, id, stamped) };
+        }),
       addCluster: (c) => set((s) => ({ clusters: [c, ...s.clusters] })),
       updateCluster: (id, patch) =>
         set((s) => ({ clusters: patchById(s.clusters, id, patch) })),
@@ -238,6 +275,7 @@ export const useIntelligenceStore = create<IntelligenceStore>()(
           keptFindIds: s.keptFindIds.filter((id) => id !== observationId),
         })),
       setLiveScanEnabled: (on) => set({ liveScanEnabled: on }),
+      setLastRefresh: (outcome) => set({ lastRefresh: outcome }),
       importLiveRecords: (sources, observations) => {
         const s = get();
         const sourceIds = new Set(s.sources.map((x) => x.id));

@@ -42,6 +42,19 @@ export interface ScanResult {
   feedErrors: Array<{ feed: string; error: string }>;
 }
 
+/** One entry per refresh run — the platform's refresh log. */
+export interface RefreshLogEntry {
+  refreshId: string;
+  startedAt: string;
+  completedAt: string;
+  status: "ok" | "partial" | "failed";
+  feedsChecked: number;
+  itemsSeen: number;
+  newObservations: number;
+  failedFeeds: number;
+  errorMessage: string | null;
+}
+
 export interface LiveScanState {
   lastScanAt: string | null;
   lastResult: ScanResult | null;
@@ -52,6 +65,7 @@ export interface LiveScanState {
 
 const STATE_DIR = path.join(process.cwd(), "data", "live-scan");
 const STATE_FILE = path.join(STATE_DIR, "state.json");
+const LOG_FILE = path.join(STATE_DIR, "refresh-log.json");
 const CONFIG_FILE = path.join(process.cwd(), "scan.feeds.json");
 
 const EMPTY_STATE: LiveScanState = {
@@ -87,6 +101,20 @@ export function readState(): LiveScanState {
 function writeState(state: LiveScanState): void {
   mkdirSync(STATE_DIR, { recursive: true });
   writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf8");
+}
+
+export function readRefreshLog(): RefreshLogEntry[] {
+  try {
+    return JSON.parse(readFileSync(LOG_FILE, "utf8")) as RefreshLogEntry[];
+  } catch {
+    return [];
+  }
+}
+
+function appendRefreshLog(entry: RefreshLogEntry): void {
+  mkdirSync(STATE_DIR, { recursive: true });
+  const log = [entry, ...readRefreshLog()].slice(0, 50);
+  writeFileSync(LOG_FILE, JSON.stringify(log, null, 2), "utf8");
 }
 
 // ---------------------------------------------------------------------------
@@ -316,12 +344,23 @@ export async function runScan(force = false): Promise<{
   const result: ScanResult = { ranAt: nowIso, itemsSeen: 0, itemsAdded: 0, feedErrors: [] };
   const seen = new Set(state.seenKeys);
 
+  // Fetch-outcome stamps on the feed's Source record, when one exists yet.
+  const stampFeedSource = (feed: FeedConfig, ok: boolean) => {
+    const src = state.sources.find((s) => s.url === feed.url);
+    if (!src) return;
+    src.lastCheckedAt = nowIso;
+    if (ok) src.lastSuccessfulFetchAt = nowIso;
+    else src.lastFailedFetchAt = nowIso;
+  };
+
   for (const feed of config.feeds) {
     if (result.itemsAdded >= config.maxNewItemsPerScan) break;
     let items: FeedItem[] = [];
     try {
       items = await fetchFeed(feed);
+      stampFeedSource(feed, true);
     } catch (err) {
+      stampFeedSource(feed, false);
       result.feedErrors.push({
         feed: feed.name,
         error: err instanceof Error ? err.message : "fetch failed",
@@ -375,5 +414,26 @@ export async function runScan(force = false): Promise<{
   state.lastScanAt = nowIso;
   state.lastResult = result;
   writeState(state);
+
+  const completedAt = new Date().toISOString();
+  appendRefreshLog({
+    refreshId: `ref-${completedAt.replace(/[^0-9]/g, "").slice(0, 14)}`,
+    startedAt: nowIso,
+    completedAt,
+    status:
+      result.feedErrors.length === 0
+        ? "ok"
+        : result.feedErrors.length < config.feeds.length
+          ? "partial"
+          : "failed",
+    feedsChecked: config.feeds.length,
+    itemsSeen: result.itemsSeen,
+    newObservations: result.itemsAdded,
+    failedFeeds: result.feedErrors.length,
+    errorMessage:
+      result.feedErrors.length === config.feeds.length && config.feeds.length > 0
+        ? "No feed could be reached."
+        : null,
+  });
   return { skipped: null, result, state };
 }
