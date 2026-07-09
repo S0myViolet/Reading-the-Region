@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
+import { RefreshBar } from "@/components/RefreshControls";
 import { RECOMMENDED_WORKFLOW } from "@/lib/copy";
 import {
   contradictionsEmerging,
@@ -254,6 +255,7 @@ export default function OverviewPage() {
         description="A clear view of what moved through the intelligence pipeline today."
       />
       <WalkthroughPanel pageId="overview" />
+      <RefreshBar />
 
       {/* 1 · Pipeline movement ---------------------------------------------- */}
       <Section title="Pipeline movement">

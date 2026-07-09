@@ -18,6 +18,15 @@ import { useAppMode } from "@/components/ViewMode";
 import { EvidenceStatusLine } from "@/components/EvidenceCompression";
 import { indicatorOverdue } from "@/lib/derived";
 import { explainContradiction } from "@/lib/explain";
+import {
+  contradictionEvidenceWindows,
+  newestDate,
+  signalEvidenceAt,
+  signalStaleReason,
+  territoryEvidenceWindow,
+} from "@/lib/freshness";
+import { Age } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
 import { signalStage } from "@/lib/pipeline";
 import OverviewCommandCenter from "./overview/page";
 import {
@@ -28,6 +37,7 @@ import {
   findVerdict,
   firstSentence,
   movementSinceLastCheck,
+  numberWord,
   todayPicks,
   todaysQueue,
   type QueueItem,
@@ -61,12 +71,19 @@ function confidenceInWords(level: string): string {
   return (CONFIDENCE_LABELS as Record<string, string>)[level] ?? level;
 }
 
+/** Count as a capitalised word for sentence starts: 3 → "Three". */
+function capWord(n: number): string {
+  const w = numberWord(n);
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}
+
 function PickCard({
   kicker,
   title,
   badge,
   actionLabel,
   href,
+  evidenceAge,
   children,
 }: {
   kicker: string;
@@ -74,6 +91,8 @@ function PickCard({
   badge?: React.ReactNode;
   actionLabel: string;
   href: string;
+  /** Real date of the newest evidence behind the pick, when derivable. */
+  evidenceAge?: string | null;
   children: React.ReactNode;
 }) {
   return (
@@ -81,6 +100,11 @@ function PickCard({
       <p className="text-[11px] text-ink-faint">{kicker}</p>
       <p className="text-[14.5px] font-medium leading-snug text-ink">{title}</p>
       {children}
+      {evidenceAge ? (
+        <p className="text-[11.5px] text-ink-faint">
+          Latest evidence <Age iso={evidenceAge} />
+        </p>
+      ) : null}
       {badge ? <div className="flex flex-wrap items-center gap-2">{badge}</div> : null}
       <div className="mt-auto pt-2">
         <Link href={href} className={openLink}>
@@ -277,6 +301,32 @@ export default function TodayPage() {
 
   const actions = useMemo(() => doNowActions(data, 2), [data]);
 
+  // "Since the last refresh" — real counts only; the section hides when all are zero.
+  const sinceRefreshLines = useMemo(() => {
+    const lines: Array<{ text: string; href?: string }> = [];
+    const newFinds = data.observations.filter(
+      (o) => o.origin === "live_scan" && o.status === "unreviewed",
+    ).length;
+    if (newFinds > 0)
+      lines.push({
+        text: `${capWord(newFinds)} new find${newFinds === 1 ? "" : "s"} arrived from the live scan — review them in New Finds.`,
+        href: "/finds",
+      });
+    const overdueCount = data.indicators.filter((i) => indicatorOverdue(i)).length;
+    if (overdueCount > 0)
+      lines.push({
+        text: `${capWord(overdueCount)} watch item${overdueCount === 1 ? " is" : "s are"} overdue for a check.`,
+        href: "/watchlist",
+      });
+    const staleSignals = data.signals.filter((s) => signalStaleReason(s) !== null).length;
+    if (staleSignals > 0)
+      lines.push({
+        text: `${capWord(staleSignals)} signal${staleSignals === 1 ? "" : "s"} ${staleSignals === 1 ? "is" : "are"} getting old — worth a fresh look.`,
+        href: "/signals",
+      });
+    return lines;
+  }, [data]);
+
   if (!hydrated) {
     return (
       <>
@@ -298,11 +348,31 @@ export default function TodayPage() {
         description="A daily brief on what is moving, what needs review, and what may matter next."
       />
       <WalkthroughPanel pageId="today" />
+      <RefreshBar />
 
       <section aria-label="Daily brief" className="mb-10">
         <p className="max-w-2xl text-[14px] leading-relaxed text-ink-soft">{brief}</p>
         <EvidenceStatusLine data={data} />
       </section>
+
+      {sinceRefreshLines.length > 0 ? (
+        <section aria-label="Since last refresh" className="mb-10">
+          <h2 className="text-[15px] font-medium text-ink">Since the last refresh</h2>
+          <ul className="mt-2 space-y-1">
+            {sinceRefreshLines.map((line) => (
+              <li key={line.text} className="text-[12.5px] leading-relaxed text-ink-soft">
+                {line.href ? (
+                  <Link href={line.href} className={quietLink}>
+                    {line.text}
+                  </Link>
+                ) : (
+                  line.text
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section aria-label="Today's picks" className="mb-10 grid gap-4 sm:grid-cols-3">
         {picks.signal ? (
@@ -317,6 +387,7 @@ export default function TodayPage() {
             }
             actionLabel="Open"
             href={`/signals/${picks.signal.id}`}
+            evidenceAge={signalEvidenceAt(picks.signal)}
           >
             <p className="line-clamp-3 text-[12.5px] leading-relaxed text-ink-soft">
               {firstSentence(
@@ -331,6 +402,14 @@ export default function TodayPage() {
             title={picks.contradiction.name}
             actionLabel="Explore"
             href={`/contradictions/${picks.contradiction.id}`}
+            evidenceAge={
+              newestDate([
+                contradictionEvidenceWindows(picks.contradiction, data.signals).sideA
+                  .latest,
+                contradictionEvidenceWindows(picks.contradiction, data.signals).sideB
+                  .latest,
+              ]) ?? undefined
+            }
           >
             <div className="flex flex-col gap-1.5">
               <p className="line-clamp-3 text-[12.5px] leading-relaxed text-ink-soft">
@@ -351,6 +430,10 @@ export default function TodayPage() {
             badge={<TerritoryStatusBadge status={picks.territory.monitoringStatus} />}
             actionLabel="Watch"
             href={`/territories/${picks.territory.id}`}
+            evidenceAge={
+              territoryEvidenceWindow(picks.territory, data.signals, data.indicators)
+                .latest ?? undefined
+            }
           >
             <p className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
               {picks.territory.oneLineDefinition}
