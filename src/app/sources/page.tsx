@@ -32,7 +32,10 @@ import {
   TextInput,
 } from "@/components/form";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
+import { Age, FreshnessWord } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
 import { nextId, useHydrated, useIntelligenceStore } from "@/lib/store";
+import { freshnessOf, sourceActivityAt } from "@/lib/freshness";
 import { modeAtLeast } from "@/lib/viewMode";
 import type { BiasTag, Score, Source, SourceRole, SourceType } from "@/lib/types";
 import {
@@ -57,6 +60,61 @@ const TYPE_OPTIONS = Object.entries(SOURCE_TYPE_LABELS) as Array<[SourceType, st
 const ROLE_OPTIONS = Object.entries(SOURCE_ROLE_LABELS) as Array<[SourceRole, string]>;
 const BIAS_OPTIONS = Object.entries(BIAS_TAG_LABELS) as Array<[BiasTag, string]>;
 const CRED_VALUES = [1, 2, 3, 4, 5] as const;
+
+// ---------------------------------------------------------------------------
+// Freshness filter (advanced) — every test reads a real recorded field:
+// sourceActivityAt for age, url/isDemo for record quality, lastCheckedAt
+// for human checks.
+// ---------------------------------------------------------------------------
+
+type SourceFreshnessFilter =
+  | "all"
+  | "fresh"
+  | "recent"
+  | "stale"
+  | "no_url"
+  | "demo"
+  | "recheck";
+
+const SOURCE_FRESHNESS_OPTIONS: Array<{ value: SourceFreshnessFilter; label: string }> = [
+  { value: "all", label: "All records" },
+  { value: "fresh", label: "Fresh (last 24h)" },
+  { value: "recent", label: "Recent (last 7 days)" },
+  { value: "stale", label: "Stale (older than 30 days)" },
+  { value: "no_url", label: "No URL recorded" },
+  { value: "demo", label: "Demo sources" },
+  { value: "recheck", label: "Needs re-check" },
+];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const RECHECK_MS = 30 * DAY_MS;
+
+function matchesSourceFreshness(
+  src: Source,
+  filter: SourceFreshnessFilter,
+  now: number,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "no_url") return !src.url;
+  if (filter === "demo") return src.isDemo;
+  if (filter === "recheck")
+    return !src.lastCheckedAt || now - Date.parse(src.lastCheckedAt) > RECHECK_MS;
+  const status = freshnessOf(sourceActivityAt(src), now);
+  if (filter === "fresh") return status === "fresh";
+  if (filter === "recent") return status === "recent";
+  return status === "stale" || status === "archived";
+}
+
+/**
+ * The honest "when was this source looked at" reading. Sources carry no
+ * updatedAt, so the fallback verb is "added" from dateAdded — "checked" is
+ * said only when a real check timestamp exists.
+ */
+function sourceCheckedReading(src: Source): { date: string; verb: "checked" | "added" } {
+  return src.lastCheckedAt
+    ? { date: src.lastCheckedAt, verb: "checked" }
+    : { date: src.dateAdded, verb: "added" };
+}
 
 // ---------------------------------------------------------------------------
 // Header (also used for the pre-hydration skeleton)
@@ -279,6 +337,10 @@ function SourceTableRow({
   signalCount: number;
   methodology: boolean;
 }) {
+  // Real recorded dates only: the newest activity (check, fetch or the day
+  // the record was added) plus the honest checked/added reading.
+  const activityAt = sourceActivityAt(src);
+  const checked = sourceCheckedReading(src);
   return (
     <tr>
       <td>
@@ -299,6 +361,17 @@ function SourceTableRow({
               · added {fmtDate(src.dateAdded)}
             </span>
           ) : null}
+        </p>
+        <p className="mt-0.5 text-[10.5px] text-ink-faint">
+          <FreshnessWord date={activityAt} />
+          {activityAt !== checked.date ? (
+            <>
+              {" · "}
+              <Age iso={activityAt} prefix="latest activity" />
+            </>
+          ) : null}
+          {" · "}
+          <Age iso={checked.date} prefix={checked.verb} />
         </p>
       </td>
       <td className="text-[12.5px] text-ink-soft">
@@ -355,11 +428,13 @@ function SourcesContent() {
   const [biasFilter, setBiasFilter] = useState<"all" | BiasTag>("all");
   const [minCred, setMinCred] = useState<Score>(1);
   const [maxCred, setMaxCred] = useState<Score>(lowPreset ? 2 : 5);
+  const [freshFilter, setFreshFilter] = useState<SourceFreshnessFilter>("all");
   const [adding, setAdding] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const now = Date.now();
     return sources
       .filter(
         (src) =>
@@ -368,10 +443,11 @@ function SourcesContent() {
           src.credibility <= maxCred &&
           (roleFilter === "all" || src.roles.includes(roleFilter)) &&
           (biasFilter === "all" || src.biasTags.includes(biasFilter)) &&
+          (!analyst || matchesSourceFreshness(src, freshFilter, now)) &&
           (!q || `${src.name} ${src.notes}`.toLowerCase().includes(q)),
       )
       .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
-  }, [sources, query, typeFilter, roleFilter, biasFilter, minCred, maxCred]);
+  }, [sources, query, typeFilter, roleFilter, biasFilter, minCred, maxCred, freshFilter, analyst]);
 
   if (!hydrated) {
     return (
@@ -393,6 +469,7 @@ function SourcesContent() {
     typeFilter !== "all" ||
     roleFilter !== "all" ||
     biasFilter !== "all" ||
+    freshFilter !== "all" ||
     minCred !== 1 ||
     maxCred !== 5;
 
@@ -401,6 +478,7 @@ function SourcesContent() {
     setTypeFilter("all");
     setRoleFilter("all");
     setBiasFilter("all");
+    setFreshFilter("all");
     setMinCred(1);
     setMaxCred(5);
   };
@@ -442,6 +520,7 @@ function SourcesContent() {
         }}
       />
       <WalkthroughPanel pageId="sources" />
+      {analyst ? <RefreshBar /> : null}
 
       {adding ? (
         <AddSourceForm
@@ -503,6 +582,12 @@ function SourcesContent() {
                     { value: "all", label: "All bias tags" },
                     ...BIAS_OPTIONS.map(([value, label]) => ({ value, label })),
                   ]}
+                />
+                <ControlSelect
+                  label="Freshness"
+                  value={freshFilter}
+                  onChange={(v) => setFreshFilter(v as SourceFreshnessFilter)}
+                  options={SOURCE_FRESHNESS_OPTIONS}
                 />
               </>
             ) : (

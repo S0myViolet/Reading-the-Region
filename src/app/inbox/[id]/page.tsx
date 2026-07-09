@@ -20,14 +20,16 @@ import { PipelineStageBadge } from "@/components/PipelineStageBadge";
 import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { SectorTags, SourceBiasTags } from "@/components/tags";
 import { EntityLink, RelatedObjectsPanel } from "@/components/EntityLink";
+import { FreshnessLine, SourceLine } from "@/components/freshness";
 import { TextArea, TextInput } from "@/components/form";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { observationEvidenceAt } from "@/lib/freshness";
 import { suggestedStage, TRIAGE_LABELS } from "@/lib/pipeline";
 import {
   canPromoteObservation,
   promotionCriteriaMet,
 } from "@/lib/validation";
-import type { Observation, ObservationStatus } from "@/lib/types";
+import type { Observation, ObservationStatus, Source } from "@/lib/types";
 import {
   PROMOTION_CRITERIA,
   PROMOTION_MIN_CRITERIA,
@@ -293,6 +295,45 @@ function TriagePanel({ obs }: { obs: Observation }) {
 }
 
 // ---------------------------------------------------------------------------
+// Evidence freshness (advanced) — real dates only: the source line, the
+// evidence age, and a "Mark as checked now" action that records a human look.
+// ---------------------------------------------------------------------------
+
+function EvidenceFreshness({
+  obs,
+  source,
+}: {
+  obs: Observation;
+  source: Source | null;
+}) {
+  const updateObservation = useIntelligenceStore((s) => s.updateObservation);
+  return (
+    <section aria-label="Evidence freshness" className="space-y-1.5">
+      <SourceLine
+        source={source}
+        publishedAt={obs.eventDate ?? obs.dateObserved}
+      />
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <FreshnessLine
+          latest={observationEvidenceAt(obs)}
+          checkedAt={obs.lastCheckedAt ?? null}
+        />
+        <button
+          type="button"
+          onClick={() =>
+            updateObservation(obs.id, { lastCheckedAt: new Date().toISOString() })
+          }
+          title="Records that a human looked at this observation just now — nothing else changes."
+          className="text-[11.5px] text-ink-faint underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+        >
+          Mark as checked now
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Calm labelled fact for the record's definition block
 // ---------------------------------------------------------------------------
 
@@ -392,6 +433,10 @@ export default function ObservationDetailPage() {
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
         {/* Left column — the captured record, read as an article */}
         <div className="space-y-8">
+          <ViewGate min="analyst">
+            <EvidenceFreshness obs={obs} source={source} />
+          </ViewGate>
+
           {obs.status === "promoted" && obs.promotedSignalId ? (
             <section className="border-l-2 border-accent pl-4">
               <p className="text-[13px] leading-relaxed text-ink-soft">

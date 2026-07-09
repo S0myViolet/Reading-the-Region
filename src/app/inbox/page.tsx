@@ -27,9 +27,15 @@ import {
 } from "@/components/ControlBar";
 import { SourceCredibilityBadge } from "@/components/badges";
 import { useViewMode } from "@/components/ViewMode";
-import { LiveScanStatus } from "@/components/LiveScanSync";
+import { Age } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
 import { promotionCriteriaMet } from "@/lib/validation";
+import {
+  checkedReading,
+  freshnessOf,
+  observationEvidenceAt,
+} from "@/lib/freshness";
 import {
   suggestedStage,
   TRIAGE_LABELS,
@@ -76,7 +82,52 @@ const TRIAGE_FILTER_OPTIONS: Array<{ value: TriageFilterKey; label: string }> = 
   { value: "noise", label: TRIAGE_LABELS.noise },
 ];
 
-type SortKey = "newest" | "oldest" | "readiness";
+type SortKey = "newest" | "oldest" | "readiness" | "checked" | "stale_promising";
+
+// ---------------------------------------------------------------------------
+// Evidence-freshness filter (advanced) — every test reads a real timestamp:
+// observationEvidenceAt for evidence age, lastCheckedAt for human checks.
+// ---------------------------------------------------------------------------
+
+type FreshnessFilterKey = "all" | "fresh" | "week" | "stale" | "recheck";
+
+const FRESHNESS_FILTER_OPTIONS: Array<{ value: FreshnessFilterKey; label: string }> = [
+  { value: "all", label: "All evidence ages" },
+  { value: "fresh", label: "Fresh (last 24h)" },
+  { value: "week", label: "Last 7 days" },
+  { value: "stale", label: "Stale (older than 30 days)" },
+  { value: "recheck", label: "Needs re-check" },
+];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const RECHECK_MS = 30 * DAY_MS;
+
+/** Never human-checked, or the recorded check is older than 30 days. */
+function needsRecheck(obs: Observation, now: number): boolean {
+  return !obs.lastCheckedAt || now - Date.parse(obs.lastCheckedAt) > RECHECK_MS;
+}
+
+function matchesFreshness(
+  obs: Observation,
+  filter: FreshnessFilterKey,
+  now: number,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "recheck") return needsRecheck(obs, now);
+  const status = freshnessOf(observationEvidenceAt(obs), now);
+  if (filter === "fresh") return status === "fresh";
+  if (filter === "week") return status === "fresh" || status === "recent";
+  return status === "stale" || status === "archived";
+}
+
+/** Stale by evidence age yet meeting the promotion minimum — worth another look. */
+function isStaleButPromising(obs: Observation, now: number): boolean {
+  const status = freshnessOf(observationEvidenceAt(obs), now);
+  return (
+    (status === "stale" || status === "archived") &&
+    promotionCriteriaMet(obs) >= PROMOTION_MIN_CRITERIA
+  );
+}
 
 function isFilterKey(v: string | null): v is FilterKey {
   return STATUS_OPTIONS.some((f) => f.value === v);
@@ -129,17 +180,12 @@ function ObservationRow({
 
   const metaParts = [obs.sourceName, fmtDate(obs.dateObserved)];
   if (obs.origin === "live_scan") metaParts.splice(1, 0, "from live scan");
-  if (advanced) {
-    metaParts.push(obs.city ? `${obs.country}, ${obs.city}` : obs.country);
-    if (obs.sectors.length > 0) {
-      metaParts.push(
-        obs.sectors
-          .slice(0, 2)
-          .map((s) => SECTOR_LABELS[s])
-          .join(", "),
-      );
-    }
-  }
+
+  // Advanced meta carries real ages instead of the bare capture date: the
+  // evidence age (event date if later than observation) and the honest
+  // checked/updated reading — "checked" only when a check was recorded.
+  const evidenceAt = observationEvidenceAt(obs);
+  const checked = checkedReading(obs);
 
   return (
     <Link href={`/inbox/${obs.id}`} className="list-row group">
@@ -153,7 +199,29 @@ function ObservationRow({
         </span>
       </div>
       <p className="mt-1 text-[12px] text-ink-faint">
-        {metaParts.filter(Boolean).join(" · ")}
+        {advanced ? (
+          <>
+            {obs.sourceName}
+            {obs.origin === "live_scan" ? " · from live scan" : ""}
+            {" · "}
+            <Age
+              iso={evidenceAt}
+              prefix={evidenceAt === obs.dateObserved ? "observed" : "published"}
+            />
+            {" · "}
+            <Age iso={checked.date} prefix={checked.verb} />
+            {" · "}
+            {obs.city ? `${obs.country}, ${obs.city}` : obs.country}
+            {obs.sectors.length > 0
+              ? ` · ${obs.sectors
+                  .slice(0, 2)
+                  .map((s) => SECTOR_LABELS[s])
+                  .join(", ")}`
+              : ""}
+          </>
+        ) : (
+          metaParts.filter(Boolean).join(" · ")
+        )}
         {obs.status === "promoted" && obs.promotedSignalId ? (
           <span className="text-accent-ink"> · promoted to {obs.promotedSignalId}</span>
         ) : null}
@@ -189,6 +257,7 @@ function InboxContent() {
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [triageFilter, setTriageFilter] = useState<TriageFilterKey>("all");
+  const [freshnessFilter, setFreshnessFilter] = useState<FreshnessFilterKey>("all");
   const [sort, setSort] = useState<SortKey>("newest");
 
   const sourceOptions = useMemo(() => {
@@ -206,19 +275,32 @@ function InboxContent() {
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const now = Date.now();
     const filtered = observations.filter((o) => {
       if (status !== "all" && o.status !== (status as ObservationStatus)) return false;
       if (sourceFilter !== "all" && o.sourceName !== sourceFilter) return false;
       if (triageFilter !== "all" && suggestedStage(o) !== triageFilter) return false;
+      if (advanced && !matchesFreshness(o, freshnessFilter, now)) return false;
       if (q && !`${o.title} ${o.description}`.toLowerCase().includes(q)) return false;
       return true;
     });
     return filtered.sort((a, b) => {
       if (sort === "oldest") return a.dateObserved.localeCompare(b.dateObserved);
       if (sort === "readiness") return promotionCriteriaMet(b) - promotionCriteriaMet(a);
+      if (sort === "checked")
+        return Date.parse(checkedReading(b).date) - Date.parse(checkedReading(a).date);
+      if (sort === "stale_promising") {
+        const ra = isStaleButPromising(a, now) ? 0 : 1;
+        const rb = isStaleButPromising(b, now) ? 0 : 1;
+        if (ra !== rb) return ra - rb;
+        // Oldest evidence first: the longest-neglected promising items surface.
+        return Date.parse(observationEvidenceAt(a)) - Date.parse(observationEvidenceAt(b));
+      }
+      if (advanced)
+        return Date.parse(observationEvidenceAt(b)) - Date.parse(observationEvidenceAt(a));
       return b.dateObserved.localeCompare(a.dateObserved);
     });
-  }, [observations, status, sourceFilter, triageFilter, query, sort]);
+  }, [observations, status, sourceFilter, triageFilter, freshnessFilter, query, sort, advanced]);
 
   if (!hydrated) {
     return (
@@ -244,14 +326,15 @@ function InboxContent() {
     <>
       <InboxHeader />
       {advanced ? (
-        <div className="-mt-4 mb-6 space-y-1.5">
+        <div className="-mt-4 mb-6">
           <p className="text-[12.5px] text-ink-faint">
             Is this noise, an observation, a signal candidate, or a valid signal?
           </p>
-          <LiveScanStatus />
         </div>
       ) : null}
       <WalkthroughPanel pageId="inbox" />
+      {/* RefreshBar supersedes the old inline live-scan status line. */}
+      {advanced ? <RefreshBar /> : null}
 
       <ControlBar
         right={
@@ -261,7 +344,19 @@ function InboxContent() {
             </span>
           ) : null
         }
-        more={advanced ? sourceSelect : undefined}
+        more={
+          advanced ? (
+            <>
+              {sourceSelect}
+              <ControlSelect
+                label="Evidence age"
+                value={freshnessFilter}
+                onChange={(v) => setFreshnessFilter(v as FreshnessFilterKey)}
+                options={FRESHNESS_FILTER_OPTIONS}
+              />
+            </>
+          ) : undefined
+        }
       >
         <ControlSearch value={query} onChange={setQuery} placeholder="Search observations…" />
         <ControlSelect
@@ -284,11 +379,21 @@ function InboxContent() {
           label="Sort"
           value={sort}
           onChange={(v) => setSort(v as SortKey)}
-          options={[
-            { value: "newest", label: "Newest first" },
-            { value: "oldest", label: "Oldest first" },
-            { value: "readiness", label: "Closest to promotion" },
-          ]}
+          options={
+            advanced
+              ? [
+                  { value: "newest", label: "Newest evidence first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "checked", label: "Most recently checked" },
+                  { value: "readiness", label: "Most criteria met" },
+                  { value: "stale_promising", label: "Stale but promising" },
+                ]
+              : [
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "readiness", label: "Closest to promotion" },
+                ]
+          }
         />
       </ControlBar>
 

@@ -14,9 +14,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DemoTag, IdChip } from "@/components/badges";
 import { SourceBiasTags } from "@/components/tags";
+import { AtAGlance } from "@/components/connect";
 import { RelatedObjectsPanel, type RelatedGroup } from "@/components/EntityLink";
+import { SourceLine } from "@/components/freshness";
 import { DepthHint, ViewGate } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import { fullDate, relativeAge } from "@/lib/freshness";
 import type { Source } from "@/lib/types";
 import {
   CREDIBILITY_LABELS,
@@ -139,6 +142,75 @@ function RecordSection({
           <Def label="Added">{fmtDate(src.dateAdded)}</Def>
         </ViewGate>
       </dl>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Source record (advanced) — the record's own dates, honestly worded: real
+// timestamps only, "checked" only when a check was recorded, fetch dates
+// only when the live scan actually wrote them.
+// ---------------------------------------------------------------------------
+
+/** Full date plus relative age, e.g. "12 Mar 2026 · 4mo ago". */
+function DatedValue({ iso }: { iso: string }) {
+  return (
+    <span>
+      {fullDate(iso)} <span className="text-ink-faint">· {relativeAge(iso)}</span>
+    </span>
+  );
+}
+
+function SourceRecordSection({
+  src,
+  observationCount,
+  signalCount,
+}: {
+  src: Source;
+  observationCount: number;
+  signalCount: number;
+}) {
+  const items: Array<{ label: string; value: React.ReactNode }> = [
+    { label: "First added", value: <DatedValue iso={src.dateAdded} /> },
+    {
+      label: "Last checked",
+      value: src.lastCheckedAt ? (
+        <DatedValue iso={src.lastCheckedAt} />
+      ) : (
+        <span className="text-ink-faint">
+          Never checked — ages shown come from the record itself
+        </span>
+      ),
+    },
+  ];
+  if (src.lastSuccessfulFetchAt) {
+    items.push({
+      label: "Last successful fetch",
+      value: <DatedValue iso={src.lastSuccessfulFetchAt} />,
+    });
+  }
+  if (src.lastFailedFetchAt) {
+    items.push({
+      label: "Last failed fetch",
+      value: <DatedValue iso={src.lastFailedFetchAt} />,
+    });
+  }
+  items.push(
+    { label: "Linked observations", value: observationCount },
+    { label: "Linked signals", value: signalCount },
+  );
+
+  return (
+    <section aria-label="Source record">
+      <h2 className="text-[13px] font-medium text-ink">Source record</h2>
+      {src.url ? (
+        <div className="mt-1.5">
+          <SourceLine source={src} checkedAt={src.lastCheckedAt ?? null} />
+        </div>
+      ) : null}
+      <div className="mt-3 max-w-2xl">
+        <AtAGlance items={items} />
+      </div>
     </section>
   );
 }
@@ -343,6 +415,11 @@ export default function SourceDetailPage() {
             signalCount={linkedSignals.length}
           />
           <ViewGate min="analyst">
+            <SourceRecordSection
+              src={src}
+              observationCount={linkedObservations.length}
+              signalCount={linkedSignals.length}
+            />
             <GuidanceSection
               src={src}
               observationCount={linkedObservations.length}

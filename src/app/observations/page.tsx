@@ -8,7 +8,9 @@
  * kept so every filtering decision stays auditable.
  *
  * Advanced-register reference page: it renders the same comparison table
- * in every mode and does not appear in the simple navigation.
+ * in every mode and does not appear in the simple navigation. Advanced mode
+ * adds the evidence-freshness reading per row (observed age, checked/updated
+ * age) and the refresh line; the simple rendering is untouched.
  */
 
 import Link from "next/link";
@@ -21,7 +23,15 @@ import {
   ControlSelect,
 } from "@/components/ControlBar";
 import { DemoTag, IdChip, SourceCredibilityBadge } from "@/components/badges";
+import { Age } from "@/components/freshness";
+import { RefreshBar } from "@/components/RefreshControls";
+import { useViewMode } from "@/components/ViewMode";
 import { useHydrated, useIntelligenceStore } from "@/lib/store";
+import {
+  checkedReading,
+  freshnessOf,
+  observationEvidenceAt,
+} from "@/lib/freshness";
 import type { Observation, ObservationStatus, Signal, Source } from "@/lib/types";
 import { OBSERVATION_STATUS_LABELS } from "@/lib/types";
 import { ObservationStatusPill, fmtDate } from "../inbox/observation-ui";
@@ -63,19 +73,28 @@ function LibraryHeader() {
 function OutcomeCell({
   obs,
   signal,
+  advanced,
 }: {
   obs: Observation;
   signal: Signal | null;
+  advanced: boolean;
 }) {
   if (obs.status === "promoted" && obs.promotedSignalId) {
     return (
-      <Link
-        href={`/signals/${obs.promotedSignalId}`}
-        className="text-[12px] text-accent-ink hover:underline"
-        title={signal?.title}
-      >
-        Became {truncate(signal?.title ?? obs.promotedSignalId)}
-      </Link>
+      <>
+        <Link
+          href={`/signals/${obs.promotedSignalId}`}
+          className="text-[12px] text-accent-ink hover:underline"
+          title={signal?.title}
+        >
+          Became {truncate(signal?.title ?? obs.promotedSignalId)}
+        </Link>
+        {advanced ? (
+          <p className="mt-0.5 text-[10.5px] text-ink-faint">
+            Promoted to <span className="font-mono">{obs.promotedSignalId}</span>
+          </p>
+        ) : null}
+      </>
     );
   }
   return (
@@ -92,11 +111,21 @@ function ObservationTableRow({
   obs,
   source,
   signal,
+  advanced,
 }: {
   obs: Observation;
   source: Source | null;
   signal: Signal | null;
+  advanced: boolean;
 }) {
+  // Advanced freshness reading — real fields only: dateObserved for the
+  // observed age, checkedReading for the honest checked/updated verb, and
+  // the evidence date (event date if later) for the background note.
+  const checked = checkedReading(obs);
+  const olderEvidence =
+    advanced &&
+    freshnessOf(observationEvidenceAt(obs)) === "archived" &&
+    obs.status !== "archived_noise";
   return (
     <tr>
       <td>
@@ -130,7 +159,16 @@ function ObservationTableRow({
         ) : null}
       </td>
       <td className="whitespace-nowrap text-[12.5px] text-ink-soft">
-        {fmtDate(obs.dateObserved)}
+        {advanced ? (
+          <>
+            <Age iso={obs.dateObserved} prefix="observed" />
+            <p className="mt-0.5 text-[10.5px] text-ink-faint">
+              <Age iso={checked.date} prefix={checked.verb} />
+            </p>
+          </>
+        ) : (
+          fmtDate(obs.dateObserved)
+        )}
       </td>
       <td className="text-[12.5px] text-ink-soft">
         {obs.country}
@@ -140,7 +178,12 @@ function ObservationTableRow({
         <ObservationStatusPill status={obs.status} />
       </td>
       <td>
-        <OutcomeCell obs={obs} signal={signal} />
+        <OutcomeCell obs={obs} signal={signal} advanced={advanced} />
+        {olderEvidence ? (
+          <p className="mt-0.5 text-[10.5px] text-ink-faint">
+            older evidence — still usable as background
+          </p>
+        ) : null}
       </td>
     </tr>
   );
@@ -148,6 +191,8 @@ function ObservationTableRow({
 
 export default function ObservationLibraryPage() {
   const hydrated = useHydrated();
+  const mode = useViewMode();
+  const advanced = mode !== "simple";
   const observations = useIntelligenceStore((s) => s.observations);
   const sources = useIntelligenceStore((s) => s.sources);
   const signals = useIntelligenceStore((s) => s.signals);
@@ -197,6 +242,8 @@ export default function ObservationLibraryPage() {
   return (
     <>
       <LibraryHeader />
+      {/* This page has no walkthrough panel; the refresh line sits where one would. */}
+      {advanced ? <RefreshBar /> : null}
 
       <ControlBar
         right={
@@ -259,6 +306,7 @@ export default function ObservationLibraryPage() {
                       ? signalById.get(o.promotedSignalId) ?? null
                       : null
                   }
+                  advanced={advanced}
                 />
               ))}
             </tbody>
