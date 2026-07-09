@@ -27,8 +27,10 @@ import {
 import { EntityLink } from "@/components/EntityLink";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { Field, Select, TextArea, TextInput } from "@/components/form";
+import { Age, SourceLine } from "@/components/freshness";
 import { indicatorOverdue } from "@/lib/derived";
 import { explainConfidenceGeneric, explainIndicator } from "@/lib/explain";
+import { checkedReading, relativeAge, signalEvidenceAt } from "@/lib/freshness";
 import { nextId, useIntelligenceStore } from "@/lib/store";
 import { modeAtLeast } from "@/lib/viewMode";
 import type {
@@ -68,6 +70,39 @@ function formatDate(iso: string): string {
 /** Today as an ISO date (date part only), used when a check is recorded. */
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * Relative form for a FUTURE date — "in 10w". The shared relativeAge only
+ * reads the past, so this tiny page-local mirror applies the same buckets
+ * forwards. Only ever called for dates that are not yet due.
+ */
+function relativeUntil(date: Date, now: number = Date.now()): string {
+  const diff = date.getTime() - now;
+  if (diff < HOUR_MS) return `in ${Math.max(1, Math.round(diff / MINUTE_MS))}m`;
+  if (diff < DAY_MS) return `in ${Math.round(diff / HOUR_MS)}h`;
+  if (diff < 7 * DAY_MS) return `in ${Math.round(diff / DAY_MS)}d`;
+  if (diff < 31 * DAY_MS) return `in ${Math.round(diff / (7 * DAY_MS))}w`;
+  if (diff < 365 * DAY_MS)
+    return `in ${Math.max(1, Math.round(diff / (30 * DAY_MS)))}mo`;
+  return `in ${Math.round(diff / (365 * DAY_MS))}y`;
+}
+
+/**
+ * The parenthetical relative age for a check-due date: a real Age span when
+ * the date has passed, the local future form (with the full date as its
+ * tooltip) when it has not.
+ */
+function DueRelative({ due, overdue }: { due: Date; overdue: boolean }) {
+  return overdue ? (
+    <Age iso={due.toISOString()} />
+  ) : (
+    <span title={formatDay(due)}>{relativeUntil(due)}</span>
+  );
 }
 
 /**
@@ -528,10 +563,24 @@ function IndicatorDetail({
   onDoneCheck: () => void;
 }) {
   const implications = useIntelligenceStore((s) => s.implications);
+  const drivers = useIntelligenceStore((s) => s.drivers);
+  const signals = useIntelligenceStore((s) => s.signals);
+  const sources = useIntelligenceStore((s) => s.sources);
   const overdue = indicatorOverdue(indicator);
   const hasTerritory = territory !== null;
   const hasEvidence = indicator.evidence.trim() !== "";
   const due = nextCheckDue(indicator);
+  // Full records behind the linked refs — the honest source of real dates.
+  const driverRecord =
+    driver === null ? null : (drivers.find((d) => d.id === driver.id) ?? null);
+  const signalRecord =
+    signal === null ? null : (signals.find((s) => s.id === signal.id) ?? null);
+  const signalSource =
+    signalRecord === null
+      ? null
+      : (sources.find(
+          (src) => signalRecord.sourceIds.includes(src.id) && src.url !== null,
+        ) ?? null);
   const relatedImplications =
     indicator.territoryId === null
       ? []
@@ -571,7 +620,8 @@ function IndicatorDetail({
         </p>
         {overdue ? (
           <p className="mt-2 text-[12px] text-caution">
-            This check lapsed on {formatDay(due)} — evidence may have moved since{" "}
+            This check lapsed on {formatDay(due)} (
+            <Age iso={due.toISOString()} />) — evidence may have moved since{" "}
             {formatDate(indicator.dateLastChecked)}. Record a check before relying
             on this reading.
           </p>
@@ -640,15 +690,57 @@ function IndicatorDetail({
           <>
             <div className="grid gap-1.5 sm:grid-cols-3">
               {territory ? (
-                <EntityLink kind="territory" id={territory.id} title={territory.title} />
+                <div>
+                  <EntityLink
+                    kind="territory"
+                    id={territory.id}
+                    title={territory.title}
+                  />
+                  {territoryRecord ? (
+                    <p className="text-[11px] text-ink-faint">
+                      <Age
+                        iso={checkedReading(territoryRecord).date}
+                        prefix={checkedReading(territoryRecord).verb}
+                      />
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
               {driver ? (
-                <EntityLink kind="driver" id={driver.id} title={driver.title} />
+                <div>
+                  <EntityLink kind="driver" id={driver.id} title={driver.title} />
+                  {driverRecord ? (
+                    <p className="text-[11px] text-ink-faint">
+                      <Age
+                        iso={checkedReading(driverRecord).date}
+                        prefix={checkedReading(driverRecord).verb}
+                      />
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
               {signal ? (
-                <EntityLink kind="signal" id={signal.id} title={signal.title} />
+                <div>
+                  <EntityLink kind="signal" id={signal.id} title={signal.title} />
+                  {signalRecord ? (
+                    <p className="text-[11px] text-ink-faint">
+                      evidence <Age iso={signalEvidenceAt(signalRecord)} />
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
             </div>
+            {signalSource ? (
+              <div className="mt-2">
+                <p className="mb-0.5 text-[11px] text-ink-faint">
+                  Source behind the linked signal
+                </p>
+                <SourceLine
+                  source={signalSource}
+                  checkedAt={signalSource.lastCheckedAt ?? null}
+                />
+              </div>
+            ) : null}
             {relatedImplications.length > 0 ? (
               <div className="mt-3">
                 <p className="mb-1 text-[11px] text-ink-faint">
@@ -687,7 +779,8 @@ function IndicatorDetail({
             label: "Last checked",
             value: (
               <span className="font-mono text-[12px]">
-                {formatDate(indicator.dateLastChecked)}
+                {formatDate(indicator.dateLastChecked)} (
+                <Age iso={indicator.dateLastChecked} />)
               </span>
             ),
           },
@@ -697,7 +790,7 @@ function IndicatorDetail({
               <span
                 className={`font-mono text-[12px] ${overdue ? "text-caution" : ""}`}
               >
-                {formatDay(due)}
+                {formatDay(due)} (<DueRelative due={due} overdue={overdue} />)
               </span>
             ),
           },
@@ -805,6 +898,7 @@ export function MonitoringIndicatorRow({
   const contradictionHref = linkedContradiction
     ? `/contradictions/${linkedContradiction.id}`
     : null;
+  const due = nextCheckDue(indicator);
   const action = rowActionFor(indicator, overdue, contradictionHref);
   const runAction = () => {
     setExpanded(true);
@@ -831,7 +925,7 @@ export function MonitoringIndicatorRow({
                 tone="caution"
                 title="Past its review cadence — record a check before relying on this reading."
               >
-                Overdue — check needed
+                Overdue — check was due {relativeAge(due.toISOString())}
               </Pill>
             ) : null}
           </div>
@@ -840,9 +934,10 @@ export function MonitoringIndicatorRow({
             {firstSentence(indicator.description)}
           </p>
           <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
-            Last checked: {formatDate(indicator.dateLastChecked)} ·{" "}
-            {overdue ? "Check was due" : "Next check due"}:{" "}
-            {formatDay(nextCheckDue(indicator))}
+            Last checked: {formatDate(indicator.dateLastChecked)} (
+            <Age iso={indicator.dateLastChecked} />) ·{" "}
+            {overdue ? "Check was due" : "Next check due"}: {formatDay(due)} (
+            <DueRelative due={due} overdue={overdue} />)
           </p>
           <p className="mt-1 max-w-2xl text-[12px] text-ink-faint">
             {evidenceNoteFor(indicator, overdue, territory !== null)}

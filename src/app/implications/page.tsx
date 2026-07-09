@@ -11,6 +11,7 @@
 
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { RefreshBar } from "@/components/RefreshControls";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
@@ -161,6 +162,7 @@ export default function ImplicationsPage() {
         onToggleForm={() => setFormOpen((o) => !o)}
       />
       <WalkthroughPanel pageId="implications" />
+      {analyst ? <RefreshBar /> : null}
 
       {formOpen ? <ImplicationForm onClose={() => setFormOpen(false)} /> : null}
 

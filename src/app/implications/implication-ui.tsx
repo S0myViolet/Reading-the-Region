@@ -20,7 +20,13 @@ import { EntityLink } from "@/components/EntityLink";
 import { IncompleteNote, ShowAllList } from "@/components/connect";
 import { ViewGate, useViewMode } from "@/components/ViewMode";
 import { CheckboxList, Field, Select, TextArea } from "@/components/form";
+import { Age } from "@/components/freshness";
 import { explainConfidenceGeneric, explainImplicationEvidence } from "@/lib/explain";
+import {
+  checkedReading,
+  implicationEvidenceWindow,
+  signalEvidenceAt,
+} from "@/lib/freshness";
 import { firstSentence } from "@/lib/simple";
 import { nextId, useIntelligenceStore } from "@/lib/store";
 import { validateImplication, type ValidationResult } from "@/lib/validation";
@@ -80,6 +86,18 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
 
 const quietLink =
   "text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink";
+
+const DAY_MS = 86_400_000;
+
+/**
+ * The horizons whose action window is already open or opens within two
+ * years (per TIME_HORIZON_LABELS). Evidence older than 90 days under one
+ * of these earns the quiet re-check caution on the card.
+ */
+const URGENT_HORIZONS: ReadonlySet<TimeHorizon> = new Set([
+  "immediate",
+  "near_term",
+]);
 
 /** Split prose into a lead of at most `count` sentences and the remainder. */
 function leadSentences(
@@ -291,6 +309,13 @@ export function ImplicationEntry({
     evidenceDrivers.length > 0 ||
     territory !== null ||
     scenario !== null;
+  // Freshness — real dates only, computed live from the resolved links.
+  const evidenceWindow = implicationEvidenceWindow(imp, evidenceSignals);
+  const reading = checkedReading(imp);
+  const staleActionWindow =
+    URGENT_HORIZONS.has(imp.timeHorizon) &&
+    evidenceWindow.latest !== null &&
+    Date.now() - Date.parse(evidenceWindow.latest) > 90 * DAY_MS;
 
   return (
     <article className="list-row py-8">
@@ -360,7 +385,15 @@ export function ImplicationEntry({
           evidenceDrivers.length,
           territory !== null,
           scenario !== null,
-        )}
+        )}{" "}
+        {evidenceWindow.latest ? (
+          <>
+            · latest evidence <Age iso={evidenceWindow.latest} />
+          </>
+        ) : (
+          <>· no dated evidence linked</>
+        )}{" "}
+        · <Age iso={reading.date} prefix={reading.verb} />
         <button
           type="button"
           aria-expanded={open}
@@ -370,6 +403,13 @@ export function ImplicationEntry({
           {open ? "Hide evidence" : "Open evidence"}
         </button>
       </p>
+
+      {staleActionWindow && evidenceWindow.latest ? (
+        <p className="mt-1.5 text-[12px] text-caution">
+          Action window is near-term but the newest evidence is{" "}
+          <Age iso={evidenceWindow.latest} /> — re-check before acting.
+        </p>
+      ) : null}
 
       {open ? (
         <div className="mt-5 space-y-5 border-l border-line pl-5">
@@ -435,12 +475,12 @@ export function ImplicationEntry({
                     previewCount={4}
                     noun="signals"
                     items={evidenceSignals.map((s) => (
-                      <EntityLink
-                        key={s.id}
-                        kind="signal"
-                        id={s.id}
-                        title={s.title}
-                      />
+                      <div key={s.id}>
+                        <EntityLink kind="signal" id={s.id} title={s.title} />
+                        <p className="text-[11px] text-ink-faint">
+                          evidence <Age iso={signalEvidenceAt(s)} />
+                        </p>
+                      </div>
                     ))}
                   />
                 ) : (
@@ -537,12 +577,12 @@ export function ImplicationEntry({
               <>
                 <div className="grid gap-1.5">
                   {shownIndicators.map((ind) => (
-                    <EntityLink
-                      key={ind.id}
-                      kind="indicator"
-                      id={ind.id}
-                      title={ind.name}
-                    />
+                    <div key={ind.id}>
+                      <EntityLink kind="indicator" id={ind.id} title={ind.name} />
+                      <p className="text-[11px] text-ink-faint">
+                        last checked <Age iso={ind.dateLastChecked} />
+                      </p>
+                    </div>
                   ))}
                 </div>
                 {territoryIndicators.length > 3 ? (
@@ -595,6 +635,23 @@ export function ImplicationEntry({
                 ))}
               </select>
             </label>
+            <button
+              type="button"
+              onClick={() =>
+                updateImplication(imp.id, {
+                  lastCheckedAt: new Date().toISOString(),
+                })
+              }
+              title="Records that a human reviewed this implication's evidence just now — nothing else changes."
+              className={`text-[11px] ${quietLink}`}
+            >
+              Mark as reviewed now
+            </button>
+            {imp.lastCheckedAt ? (
+              <span className="text-[11px] text-ink-faint">
+                <Age iso={imp.lastCheckedAt} prefix="checked" />
+              </span>
+            ) : null}
             <ViewGate min="methodology">
               <p className="text-[11px] text-ink-faint">
                 Created {fmtDate(imp.createdAt)} · Updated {fmtDate(imp.updatedAt)}

@@ -13,6 +13,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { RefreshBar } from "@/components/RefreshControls";
 import { WalkthroughPanel } from "@/components/WalkthroughPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { DepthHint, ViewGate, useViewMode } from "@/components/ViewMode";
@@ -249,6 +250,52 @@ function MonitoringContent() {
   const signalRef = (id: string | null): LinkedRef | null =>
     id === null ? null : { id, title: signals.find((s) => s.id === id)?.title ?? id };
 
+  const groupSections = groups.map((g) => (
+    <section key={g.key} className="mb-10" aria-label={g.heading}>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-[13px] font-medium text-ink">
+          {g.territoryId !== null ? (
+            <Link
+              href={`/territories/${g.territoryId}`}
+              className="hover:text-accent-ink"
+            >
+              {g.heading}
+            </Link>
+          ) : (
+            g.heading
+          )}
+        </h2>
+        {analyst ? (
+          g.items.length !== g.all.length ? (
+            <span className="text-[11.5px] text-ink-faint">
+              {g.items.length} of {g.all.length} shown
+            </span>
+          ) : null
+        ) : (
+          <span className="text-[11.5px] text-ink-faint">
+            {g.items.length} indicator{g.items.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
+      {analyst ? (
+        <p className="mt-1 text-[12px] text-ink-soft">
+          {overallReadSentence(g.all)}
+        </p>
+      ) : null}
+      <div>
+        {g.items.map((i) => (
+          <MonitoringIndicatorRow
+            key={i.id}
+            indicator={i}
+            territory={territoryRef(i.territoryId)}
+            driver={driverRef(i.driverId)}
+            signal={signalRef(i.signalId)}
+          />
+        ))}
+      </div>
+    </section>
+  ));
+
   return (
     <>
       <MonitoringHeader
@@ -270,6 +317,7 @@ function MonitoringContent() {
         }
       />
       <WalkthroughPanel pageId="monitoring" />
+      {analyst ? <RefreshBar /> : null}
 
       {analyst && adding ? (
         <AddIndicatorForm onClose={() => setAdding(false)} />
@@ -295,6 +343,24 @@ function MonitoringContent() {
           onClick={() => setFilter((f) => (f === "overdue" ? null : "overdue"))}
         />
       </div>
+
+      {analyst && overdueCount > 0 ? (
+        <p className="-mt-4 mb-8 text-[12px]">
+          <button
+            type="button"
+            onClick={() => {
+              setFilter("overdue");
+              document
+                .getElementById("indicator-list")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            title="Filters the list to overdue indicators. Nothing is marked checked — record each check with the row's Record check form."
+            className="text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+          >
+            Review overdue indicators
+          </button>
+        </p>
+      ) : null}
 
       <ControlBar
         right={
@@ -384,52 +450,11 @@ function MonitoringContent() {
             Clear filters
           </button>
         </div>
+      ) : analyst ? (
+        // Advanced only: a stable scroll target for "Review overdue indicators".
+        <div id="indicator-list">{groupSections}</div>
       ) : (
-        groups.map((g) => (
-          <section key={g.key} className="mb-10" aria-label={g.heading}>
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="text-[13px] font-medium text-ink">
-                {g.territoryId !== null ? (
-                  <Link
-                    href={`/territories/${g.territoryId}`}
-                    className="hover:text-accent-ink"
-                  >
-                    {g.heading}
-                  </Link>
-                ) : (
-                  g.heading
-                )}
-              </h2>
-              {analyst ? (
-                g.items.length !== g.all.length ? (
-                  <span className="text-[11.5px] text-ink-faint">
-                    {g.items.length} of {g.all.length} shown
-                  </span>
-                ) : null
-              ) : (
-                <span className="text-[11.5px] text-ink-faint">
-                  {g.items.length} indicator{g.items.length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-            {analyst ? (
-              <p className="mt-1 text-[12px] text-ink-soft">
-                {overallReadSentence(g.all)}
-              </p>
-            ) : null}
-            <div>
-              {g.items.map((i) => (
-                <MonitoringIndicatorRow
-                  key={i.id}
-                  indicator={i}
-                  territory={territoryRef(i.territoryId)}
-                  driver={driverRef(i.driverId)}
-                  signal={signalRef(i.signalId)}
-                />
-              ))}
-            </div>
-          </section>
-        ))
+        groupSections
       )}
 
       <div className="mt-6">
